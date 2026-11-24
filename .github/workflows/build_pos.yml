@@ -54,6 +54,11 @@ jobs:
     name: Build Android Tablet (.apk)
     runs-on: ubuntu-latest
     steps:
+      - name: Free runner disk space (prevent NDK unzip failure)
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL || true
+          df -h
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -73,7 +78,7 @@ jobs:
         working-directory: apps/nutrifresh_pos
         run: flutter create --org id.my.nutrifresh --project-name nutrifresh_pos --platforms=android .
 
-      - name: Configure Android icons, OAuth deep link & Bluetooth bridge
+      - name: Configure Android icons, Camera, OAuth deep link & Bluetooth bridge
         run: python3 scripts/configure_pos_platforms.py
 
       - name: Install dependencies

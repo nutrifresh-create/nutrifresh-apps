@@ -1,7 +1,11 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:nf_core/nf_core.dart';
 import '../services/pos_print_service.dart';
 import '../state/pos_controller.dart';
+import '../widgets/camera_scanner_modal.dart';
 
 class StockScreen extends StatefulWidget {
   final PosController controller;
@@ -13,11 +17,36 @@ class StockScreen extends StatefulWidget {
 
 class _StockScreenState extends State<StockScreen> {
   final _searchCtrl = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  String _generateUniquePlu() {
+    final used = widget.controller.inventory
+        .map((p) => p.barcode.trim().toUpperCase())
+        .where((b) => b.isNotEmpty)
+        .toSet();
+    for (int n = 200101; n < 299999; n++) {
+      final candidate = n.toString();
+      if (!used.contains(candidate)) return candidate;
+    }
+    return 'PLU${DateTime.now().millisecondsSinceEpoch % 100000}';
+  }
+
+  Future<void> _scanToFilterStock() async {
+    final code = await openBarcodeQrCameraScanner(
+      context: context,
+      style: widget.controller.uiStyle,
+      title: 'Scan Barcode Produk',
+      hint: 'Scan stiker barcode di rak untuk langsung menemukan produknya',
+    );
+    if (code != null && code.isNotEmpty && mounted) {
+      setState(() => _searchCtrl.text = code);
+    }
   }
 
   Future<void> _openStockOpnameDialog(NfProduct p) async {
@@ -323,7 +352,7 @@ class _StockScreenState extends State<StockScreen> {
             name: newNameCtrl.text.trim(),
             category: src.category,
             unit: src.unit,
-            barcode: targetId,
+            barcode: _generateUniquePlu(),
             price: double.tryParse(newPriceCtrl.text.trim()) ?? src.price,
             cost: src.cost,
             stock: 0,
@@ -362,108 +391,290 @@ class _StockScreenState extends State<StockScreen> {
     newPriceCtrl.dispose();
   }
 
+  /// PRODUKSI DAPUR v1.1: PENCARIAN PRODUK JADI & PENCARIAN BAHAN MENTAH SUPER MUDAH!
   Future<void> _openKitchenProductionModal() async {
     final c = widget.controller;
     if (c.inventory.isEmpty) return;
-    NfProduct targetProd = c.inventory.first;
+
+    NfProduct? targetProd;
+    // Prioritaskan produk Jus / Potong / Parsel sebagai rekomendasi default
+    final preferredTargets = c.inventory.where((p) =>
+        p.category.contains('Jus') || p.category.contains('Potong') || p.category.contains('Parsel')).toList();
+    targetProd = preferredTargets.isNotEmpty ? preferredTargets.first : c.inventory.first;
+
+    final targetSearchCtrl = TextEditingController();
+    final ingSearchCtrl = TextEditingController();
     final outQtyCtrl = TextEditingController(text: '10');
-    final List<({NfProduct? prod, TextEditingController qtyCtrl})> ingredients = [
-      (prod: c.inventory.first, qtyCtrl: TextEditingController(text: '1000')),
-    ];
+    final List<({NfProduct prod, TextEditingController qtyCtrl})> selectedIngredients = [];
 
     final ok = await showNfGlassModal<bool>(
       context: context,
       style: c.uiStyle,
-      title: 'Produksi Dapur (Jus / Rakit Parsel)',
-      subtitle: 'Potong bahan mentah & tambah stok produk jadi + hitung HPP otomatis',
+      title: 'Produksi Dapur (Jus / Salad / Parsel)',
+      subtitle: 'Cari bahan cepat → potong bahan otomatis → hitung HPP akurat',
       icon: Icons.blender_rounded,
       headerGradient: const [Color(0xFF047857), Color(0xFF10B981)],
-      maxWidth: 540,
+      maxWidth: 580,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setM) {
-          final outQty = (int.tryParse(outQtyCtrl.text.trim()) ?? 1).clamp(1, 99999);
+          final outQty = (int.tryParse(outQtyCtrl.text.trim()) ?? 1).clamp(1, 99999).toInt();
+          final tQuery = targetSearchCtrl.text.trim().toLowerCase();
+          final targetSuggestions = tQuery.isEmpty
+              ? const <NfProduct>[]
+              : c.inventory.where((p) => p.name.toLowerCase().contains(tQuery) || p.barcode.toLowerCase().contains(tQuery)).take(6).toList();
+
+          final iQuery = ingSearchCtrl.text.trim().toLowerCase();
+          final ingSuggestions = iQuery.isEmpty
+              ? c.inventory.where((p) => p.id != targetProd?.id && p.stock > 0).take(6).toList()
+              : c.inventory
+                  .where((p) => p.id != targetProd?.id && (p.name.toLowerCase().contains(iQuery) || p.category.toLowerCase().contains(iQuery) || p.barcode.toLowerCase().contains(iQuery)))
+                  .take(8)
+                  .toList();
+
           double totalRawCost = 0;
-          for (final ing in ingredients) {
-            if (ing.prod != null) {
-              final q = int.tryParse(ing.qtyCtrl.text.trim()) ?? 0;
-              totalRawCost += ing.prod!.calculateLineCost(q);
-            }
+          for (final ing in selectedIngredients) {
+            final q = int.tryParse(ing.qtyCtrl.text.trim()) ?? 0;
+            totalRawCost += ing.prod.calculateLineCost(q);
           }
-          final hppPerUnit = totalRawCost / (outQty / NfFormatters.unitDivisor(targetProd.unit));
+          final hppPerUnit = targetProd == null
+              ? 0.0
+              : totalRawCost / (outQty / NfFormatters.unitDivisor(targetProd!.unit));
+
+          void addIngredient(NfProduct p) {
+            final exists = selectedIngredients.any((e) => e.prod.id == p.id);
+            if (exists) return;
+            final defQty = p.unit == 'Gram' ? '500' : '1';
+            setM(() {
+              selectedIngredients.add((prod: p, qtyCtrl: TextEditingController(text: defQty)));
+              ingSearchCtrl.clear();
+            });
+          }
 
           return Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              DropdownButtonFormField<NfProduct>(
-                value: targetProd,
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Produk Jadi (Jus / Salad / Parsel)'),
-                items: c.inventory.map((p) => DropdownMenuItem(value: p, child: Text('${p.name} (${p.unit})', overflow: TextOverflow.ellipsis))).toList(),
-                onChanged: (v) {
-                  if (v != null) setM(() => targetProd = v);
-                },
+              // 1. PRODUK JADI DENGAN PENCARIAN INSTAN
+              const Text('1. Produk Jadi Hasil Produksi', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12.5, color: Color(0xFF065F46))),
+              const SizedBox(height: 6),
+              if (targetProd != null)
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF6EE7B7)),
+                  ),
+                  child: Row(
+                    children: [
+                      NfCachedImage(url: targetProd!.img, width: 42, height: 42, borderRadius: BorderRadius.circular(10)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(targetProd!.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
+                            Text(
+                              '${targetProd!.category} • Stok: ${NfFormatters.stockDisplay(targetProd!.stock, targetProd!.unit)}',
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF047857)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 7),
+              TextField(
+                controller: targetSearchCtrl,
+                decoration: const InputDecoration(
+                  isDense: true,
+                  prefixIcon: Icon(Icons.search_rounded, size: 18),
+                  hintText: 'Ganti produk jadi? Ketik nama Jus / Salad / Parsel...',
+                ),
+                onChanged: (_) => setM(() {}),
               ),
+              if (targetSuggestions.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(top: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                  ),
+                  child: Column(
+                    children: targetSuggestions.map((p) => ListTile(
+                          dense: true,
+                          leading: NfCachedImage(url: p.img, width: 32, height: 32, borderRadius: BorderRadius.circular(8)),
+                          title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                          subtitle: Text('${p.category} • Stok: ${NfFormatters.stockDisplay(p.stock, p.unit)}', style: const TextStyle(fontSize: 10.5)),
+                          onTap: () => setM(() {
+                            targetProd = p;
+                            targetSearchCtrl.clear();
+                          }),
+                        )).toList(),
+                  ),
+                ),
               const SizedBox(height: 10),
               TextField(
                 controller: outQtyCtrl,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Jumlah Hasil Produksi (${NfFormatters.displayUnit(targetProd.unit)}) *'),
+                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                decoration: InputDecoration(
+                  labelText: 'Jumlah Hasil Jadi (${targetProd != null ? NfFormatters.displayUnit(targetProd!.unit) : 'Pcs'}) *',
+                ),
                 onChanged: (_) => setM(() {}),
               ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Bahan Mentah Terpakai:', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
-                  TextButton.icon(
-                    onPressed: () => setM(() => ingredients.add((prod: c.inventory.first, qtyCtrl: TextEditingController(text: '500')))),
-                    icon: const Icon(Icons.add_circle_outline, size: 16),
-                    label: const Text('Tambah Bahan', style: TextStyle(fontSize: 11.5)),
-                  ),
-                ],
+
+              const Divider(height: 22),
+
+              // 2. PENCARIAN BAHAN MENTAH SUPER CEPAT
+              const Text('2. Cari & Tambahkan Bahan Mentah / Kemasan', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12.5, color: Color(0xFF1D4ED8))),
+              const SizedBox(height: 6),
+              TextField(
+                controller: ingSearchCtrl,
+                decoration: InputDecoration(
+                  isDense: true,
+                  prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF2563EB)),
+                  hintText: 'Ketik bahan (misal: alpukat, gula, cup, pita, keranjang)...',
+                  suffixIcon: ingSearchCtrl.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 17),
+                          onPressed: () => setM(() => ingSearchCtrl.clear()),
+                        )
+                      : null,
+                ),
+                onChanged: (_) => setM(() {}),
               ),
-              ...List.generate(ingredients.length, (i) {
-                final row = ingredients[i];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: DropdownButtonFormField<NfProduct>(
-                          value: row.prod,
-                          isExpanded: true,
-                          decoration: const InputDecoration(isDense: true, labelText: 'Bahan'),
-                          items: c.inventory.map((p) => DropdownMenuItem(value: p, child: Text(p.name, overflow: TextOverflow.ellipsis))).toList(),
-                          onChanged: (v) => setM(() => ingredients[i] = (prod: v, qtyCtrl: row.qtyCtrl)),
-                        ),
+              const SizedBox(height: 7),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 165),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: ingSuggestions.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(14),
+                        child: Center(child: Text('Bahan tidak ditemukan.', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)))),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: ingSuggestions.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (_, idx) {
+                          final p = ingSuggestions[idx];
+                          final already = selectedIngredients.any((e) => e.prod.id == p.id);
+                          return ListTile(
+                            dense: true,
+                            leading: NfCachedImage(url: p.img, width: 34, height: 34, borderRadius: BorderRadius.circular(8)),
+                            title: Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                            subtitle: Text(
+                              'Stok: ${NfFormatters.stockDisplay(p.stock, p.unit)} • HPP: ${NfFormatters.rupiah(p.cost)}/${NfFormatters.catalogPriceUnit(p.unit)}',
+                              style: const TextStyle(fontSize: 10.5),
+                            ),
+                            trailing: already
+                                ? const Icon(Icons.check_circle_rounded, color: NfColors.green, size: 20)
+                                : FilledButton.tonal(
+                                    style: FilledButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    onPressed: () => addIngredient(p),
+                                    child: const Text('+ Pakai', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                                  ),
+                            onTap: already ? null : () => addIngredient(p),
+                          );
+                        },
                       ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        flex: 2,
-                        child: TextField(
-                          controller: row.qtyCtrl,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(isDense: true, labelText: row.prod != null ? NfFormatters.displayUnit(row.prod!.unit) : 'Qty'),
-                          onChanged: (_) => setM(() {}),
+              ),
+
+              const SizedBox(height: 12),
+              Text(
+                'Bahan Terpilih (${selectedIngredients.length} item):',
+                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+              ),
+              const SizedBox(height: 6),
+              if (selectedIngredients.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: const Text(
+                    'Belum ada bahan dipilih. Ketik nama bahan di atas lalu ketuk "+ Pakai".',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                  ),
+                )
+              else
+                ...List.generate(selectedIngredients.length, (i) {
+                  final row = selectedIngredients[i];
+                  final q = int.tryParse(row.qtyCtrl.text.trim()) ?? 0;
+                  final lineCost = row.prod.calculateLineCost(q);
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 7),
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(row.prod.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                              Text(
+                                'Modal: ${NfFormatters.rupiah(lineCost)} • Sisa: ${NfFormatters.stockDisplay(row.prod.stock, row.prod.unit)}',
+                                style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      if (ingredients.length > 1)
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 96,
+                          child: TextField(
+                            controller: row.qtyCtrl,
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                              suffixText: NfFormatters.displayUnit(row.prod.unit),
+                            ),
+                            onChanged: (_) => setM(() {}),
+                          ),
+                        ),
                         IconButton(
-                          icon: const Icon(Icons.remove_circle_outline, color: NfColors.danger, size: 19),
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.close_rounded, color: NfColors.danger, size: 18),
                           onPressed: () => setM(() {
                             row.qtyCtrl.dispose();
-                            ingredients.removeAt(i);
+                            selectedIngredients.removeAt(i);
                           }),
                         ),
-                    ],
-                  ),
-                );
-              }),
+                      ],
+                    ),
+                  );
+                }),
+
+              const SizedBox(height: 10),
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: NfColors.lightBg, borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(
+                  color: NfColors.lightBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: NfColors.green.withAlpha(90)),
+                ),
                 child: Column(
                   children: [
                     Row(
@@ -477,7 +688,7 @@ class _StockScreenState extends State<StockScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Estimasi HPP Baru / Satuan:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: NfColors.greenDark)),
-                        Text(NfFormatters.rupiah(hppPerUnit), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: NfColors.brown)),
+                        Text(NfFormatters.rupiah(hppPerUnit), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: NfColors.brown)),
                       ],
                     ),
                   ],
@@ -485,9 +696,11 @@ class _StockScreenState extends State<StockScreen> {
               ),
               const SizedBox(height: 14),
               FilledButton.icon(
-                onPressed: () => Navigator.of(ctx).pop(true),
+                onPressed: (targetProd == null || selectedIngredients.isEmpty)
+                    ? null
+                    : () => Navigator.of(ctx).pop(true),
                 icon: const Icon(Icons.check_circle_rounded),
-                label: const Text('Proses Produksi Sekarang'),
+                label: const Text('Proses Produksi & Potong Bahan'),
               ),
             ],
           );
@@ -495,43 +708,45 @@ class _StockScreenState extends State<StockScreen> {
       ),
     );
 
-    if (ok == true) {
+    if (ok == true && targetProd != null) {
       final outQty = int.tryParse(outQtyCtrl.text.trim()) ?? 0;
       if (outQty > 0) {
         final batch = <Map<String, dynamic>>[];
         double totalRawCost = 0;
-        for (final ing in ingredients) {
+        for (final ing in selectedIngredients) {
           final q = int.tryParse(ing.qtyCtrl.text.trim()) ?? 0;
-          if (ing.prod != null && q > 0) {
-            totalRawCost += ing.prod!.calculateLineCost(q);
-            batch.add({'product_id': ing.prod!.id, 'delta_qty': -q, 'reason': 'Bahan Produksi ${targetProd.name}'});
+          if (q > 0) {
+            totalRawCost += ing.prod.calculateLineCost(q);
+            batch.add({'product_id': ing.prod.id, 'delta_qty': -q, 'reason': 'Bahan Produksi ${targetProd!.name}'});
           }
         }
         final hppPerUnit = totalRawCost > 0
-            ? totalRawCost / (outQty / NfFormatters.unitDivisor(targetProd.unit))
-            : targetProd.cost;
+            ? totalRawCost / (outQty / NfFormatters.unitDivisor(targetProd!.unit))
+            : targetProd!.cost;
         batch.add({
-          'product_id': targetProd.id,
+          'product_id': targetProd!.id,
           'delta_qty': outQty,
           'new_unit_cost': hppPerUnit,
           'reason': 'Hasil Produksi Dapur',
         });
         await NfSupabaseService.instance.batchAdjustStockAtomic(
           items: batch,
-          reason: 'Produksi ${targetProd.name}',
+          reason: 'Produksi ${targetProd!.name}',
           actor: c.session?.name ?? 'Staf',
           preventNegative: false,
         );
         await c.syncAllData();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Produksi ${targetProd.name} (+${NfFormatters.stockDisplay(outQty, targetProd.unit)}) tersimpan!')),
+            SnackBar(content: Text('Produksi ${targetProd!.name} (+${NfFormatters.stockDisplay(outQty, targetProd!.unit)}) tersimpan!')),
           );
         }
       }
     }
+    targetSearchCtrl.dispose();
+    ingSearchCtrl.dispose();
     outQtyCtrl.dispose();
-    for (final ing in ingredients) {
+    for (final ing in selectedIngredients) {
       ing.qtyCtrl.dispose();
     }
   }
@@ -624,7 +839,7 @@ class _StockScreenState extends State<StockScreen> {
       context: context,
       style: c.uiStyle,
       title: 'Cetak Label Barcode Massal',
-      subtitle: 'Tentukan jumlah stiker per produk lalu cetak langsung (${PosPrintService.instance.activePrinterSummary})',
+      subtitle: 'Tentukan jumlah stiker per produk (${PosPrintService.instance.activePrinterSummary})',
       icon: Icons.qr_code_2_rounded,
       headerGradient: const [Color(0xFF1D4ED8), Color(0xFF3B82F6)],
       maxWidth: 540,
@@ -725,16 +940,30 @@ class _StockScreenState extends State<StockScreen> {
     );
   }
 
+  /// TAMBAH / EDIT PRODUK v1.1: LENGKAP DENGAN UPLOAD FOTO KE SUPABASE STORAGE + AUTO PLU + SCAN BARCODE!
   Future<void> _openAddOrEditProduct({NfProduct? existing}) async {
     final nameCtrl = TextEditingController(text: existing?.name ?? '');
-    final bcCtrl = TextEditingController(text: existing?.barcode ?? '');
+    final bcCtrl = TextEditingController(
+      text: (existing?.barcode.isNotEmpty ?? false) ? existing!.barcode : _generateUniquePlu(),
+    );
     final priceCtrl = TextEditingController(text: existing != null ? existing.price.round().toString() : '');
     final costCtrl = TextEditingController(text: existing != null ? existing.cost.round().toString() : '');
     final empPriceCtrl = TextEditingController(text: existing != null && existing.employeePrice > 0 ? existing.employeePrice.round().toString() : '');
     final resPriceCtrl = TextEditingController(text: existing != null && existing.resellerPrice > 0 ? existing.resellerPrice.round().toString() : '');
     final stockCtrl = TextEditingController(text: existing != null ? existing.stock.toString() : '0');
+    final minStockCtrl = TextEditingController(text: existing != null ? existing.minStock.toString() : '0');
+    final bundleQtyCtrl = TextEditingController(text: existing != null && existing.bundleQty > 0 ? existing.bundleQty.toString() : '');
+    final bundlePriceCtrl = TextEditingController(text: existing != null && existing.bundlePrice > 0 ? existing.bundlePrice.round().toString() : '');
+    final imgUrlCtrl = TextEditingController(text: existing?.img ?? '');
+
     String unit = existing?.unit ?? 'Gram';
     String cat = existing?.category ?? 'Buah Lokal';
+    bool isActive = existing?.active ?? true;
+    bool isObral = existing?.isObral ?? false;
+    Uint8List? pickedPreviewBytes;
+    bool uploadingPhoto = false;
+    final prodId = existing?.id ?? NfFormatters.generateId('PRD');
+
     final catOptions = <String>{
       'Buah Lokal',
       'Buah Impor',
@@ -753,116 +982,313 @@ class _StockScreenState extends State<StockScreen> {
       context: context,
       style: widget.controller.uiStyle,
       title: existing == null ? 'Tambah Produk Baru' : 'Edit Produk',
-      subtitle: existing?.name ?? 'Langsung tampil di Kasir & Katalog',
+      subtitle: existing?.name ?? 'Foto otomatis tersinkron ke Kasir & Katalog Web',
       icon: Icons.inventory_2_rounded,
       headerGradient: const [Color(0xFF558B2F), Color(0xFF7CB342)],
+      maxWidth: 520,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setM) => Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Nama Produk *')),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: cat,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Kategori'),
-                    items: catOptions.map((e) => DropdownMenuItem(value: e, child: Text(e, overflow: TextOverflow.ellipsis))).toList(),
-                    onChanged: (v) => setM(() => cat = v ?? 'Buah Lokal'),
-                  ),
+        builder: (ctx, setM) {
+          Future<void> pickAndUploadPhoto(ImageSource source) async {
+            try {
+              final xfile = await _picker.pickImage(
+                source: source,
+                maxWidth: 900,
+                maxHeight: 900,
+                imageQuality: 80,
+              );
+              if (xfile == null) return;
+              final bytes = await xfile.readAsBytes();
+              setM(() {
+                pickedPreviewBytes = bytes;
+                uploadingPhoto = true;
+              });
+              final ext = xfile.name.contains('.') ? xfile.name.split('.').last : 'jpg';
+              final publicUrl = await NfSupabaseService.instance.uploadProductImageBytes(
+                bytes: bytes,
+                filePrefix: prodId,
+                ext: ext,
+              );
+              setM(() {
+                imgUrlCtrl.text = publicUrl;
+                uploadingPhoto = false;
+              });
+            } catch (e) {
+              setM(() => uploadingPhoto = false);
+              if (ctx.mounted) {
+                ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Gagal unggah foto: $e')));
+              }
+            }
+          }
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Bagian Foto Produk
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: unit,
-                    decoration: const InputDecoration(labelText: 'Satuan'),
-                    items: unitOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                    onChanged: (v) => setM(() => unit = v ?? 'Gram'),
-                  ),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: SizedBox(
+                        width: 72,
+                        height: 72,
+                        child: pickedPreviewBytes != null
+                            ? Image.memory(pickedPreviewBytes!, fit: BoxFit.cover)
+                            : NfCachedImage(url: imgUrlCtrl.text.trim(), width: 72, height: 72),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            uploadingPhoto ? 'Mengunggah foto ke Cloud...' : 'Foto Produk (Kasir & Katalog)',
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12.5),
+                          ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              FilledButton.tonalIcon(
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: uploadingPhoto ? null : () => pickAndUploadPhoto(ImageSource.gallery),
+                                icon: const Icon(Icons.photo_library_rounded, size: 15),
+                                label: Text(Platform.isWindows ? 'Pilih File Foto' : 'Galeri', style: const TextStyle(fontSize: 11.5)),
+                              ),
+                              if (Platform.isAndroid || Platform.isIOS)
+                                FilledButton.tonalIcon(
+                                  style: FilledButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  onPressed: uploadingPhoto ? null : () => pickAndUploadPhoto(ImageSource.camera),
+                                  icon: const Icon(Icons.camera_alt_rounded, size: 15),
+                                  label: const Text('Kamera', style: TextStyle(fontSize: 11.5)),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            TextField(controller: bcCtrl, decoration: const InputDecoration(labelText: 'Kode Barcode PLU')),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: priceCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(labelText: 'Harga Jual / ${NfFormatters.catalogPriceUnit(unit)}'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: costCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Harga Modal (HPP)'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: empPriceCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Harga Karyawan (Ops)'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: resPriceCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Harga Reseller (Ops)'),
-                  ),
-                ),
-              ],
-            ),
-            if (existing == null) ...[
+              ),
               const SizedBox(height: 10),
-              TextField(
-                controller: stockCtrl,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Stok Awal (${NfFormatters.displayUnit(unit)})'),
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Nama Produk *')),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: cat,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Kategori'),
+                      items: catOptions.map((e) => DropdownMenuItem(value: e, child: Text(e, overflow: TextOverflow.ellipsis))).toList(),
+                      onChanged: (v) => setM(() => cat = v ?? 'Buah Lokal'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: unit,
+                      decoration: const InputDecoration(labelText: 'Satuan'),
+                      items: unitOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                      onChanged: (v) => setM(() => unit = v ?? 'Gram'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // Kode PLU + Auto Generate + Scan Kamera!
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: bcCtrl,
+                      style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w800),
+                      decoration: const InputDecoration(labelText: 'Kode Barcode PLU'),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  FilledButton.tonal(
+                    style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12)),
+                    onPressed: () => setM(() => bcCtrl.text = _generateUniquePlu()),
+                    child: const Text('✨ Auto', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800)),
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton.filled(
+                    style: IconButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
+                    tooltip: 'Scan Barcode Kemasan',
+                    onPressed: () async {
+                      final code = await openBarcodeQrCameraScanner(
+                        context: ctx,
+                        style: widget.controller.uiStyle,
+                        title: 'Scan Barcode Produk',
+                        hint: 'Arahkan kamera ke barcode kemasan produk',
+                      );
+                      if (code != null && code.isNotEmpty) {
+                        setM(() => bcCtrl.text = code);
+                      }
+                    },
+                    icon: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 19),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: priceCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: 'Harga Jual / ${NfFormatters.catalogPriceUnit(unit)}'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: costCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Harga Modal (HPP)'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: empPriceCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Harga Karyawan (Ops)'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: resPriceCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Harga Reseller (Ops)'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  if (existing == null) ...[
+                    Expanded(
+                      child: TextField(
+                        controller: stockCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(labelText: 'Stok Awal (${NfFormatters.displayUnit(unit)})'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: TextField(
+                      controller: minStockCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: 'Stok Minimal (${NfFormatters.displayUnit(unit)})'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: bundleQtyCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Promo Paket Min Qty (Ops)'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: bundlePriceCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Harga Paket Rp (Ops)'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Expanded(
+                    child: SwitchListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      value: isActive,
+                      onChanged: (v) => setM(() => isActive = v),
+                      title: const Text('Tampil di Katalog', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                  Expanded(
+                    child: SwitchListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      value: isObral,
+                      onChanged: (v) => setM(() => isObral = v),
+                      title: const Text('Tandai Obral 🔥', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(child: OutlinedButton(onPressed: uploadingPhoto ? null : () => Navigator.of(ctx).pop(false), child: const Text('Batal'))),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: FilledButton.icon(
+                      onPressed: uploadingPhoto ? null : () => Navigator.of(ctx).pop(true),
+                      icon: const Icon(Icons.save_rounded),
+                      label: Text(uploadingPhoto ? 'Mengunggah Foto...' : 'Simpan Produk'),
+                    ),
+                  ),
+                ],
               ),
             ],
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(child: OutlinedButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Batal'))),
-                const SizedBox(width: 10),
-                Expanded(flex: 2, child: FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Simpan Produk'))),
-              ],
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
     if (ok == true && nameCtrl.text.trim().isNotEmpty) {
       final p = NfProduct(
-        id: existing?.id ?? NfFormatters.generateId('PRD'),
+        id: prodId,
         name: nameCtrl.text.trim(),
         category: cat,
         unit: unit,
-        barcode: bcCtrl.text.trim(),
+        barcode: bcCtrl.text.trim().isEmpty ? _generateUniquePlu() : bcCtrl.text.trim(),
         price: double.tryParse(priceCtrl.text.trim()) ?? 0,
         cost: double.tryParse(costCtrl.text.trim()) ?? 0,
         stock: existing?.stock ?? (int.tryParse(stockCtrl.text.trim()) ?? 0),
-        minStock: existing?.minStock ?? 0,
-        active: existing?.active ?? true,
-        img: existing?.img ?? '',
-        isObral: existing?.isObral ?? false,
-        bundleQty: existing?.bundleQty ?? 0,
-        bundlePrice: existing?.bundlePrice ?? 0,
+        minStock: int.tryParse(minStockCtrl.text.trim()) ?? 0,
+        active: isActive,
+        img: imgUrlCtrl.text.trim(),
+        isObral: isObral,
+        bundleQty: int.tryParse(bundleQtyCtrl.text.trim()) ?? 0,
+        bundlePrice: double.tryParse(bundlePriceCtrl.text.trim()) ?? 0,
         employeePrice: double.tryParse(empPriceCtrl.text.trim()) ?? 0,
         resellerPrice: double.tryParse(resPriceCtrl.text.trim()) ?? 0,
         raw: existing?.raw ?? const {},
@@ -877,6 +1303,10 @@ class _StockScreenState extends State<StockScreen> {
     empPriceCtrl.dispose();
     resPriceCtrl.dispose();
     stockCtrl.dispose();
+    minStockCtrl.dispose();
+    bundleQtyCtrl.dispose();
+    bundlePriceCtrl.dispose();
+    imgUrlCtrl.dispose();
   }
 
   @override
@@ -921,11 +1351,29 @@ class _StockScreenState extends State<StockScreen> {
                           onChanged: (_) => setState(() {}),
                         ),
                       ),
+                      if (_searchCtrl.text.isNotEmpty)
+                        InkWell(
+                          onTap: () => setState(() => _searchCtrl.clear()),
+                          child: const Icon(Icons.cancel_rounded, size: 17, color: Color(0xFF94A3B8)),
+                        ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
+              NfPressScale(
+                onTap: _scanToFilterStock,
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)]),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 19),
+                ),
+              ),
+              const SizedBox(width: 6),
               FilledButton.icon(
                 onPressed: () => _openAddOrEditProduct(),
                 icon: const Icon(Icons.add_rounded, size: 18),
@@ -940,11 +1388,11 @@ class _StockScreenState extends State<StockScreen> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             children: [
-              _quickActionPill(Icons.sell_rounded, 'Edit Harga Cepat', const Color(0xFF936C38), _openQuickPriceEditorModal),
+              _quickActionPill(Icons.sell_rounded, 'Edit Harga Cepat', const Color(0xFFB45309), const Color(0xFFFEF3C7), _openQuickPriceEditorModal),
               const SizedBox(width: 8),
-              _quickActionPill(Icons.blender_rounded, 'Produksi Jus / Parsel', const Color(0xFF047857), _openKitchenProductionModal),
+              _quickActionPill(Icons.blender_rounded, 'Produksi Jus / Parsel', const Color(0xFF047857), const Color(0xFFD1FAE5), _openKitchenProductionModal),
               const SizedBox(width: 8),
-              _quickActionPill(Icons.qr_code_2_rounded, 'Barcode Massal', const Color(0xFF1D4ED8), _openBatchBarcodeModal),
+              _quickActionPill(Icons.qr_code_2_rounded, 'Barcode Massal', const Color(0xFF1D4ED8), const Color(0xFFDBEAFE), _openBatchBarcodeModal),
             ],
           ),
         ),
@@ -998,7 +1446,14 @@ class _StockScreenState extends State<StockScreen> {
                               ),
                               if (p.barcode.isNotEmpty) ...[
                                 const SizedBox(width: 6),
-                                Text('PLU: ${p.barcode}', style: const TextStyle(fontSize: 10.5, fontFamily: 'monospace', color: Color(0xFF64748B))),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEFF6FF),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text('PLU: ${p.barcode}', style: const TextStyle(fontSize: 10, fontFamily: 'monospace', fontWeight: FontWeight.w800, color: Color(0xFF1D4ED8))),
+                                ),
                               ],
                             ],
                           ),
@@ -1032,7 +1487,7 @@ class _StockScreenState extends State<StockScreen> {
                         PopupMenuItem(value: 'kartu', child: Text('📋 Kartu Stok')),
                         PopupMenuItem(value: 'bc_print', child: Text('🖨️ Cetak Barcode Langsung')),
                         PopupMenuItem(value: 'bc_png', child: Text('🖼️ Unduh Label Barcode PNG')),
-                        PopupMenuItem(value: 'edit', child: Text('✏️ Edit Produk & Harga')),
+                        PopupMenuItem(value: 'edit', child: Text('✏️ Edit Produk, Foto & PLU')),
                       ],
                     ),
                   ],
@@ -1045,23 +1500,22 @@ class _StockScreenState extends State<StockScreen> {
     );
   }
 
-  Widget _quickActionPill(IconData icon, String label, Color color, VoidCallback onTap) {
-    return InkWell(
+  Widget _quickActionPill(IconData icon, String label, Color fg, Color bg, VoidCallback onTap) {
+    return NfPressScale(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(235),
+          color: bg,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: color.withAlpha(85)),
+          border: Border.all(color: fg.withAlpha(80)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 15, color: color),
+            Icon(icon, size: 15, color: fg),
             const SizedBox(width: 6),
-            Text(label, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: color)),
+            Text(label, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: fg)),
           ],
         ),
       ),

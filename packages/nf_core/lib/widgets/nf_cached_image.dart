@@ -24,15 +24,27 @@ class NfCachedImage extends StatefulWidget {
   State<NfCachedImage> createState() => _NfCachedImageState();
 }
 
-class _NfCachedImageState extends State<NfCachedImage> {
+class _NfCachedImageState extends State<NfCachedImage>
+    with SingleTickerProviderStateMixin {
   static final Map<String, Uint8List> _memCache = {};
+  late final AnimationController _shimmerCtrl;
   Uint8List? _bytes;
   bool _failed = false;
 
   @override
   void initState() {
     super.initState();
+    _shimmerCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat(reverse: true);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _shimmerCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -111,16 +123,22 @@ class _NfCachedImageState extends State<NfCachedImage> {
     } else if (_failed) {
       child = _placeholder();
     } else {
-      child = Container(
-        width: widget.width ?? 48,
-        height: widget.height ?? 48,
-        color: const Color(0xFFE2E8F0),
-        alignment: Alignment.center,
-        child: const SizedBox(
-          width: 18,
-          height: 18,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
+      child = AnimatedBuilder(
+        animation: _shimmerCtrl,
+        builder: (_, __) {
+          final col = Color.lerp(
+            const Color(0xFFE9F1EC),
+            const Color(0xFFF6FAF7),
+            _shimmerCtrl.value,
+          );
+          return Container(
+            width: widget.width ?? 48,
+            height: widget.height ?? 48,
+            color: col,
+            alignment: Alignment.center,
+            child: const Icon(Icons.eco_outlined, color: Color(0xFF9CCC65), size: 22),
+          );
+        },
       );
     }
     if (widget.borderRadius != null) {

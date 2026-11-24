@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/nf_config.dart';
@@ -718,6 +719,34 @@ class NfSupabaseService {
       'data': data,
       'updated_at': nowIso,
     }, onConflict: 'tenant_id,id');
+  }
+
+
+  // ---------- UPLOAD FOTO PRODUK KE SUPABASE STORAGE (nutrifresh-media) ----------
+  Future<String> uploadProductImageBytes({
+    required Uint8List bytes,
+    required String filePrefix,
+    String ext = 'jpg',
+  }) async {
+    final cleanExt = ext.toLowerCase().replaceAll('.', '');
+    final safeExt = (cleanExt == 'png' || cleanExt == 'webp') ? cleanExt : 'jpg';
+    final contentType = safeExt == 'png'
+        ? 'image/png'
+        : (safeExt == 'webp' ? 'image/webp' : 'image/jpeg');
+    final safePrefix = filePrefix.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    final path =
+        '${NfConfig.tenantId}/products/${safePrefix}_${DateTime.now().millisecondsSinceEpoch}.$safeExt';
+
+    await client.storage.from(NfConfig.storageBucket).uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(
+            contentType: contentType,
+            upsert: true,
+            cacheControl: '31536000',
+          ),
+        );
+    return client.storage.from(NfConfig.storageBucket).getPublicUrl(path);
   }
 
   // ---------- REALTIME SUBSCRIPTION (KHUSUS POS/INTERNAL) ----------

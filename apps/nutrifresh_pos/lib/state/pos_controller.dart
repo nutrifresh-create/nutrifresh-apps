@@ -476,7 +476,7 @@ class PosController extends ChangeNotifier {
         continue;
       }
       final reqQty = ((it['requestedQty'] ?? it['qty'] ?? 1) as num).round();
-      final clampedQty = reqQty.clamp(1, found.stock);
+      final clampedQty = reqQty.clamp(1, found.stock).toInt();
       final noteParts = [
         if (found.unit == 'Gram' && (it['weightPref'] ?? '').toString().isNotEmpty)
           it['weightPref'].toString(),
@@ -594,11 +594,11 @@ class PosController extends ChangeNotifier {
     final ptsBefore = (activeMemberDetails?['points'] is num)
         ? (activeMemberDetails!['points'] as num).round()
         : 0;
-    final ptsAfter = (ptsBefore - pointsToRedeem + earnedPts).clamp(0, 9999999);
+    final ptsAfter = (ptsBefore - pointsToRedeem + earnedPts).clamp(0, 9999999).toInt();
 
     final processedItems = cart.map((c) => c.toTransactionItemJson(buyerMode)).toList();
     final change = paymentMethod == 'Tunai'
-        ? (cashReceived - total).clamp(0, double.infinity)
+        ? (cashReceived - total).clamp(0.0, double.infinity).toDouble()
         : 0.0;
 
     final txMap = <String, dynamic>{

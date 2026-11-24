@@ -177,7 +177,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           'actor': actor,
         });
         nextRaw['returns'] = prevReturns;
-        nextRaw['total'] = (tx.total - refundRp).clamp(0, double.infinity);
+        nextRaw['total'] = (tx.total - refundRp).clamp(0.0, double.infinity).toDouble();
         await NfSupabaseService.instance.saveTransaction(nextRaw);
         await NfSupabaseService.instance.logAuditEvent(
           action: 'RETURN_ITEM',

@@ -227,7 +227,7 @@ class _ParcelOrdersScreenState extends State<ParcelOrdersScreen> {
     );
 
     if (ok == true && nameCtrl.text.trim().isNotEmpty) {
-      final qty = (int.tryParse(qtyCtrl.text.trim()) ?? 1).clamp(1, 999);
+      final qty = (int.tryParse(qtyCtrl.text.trim()) ?? 1).clamp(1, 999).toInt();
       final price = double.tryParse(priceCtrl.text.trim()) ?? 0;
       final tot = qty * price;
       final dp = payStatus == 'Lunas' ? tot : (double.tryParse(dpCtrl.text.trim()) ?? 0);

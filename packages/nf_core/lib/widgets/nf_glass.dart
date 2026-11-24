@@ -1,6 +1,75 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/nf_theme.dart';
+import '../utils/nf_formatters.dart';
+
+/// Tombol/Kartu dengan efek tekan membal halus (micro-interaction ala iOS / POS modern)
+class NfPressScale extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final double pressedScale;
+  final BorderRadius? borderRadius;
+
+  const NfPressScale({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.pressedScale = 0.965,
+    this.borderRadius,
+  });
+
+  @override
+  State<NfPressScale> createState() => _NfPressScaleState();
+}
+
+class _NfPressScaleState extends State<NfPressScale> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: widget.onTap == null ? null : (_) => setState(() => _pressed = true),
+      onTapUp: widget.onTap == null ? null : (_) => setState(() => _pressed = false),
+      onTapCancel: widget.onTap == null ? null : () => setState(() => _pressed = false),
+      onTap: widget.onTap == null
+          ? null
+          : () {
+              HapticFeedback.selectionClick();
+              widget.onTap?.call();
+            },
+      child: AnimatedScale(
+        scale: _pressed ? widget.pressedScale : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutCubic,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Angka Rupiah dengan animasi transisi mulus (smooth rolling counter)
+class NfAnimatedRupiah extends StatelessWidget {
+  final num value;
+  final TextStyle? style;
+
+  const NfAnimatedRupiah({
+    super.key,
+    required this.value,
+    this.style,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(end: value.toDouble()),
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      builder: (_, v, __) => Text(NfFormatters.rupiah(v), style: style),
+    );
+  }
+}
 
 /// Latar belakang utama:
 /// - Mode Liquid Glass: Soft Botanical Mesh + 4 aura warna lembut agar efek blur kaca hidup
@@ -19,7 +88,7 @@ class NfAmbientBackdrop extends StatelessWidget {
   Widget build(BuildContext context) {
     if (style == NfUiStyle.natural) {
       return Container(
-        color: const Color(0xFFF4F7F5),
+        color: const Color(0xFFF3F6F4),
         child: child,
       );
     }
@@ -93,6 +162,7 @@ class NfGlassSurface extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
   final Color? tintColor;
+  final Color? borderColor;
   final double blurSigma;
   final bool elevated;
 
@@ -104,6 +174,7 @@ class NfGlassSurface extends StatelessWidget {
     this.padding,
     this.margin,
     this.tintColor,
+    this.borderColor,
     this.blurSigma = 18,
     this.elevated = true,
   });
@@ -118,7 +189,7 @@ class NfGlassSurface extends StatelessWidget {
         decoration: BoxDecoration(
           color: tintColor ?? Colors.white,
           borderRadius: radius,
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: borderColor ?? const Color(0xFFE2E8F0)),
           boxShadow: elevated
               ? [
                   BoxShadow(
@@ -160,14 +231,14 @@ class NfGlassSurface extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: tintColor != null
-                    ? [tintColor!.withAlpha(218), tintColor!.withAlpha(178)]
+                    ? [tintColor!.withAlpha(225), tintColor!.withAlpha(185)]
                     : [
-                        Colors.white.withAlpha(206),
-                        const Color(0xFFF6FBF8).withAlpha(172),
+                        Colors.white.withAlpha(212),
+                        const Color(0xFFF6FBF8).withAlpha(178),
                       ],
               ),
               border: Border.all(
-                color: Colors.white.withAlpha(230),
+                color: borderColor ?? Colors.white.withAlpha(232),
                 width: 1.25,
               ),
             ),
@@ -196,7 +267,7 @@ class NfBrandLogoPill extends StatelessWidget {
       height: height,
       padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(242),
+        color: Colors.white.withAlpha(245),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: const Color(0xFFD9EBD0)),
         boxShadow: [
@@ -224,7 +295,7 @@ class NfBrandLogoPill extends StatelessWidget {
   }
 }
 
-/// Modal / Bottom-Sheet Liquid Glass ala iOS 26 (menggantikan AlertDialog standar Android!)
+/// Modal / Bottom-Sheet Liquid Glass ala iOS 26 dengan transisi smooth spring (scale+fade di PC, slide sheet di HP)
 Future<T?> showNfGlassModal<T>({
   required BuildContext context,
   required NfUiStyle style,
@@ -261,10 +332,8 @@ Future<T?> showNfGlassModal<T>({
         Container(
           padding: const EdgeInsets.fromLTRB(18, 14, 12, 14),
           decoration: BoxDecoration(
-            gradient: headerGradient != null
-                ? LinearGradient(colors: headerGradient)
-                : null,
-            color: headerGradient == null ? Colors.white.withAlpha(isGlass ? 150 : 255) : null,
+            gradient: headerGradient != null ? LinearGradient(colors: headerGradient) : null,
+            color: headerGradient == null ? Colors.white.withAlpha(isGlass ? 165 : 255) : null,
             border: Border(
               bottom: BorderSide(
                 color: headerGradient != null
@@ -281,9 +350,7 @@ Future<T?> showNfGlassModal<T>({
                   height: 34,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: headerGradient != null
-                        ? Colors.white.withAlpha(55)
-                        : NfColors.lightBg,
+                    color: headerGradient != null ? Colors.white.withAlpha(55) : NfColors.lightBg,
                   ),
                   child: Icon(
                     icon,
@@ -348,7 +415,7 @@ Future<T?> showNfGlassModal<T>({
       ],
     );
 
-    final box = ClipRRect(
+    return ClipRRect(
       borderRadius: radius,
       child: BackdropFilter(
         filter: ImageFilter.blur(
@@ -358,11 +425,11 @@ Future<T?> showNfGlassModal<T>({
         child: Container(
           constraints: BoxConstraints(
             maxWidth: asSheet ? double.infinity : maxWidth,
-            maxHeight: MediaQuery.of(ctx).size.height * (asSheet ? 0.90 : 0.86),
+            maxHeight: MediaQuery.of(ctx).size.height * (asSheet ? 0.91 : 0.88),
           ),
           decoration: BoxDecoration(
             borderRadius: radius,
-            color: isGlass ? const Color(0xFFF6FBF8).withAlpha(232) : const Color(0xFFF8FAFC),
+            color: isGlass ? const Color(0xFFF6FBF8).withAlpha(235) : const Color(0xFFF8FAFC),
             border: Border.all(
               color: isGlass ? Colors.white.withAlpha(240) : const Color(0xFFE2E8F0),
               width: 1.3,
@@ -379,7 +446,6 @@ Future<T?> showNfGlassModal<T>({
         ),
       ),
     );
-    return box;
   }
 
   if (!isWide) {
@@ -387,24 +453,40 @@ Future<T?> showNfGlassModal<T>({
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0xFF0F172A).withAlpha(120),
+      barrierColor: const Color(0xFF0F172A).withAlpha(125),
       builder: (ctx) => buildShell(ctx, true),
     );
   }
 
-  return showDialog<T>(
+  return showGeneralDialog<T>(
     context: context,
-    barrierColor: const Color(0xFF0F172A).withAlpha(120),
-    builder: (ctx) => Dialog(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      insetPadding: const EdgeInsets.all(20),
-      child: buildShell(ctx, false),
+    barrierDismissible: true,
+    barrierLabel: title,
+    barrierColor: const Color(0xFF0F172A).withAlpha(125),
+    transitionDuration: const Duration(milliseconds: 240),
+    pageBuilder: (ctx, _, __) => Center(
+      child: Material(
+        color: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: buildShell(ctx, false),
+        ),
+      ),
     ),
+    transitionBuilder: (_, anim, __, child) {
+      final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutBack, reverseCurve: Curves.easeIn);
+      return FadeTransition(
+        opacity: anim,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.92, end: 1.0).animate(curved),
+          child: child,
+        ),
+      );
+    },
   );
 }
 
-/// Kontrol Tab Kapsul Geser (iOS Sliding Pill — tanpa tanda centang Material 3!)
+/// Kontrol Tab Kapsul Geser (iOS Sliding Pill — halus & tanpa centang Material 3!)
 class NfSlidingSegmented<T> extends StatelessWidget {
   final NfUiStyle style;
   final List<(T, String, IconData?)> items;
@@ -423,17 +505,17 @@ class NfSlidingSegmented<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeIndex = items.indexWhere((e) => e.$1 == selected).clamp(0, items.length - 1);
+    final activeIndex = items.indexWhere((e) => e.$1 == selected).clamp(0, items.length - 1).toInt();
     final isGlass = style == NfUiStyle.glass;
 
     final track = Container(
-      height: 44,
-      padding: const EdgeInsets.all(4),
+      height: 42,
+      padding: const EdgeInsets.all(3.5),
       decoration: BoxDecoration(
-        color: isGlass ? const Color(0xFFE4EFE9).withAlpha(178) : const Color(0xFFEDF2EE),
+        color: isGlass ? const Color(0xFFE4EFE9).withAlpha(182) : const Color(0xFFEDF2EE),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: isGlass ? Colors.white.withAlpha(220) : const Color(0xFFDCE5DF),
+          color: isGlass ? Colors.white.withAlpha(225) : const Color(0xFFDCE5DF),
         ),
       ),
       child: LayoutBuilder(
@@ -452,9 +534,7 @@ class NfSlidingSegmented<T> extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(999),
                     gradient: greenActive
-                        ? const LinearGradient(
-                            colors: [Color(0xFF8BC34A), Color(0xFF558B2F)],
-                          )
+                        ? const LinearGradient(colors: [Color(0xFF8BC34A), Color(0xFF558B2F)])
                         : null,
                     color: greenActive ? null : Colors.white,
                     border: Border.all(
@@ -479,7 +559,10 @@ class NfSlidingSegmented<T> extends StatelessWidget {
                       : const Color(0xFF475569);
                   return Expanded(
                     child: InkWell(
-                      onTap: () => onChanged(entry.$1),
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        onChanged(entry.$1);
+                      },
                       borderRadius: BorderRadius.circular(999),
                       child: Center(
                         child: Row(
@@ -526,22 +609,24 @@ class NfSlidingSegmented<T> extends StatelessWidget {
   }
 }
 
-/// Item untuk Floating Liquid Glass Bottom Dock
+/// Item untuk Floating Liquid Glass Bottom Dock & Desktop Sidebar (berwarna khas per menu!)
 class NfDockItem {
   final IconData icon;
   final String label;
   final Color activeColor;
+  final Color softBg;
   final int badgeCount;
 
   const NfDockItem({
     required this.icon,
     required this.label,
     this.activeColor = NfColors.greenDark,
+    this.softBg = const Color(0xFFECFCCB),
     this.badgeCount = 0,
   });
 }
 
-/// Dock Bawah Kapsul Melayang iOS 26 dengan Lensa Geser Halus
+/// Dock Bawah Kapsul Melayang iOS 26 dengan Lensa Geser Berwarna Halus
 class NfFloatingDock extends StatelessWidget {
   final NfUiStyle style;
   final List<NfDockItem> items;
@@ -560,16 +645,17 @@ class NfFloatingDock extends StatelessWidget {
   Widget build(BuildContext context) {
     final isGlass = style == NfUiStyle.glass;
     final safeBottom = MediaQuery.of(context).padding.bottom;
+    final currentAccent = items[selectedIndex].activeColor;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(10, 0, 10, safeBottom > 8 ? safeBottom : 10),
       child: Container(
-        height: 62,
+        height: 64,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF0F172A).withAlpha(isGlass ? 42 : 30),
+              color: const Color(0xFF0F172A).withAlpha(isGlass ? 45 : 32),
               blurRadius: 24,
               spreadRadius: -4,
               offset: const Offset(0, 10),
@@ -587,13 +673,9 @@ class NfFloatingDock extends StatelessWidget {
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(999),
-                color: isGlass
-                    ? const Color(0xFFEBF4EE).withAlpha(186)
-                    : Colors.white,
+                color: isGlass ? const Color(0xFFEBF4EE).withAlpha(192) : Colors.white,
                 border: Border.all(
-                  color: isGlass
-                      ? Colors.white.withAlpha(228)
-                      : const Color(0xFFDBE4DE),
+                  color: isGlass ? Colors.white.withAlpha(232) : const Color(0xFFDBE4DE),
                   width: 1.25,
                 ),
               ),
@@ -609,17 +691,19 @@ class NfFloatingDock extends StatelessWidget {
                         top: 0,
                         bottom: 0,
                         width: itemW,
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(999),
-                            color: isGlass ? Colors.white.withAlpha(245) : NfColors.lightBg,
+                            color: isGlass ? Colors.white.withAlpha(248) : items[selectedIndex].softBg,
                             border: Border.all(
-                              color: isGlass ? Colors.white : const Color(0xFFC5E3B2),
+                              color: currentAccent.withAlpha(80),
+                              width: 1.2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: NfColors.greenDark.withAlpha(38),
-                                blurRadius: 10,
+                                color: currentAccent.withAlpha(48),
+                                blurRadius: 12,
                                 offset: const Offset(0, 3),
                               ),
                             ],
@@ -630,12 +714,12 @@ class NfFloatingDock extends StatelessWidget {
                         children: List.generate(items.length, (i) {
                           final item = items[i];
                           final active = i == selectedIndex;
-                          final iconColor = active
-                              ? item.activeColor
-                              : const Color(0xFF64748B);
                           return Expanded(
                             child: InkWell(
-                              onTap: () => onSelected(i),
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                onSelected(i);
+                              },
                               borderRadius: BorderRadius.circular(999),
                               child: Stack(
                                 alignment: Alignment.center,
@@ -643,7 +727,16 @@ class NfFloatingDock extends StatelessWidget {
                                   Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(item.icon, size: 19, color: iconColor),
+                                      AnimatedScale(
+                                        scale: active ? 1.12 : 1.0,
+                                        duration: const Duration(milliseconds: 220),
+                                        curve: Curves.easeOutBack,
+                                        child: Icon(
+                                          item.icon,
+                                          size: 20,
+                                          color: active ? item.activeColor : item.activeColor.withAlpha(175),
+                                        ),
+                                      ),
                                       const SizedBox(height: 2),
                                       Text(
                                         item.label,
@@ -660,7 +753,7 @@ class NfFloatingDock extends StatelessWidget {
                                   if (item.badgeCount > 0)
                                     Positioned(
                                       top: 4,
-                                      right: itemW * 0.16,
+                                      right: itemW * 0.14,
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                         decoration: BoxDecoration(

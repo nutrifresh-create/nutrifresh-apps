@@ -58,7 +58,7 @@ class NfParcelOrder {
   }
 
   double get remainingAmount =>
-      (totalAmount - dpAmount).clamp(0, double.infinity);
+      (totalAmount - dpAmount).clamp(0.0, double.infinity).toDouble();
 
   bool get isClosed => orderStatus == 'Selesai' || orderStatus == 'Dibatalkan';
 
