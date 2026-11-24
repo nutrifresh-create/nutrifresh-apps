@@ -4,6 +4,8 @@
     const isTauri = () => !!(window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke);
     const isAndroidNative = () => !!(window.NfAndroidNative);
     const nativeAppRole = window.__NF_NATIVE_APP__ || ""; // 'pos' | 'office' | ''
+    const isNativeEnv = () => isTauri() || isAndroidNative() || !!nativeAppRole;
+    const isPosPage = () => nativeAppRole === "pos" || !!document.getElementById("posSearch");
 
     // Global Deep Link receiver called from Android MainActivity.java
     window.__nfHandleNativeOAuthUrl = function (urlStr) {
@@ -12,13 +14,12 @@
         }
     };
 
-    if (!isTauri() && !isAndroidNative() && !nativeAppRole) {
-        // Normal browser (nutrifresh.my.id / iPhone): do nothing, 100% untouched!
-        return;
-    }
-
     const PREF_WIN_PRINTER = "nf_native_win_printer";
     const PREF_BT_PRINTER = "nf_native_bt_printer_json";
+
+    function escapeHtml(s) {
+        return String(s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
 
     function uint8ToBase64(bytes) {
         let bin = "";
@@ -29,6 +30,25 @@
         return btoa(bin);
     }
 
+    function getReadyApp() {
+        const a = window.__nutriReadyApp;
+        if (a && typeof a === "object" && a.state && typeof a.state === "object") return a;
+        return null;
+    }
+
+    // Immediately hide Absensi & Office link in Native POS app (zero flash!)
+    if (nativeAppRole === "pos") {
+        const earlyStyle = document.createElement("style");
+        earlyStyle.textContent = `
+            #tab-absensi, #content-absensi { display: none !important; }
+            a[href="office.html"] { display: none !important; }
+        `;
+        (document.head || document.documentElement).appendChild(earlyStyle);
+    }
+
+    // =========================================================================
+    // EXTERNAL LINKS BRIDGE (NATIVE APK / EXE ONLY)
+    // =========================================================================
     function openExternalNative(url) {
         if (!url) return;
         if (isTauri()) {
@@ -42,33 +62,290 @@
         window.open(url, "_blank");
     }
 
-    // Intercept external links (wa.me, maps, nutrifresh.my.id) so they launch native apps cleanly
-    document.addEventListener("click", (ev) => {
-        const a = ev.target && ev.target.closest ? ev.target.closest("a[href]") : null;
-        if (!a) return;
-        const href = (a.getAttribute("href") || "").trim();
-        if (!href) return;
-        if (/^(https?:\/\/|whatsapp:|tel:|mailto:)/i.test(href)) {
-            if (!href.startsWith(window.location.origin)) {
+    if (isNativeEnv()) {
+        document.addEventListener("click", (ev) => {
+            const a = ev.target && ev.target.closest ? ev.target.closest("a[href]") : null;
+            if (!a) return;
+            const href = (a.getAttribute("href") || "").trim();
+            if (!href) return;
+            if (/^(https?:\/\/|whatsapp:|tel:|mailto:)/i.test(href)) {
+                if (!href.startsWith(window.location.origin)) {
+                    ev.preventDefault();
+                    openExternalNative(href);
+                }
+            } else if (nativeAppRole && (href === "index.html" || href.startsWith("index.html?"))) {
                 ev.preventDefault();
-                openExternalNative(href);
+                openExternalNative("https://nutrifresh.my.id/" + href.replace(/^index\.html/, ""));
             }
-        } else if (nativeAppRole && (href === "index.html" || href.startsWith("index.html?"))) {
-            ev.preventDefault();
-            openExternalNative("https://nutrifresh.my.id/" + href.replace(/^index\.html/, ""));
-        }
-    }, true);
+        }, true);
 
-    // Override window.open for WhatsApp / external links inside WebView
-    const origOpen = window.open.bind(window);
-    window.open = function (url, target, features) {
-        const s = String(url || "");
-        if (/^(https?:\/\/(wa\.me|api\.whatsapp\.com|maps\.google|goo\.gl|nutrifresh\.my\.id))/i.test(s)) {
-            openExternalNative(s);
-            return null;
+        const origOpen = window.open.bind(window);
+        window.open = function (url, target, features) {
+            const s = String(url || "");
+            if (/^(https?:\/\/(wa\.me|api\.whatsapp\.com|maps\.google|goo\.gl|nutrifresh\.my\.id))/i.test(s)) {
+                openExternalNative(s);
+                return null;
+            }
+            return origOpen(url, target, features);
+        };
+    }
+
+    // =========================================================================
+    // LIVE CAMERA BARCODE / QR SCANNER (WORKS IN APK, TABLET/HP WEB & PC WEBCAM)
+    // =========================================================================
+    let __html5QrPromise = null;
+    function ensureHtml5QrLoaded() {
+        if (window.Html5Qrcode) return Promise.resolve();
+        if (__html5QrPromise) return __html5QrPromise;
+        __html5QrPromise = new Promise((resolve, reject) => {
+            const sc = document.createElement("script");
+            sc.src = "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
+            sc.onload = () => resolve();
+            sc.onerror = () => {
+                __html5QrPromise = null;
+                reject(new Error("Gagal memuat modul kamera scanner (pastikan koneksi internet aktif)."));
+            };
+            document.head.appendChild(sc);
+        });
+        return __html5QrPromise;
+    }
+
+    async function waitForAndroidCameraPermission() {
+        if (!isAndroidNative()) return true;
+        try {
+            if (typeof window.NfAndroidNative.hasCameraPermission === "function") {
+                if (window.NfAndroidNative.hasCameraPermission()) return true;
+                window.NfAndroidNative.requestCameraPermission();
+                const deadline = Date.now() + 12000;
+                while (Date.now() < deadline) {
+                    await new Promise((r) => setTimeout(r, 250));
+                    if (window.NfAndroidNative.hasCameraPermission()) return true;
+                }
+                return false;
+            }
+            if (typeof window.NfAndroidNative.requestCameraPermission === "function") {
+                window.NfAndroidNative.requestCameraPermission();
+                await new Promise((r) => setTimeout(r, 400));
+            }
+        } catch (_) {}
+        return true;
+    }
+
+    async function openCameraScannerOverlay({ title, onScanned }) {
+        try {
+            const permOk = await waitForAndroidCameraPermission();
+            if (!permOk) {
+                alert("Izin kamera belum diberikan. Buka Pengaturan Android → Aplikasi → NutriFresh POS → Izin → Kamera, lalu izinkan.");
+                return;
+            }
+            await ensureHtml5QrLoaded();
+        } catch (err) {
+            alert(err?.message || "Kamera scanner tidak tersedia.");
+            return;
         }
-        return origOpen(url, target, features);
-    };
+
+        document.getElementById("nfCamScanOverlay")?.remove();
+        const overlay = document.createElement("div");
+        overlay.id = "nfCamScanOverlay";
+        overlay.style.cssText = "position:fixed;inset:0;z-index:100000;background:rgba(2,6,23,.92);backdrop-filter:blur(6px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;font-family:Inter,system-ui,sans-serif;";
+        overlay.innerHTML = `
+            <div style="width:100%;max-width:440px;background:#0f172a;border:1px solid rgba(255,255,255,.18);border-radius:26px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.6);">
+                <div style="padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;">
+                    <div style="font-weight:900;font-size:13.5px;display:flex;align-items:center;gap:7px;min-width:0;">
+                        <i class="fa-solid fa-camera"></i>
+                        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(title || "Scan Barcode / QR")}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                        <button type="button" id="nfCamTorch" title="Senter / Flash" style="background:rgba(255,255,255,.22);border:none;color:#fff;width:32px;height:32px;border-radius:999px;cursor:pointer;display:none;align-items:center;justify-content:center;"><i class="fa-solid fa-bolt"></i></button>
+                        <button type="button" id="nfCamFlip" title="Ganti Kamera Depan/Belakang" style="background:rgba(255,255,255,.22);border:none;color:#fff;width:32px;height:32px;border-radius:999px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-camera-rotate"></i></button>
+                        <button type="button" id="nfCamClose" title="Tutup" style="background:rgba(255,255,255,.22);border:none;color:#fff;width:32px;height:32px;border-radius:999px;font-weight:900;cursor:pointer;">✕</button>
+                    </div>
+                </div>
+                <div id="nfCamReader" style="width:100%;min-height:300px;background:#000;"></div>
+                <div style="padding:12px 16px;color:#cbd5e1;font-size:11.5px;text-align:center;line-height:1.45;">
+                    Arahkan kamera ke <strong>stiker barcode PLU / timbangan</strong> atau <strong>QR Kartu Member</strong>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
+
+        const formats = window.Html5QrcodeSupportedFormats ? [
+            window.Html5QrcodeSupportedFormats.QR_CODE,
+            window.Html5QrcodeSupportedFormats.EAN_13,
+            window.Html5QrcodeSupportedFormats.EAN_8,
+            window.Html5QrcodeSupportedFormats.CODE_128,
+            window.Html5QrcodeSupportedFormats.CODE_39,
+            window.Html5QrcodeSupportedFormats.UPC_A,
+            window.Html5QrcodeSupportedFormats.UPC_E,
+            window.Html5QrcodeSupportedFormats.ITF,
+            window.Html5QrcodeSupportedFormats.CODABAR
+        ] : undefined;
+
+        const qr = new window.Html5Qrcode("nfCamReader", formats ? { formatsToSupport: formats, verbose: false } : false);
+        let closed = false;
+        let facingMode = "environment";
+        let torchOn = false;
+
+        const stopAndClose = async () => {
+            if (closed) return;
+            closed = true;
+            try { await qr.stop(); } catch (_) {}
+            try { qr.clear(); } catch (_) {}
+            overlay.remove();
+        };
+
+        const startStream = async (mode) => {
+            const torchBtn = overlay.querySelector("#nfCamTorch");
+            if (torchBtn) torchBtn.style.display = "none";
+            torchOn = false;
+            await qr.start(
+                { facingMode: mode },
+                { fps: 14, qrbox: { width: 255, height: 155 }, aspectRatio: 1.33 },
+                async (decodedText) => {
+                    const clean = String(decodedText || "").trim();
+                    if (!clean || closed) return;
+                    try { if (navigator.vibrate) navigator.vibrate(70); } catch (_) {}
+                    await stopAndClose();
+                    if (typeof onScanned === "function") onScanned(clean);
+                },
+                () => {}
+            );
+            // Tampilkan tombol Senter jika kamera mendukung torch
+            try {
+                const caps = qr.getRunningTrackCameraCapabilities && qr.getRunningTrackCameraCapabilities();
+                if (caps && caps.torchFeature && caps.torchFeature().isSupported() && torchBtn) {
+                    torchBtn.style.display = "flex";
+                    torchBtn.onclick = async () => {
+                        try {
+                            torchOn = !torchOn;
+                            await caps.torchFeature().apply(torchOn);
+                            torchBtn.style.background = torchOn ? "#facc15" : "rgba(255,255,255,.22)";
+                            torchBtn.style.color = torchOn ? "#0f172a" : "#fff";
+                        } catch (_) {}
+                    };
+                }
+            } catch (_) {}
+        };
+
+        overlay.querySelector("#nfCamClose").onclick = stopAndClose;
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) stopAndClose(); });
+
+        overlay.querySelector("#nfCamFlip").onclick = async () => {
+            if (closed) return;
+            facingMode = facingMode === "environment" ? "user" : "environment";
+            try {
+                await qr.stop();
+                await startStream(facingMode);
+            } catch (_) {}
+        };
+
+        try {
+            await startStream(facingMode);
+        } catch (err) {
+            // Fallback ke kamera depan / default jika kamera belakang tidak tersedia (misal webcam PC)
+            try {
+                await startStream("user");
+            } catch (err2) {
+                await stopAndClose();
+                alert("Gagal membuka kamera: " + (err2?.message || err?.message || "Izinkan akses kamera pada perangkat."));
+            }
+        }
+    }
+
+    window.__nfOpenCameraScanner = openCameraScannerOverlay;
+
+    // =========================================================================
+    // INJECT CAMERA SCAN BUTTONS INTO POS UI (UNMISTAKABLE & CLEAN LAYOUT)
+    // =========================================================================
+    function injectPosCameraButtons() {
+        if (!isPosPage()) return;
+
+        // 1. Tombol Utama Biru "Scan" tepat di samping kotak pencarian Kasir (#posSearch)
+        const posSearch = document.getElementById("posSearch");
+        if (posSearch && posSearch.parentElement && posSearch.parentElement.parentElement && !document.getElementById("nfBtnPosCameraScan")) {
+            const toolbar = posSearch.parentElement.parentElement;
+            const scanBtn = document.createElement("button");
+            scanBtn.id = "nfBtnPosCameraScan";
+            scanBtn.type = "button";
+            scanBtn.title = "Scan Barcode PLU / Timbangan / QR Member dengan Kamera";
+            scanBtn.style.cssText = "height:36px;padding:0 12px;border-radius:9999px;border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;font-weight:900;font-size:11.5px;display:inline-flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;flex-shrink:0;box-shadow:0 4px 12px -3px rgba(37,99,235,.55);white-space:nowrap;";
+            scanBtn.innerHTML = `<i class="fa-solid fa-camera" style="font-size:12.5px;"></i><span>Scan</span>`;
+            scanBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openCameraScannerOverlay({
+                    title: "Scan Barcode PLU / QR Member",
+                    onScanned: (code) => {
+                        const inp = document.getElementById("posSearch");
+                        if (!inp) return;
+                        inp.value = code;
+                        const app = getReadyApp() || window.app;
+                        if (app && typeof app.handleBarcodeScan === "function") {
+                            app.handleBarcodeScan({ key: "Enter", target: inp });
+                        }
+                    }
+                });
+            });
+            // Sisipkan tepat setelah wrapper input pencarian (sebelum tombol Grid/List)
+            toolbar.insertBefore(scanBtn, posSearch.parentElement.nextSibling);
+        }
+
+        // 2. Tombol Scan QR Member di kolom No. WA / Scan QR MEM-... (#posCustomerPhone)
+        injectInlineScanBtn("posCustomerPhone", "Scan Kartu QR Member", { rightPx: 4, padRightPx: 36 }, (code) => {
+            const inp = document.getElementById("posCustomerPhone");
+            if (!inp) return;
+            inp.value = code;
+            const app = getReadyApp() || window.app;
+            if (app && typeof app.lookupPosMemberDirect === "function") {
+                app.lookupPosMemberDirect(code);
+            }
+        });
+
+        // 3. Tombol Scan Barcode di filter Stok (#invSearchInput — tidak menabrak tombol X!)
+        injectInlineScanBtn("invSearchInput", "Scan Barcode Produk di Rak", { rightPx: 28, padRightPx: 62 }, (code) => {
+            const inp = document.getElementById("invSearchInput");
+            if (!inp) return;
+            inp.value = code;
+            const app = getReadyApp() || window.app;
+            if (app && typeof app.filterInventory === "function") {
+                app.filterInventory();
+            }
+        });
+
+        // 4. Tombol Scan Barcode Kemasan di Modal Tambah/Edit Produk (#editBarcode)
+        const editBc = document.getElementById("editBarcode");
+        if (editBc && editBc.parentElement && !document.querySelector('[data-nf-scan="editBarcode"]')) {
+            const wrap = document.createElement("div");
+            wrap.style.cssText = "position:relative;display:flex;align-items:center;";
+            editBc.parentElement.insertBefore(wrap, editBc);
+            wrap.appendChild(editBc);
+            injectInlineScanBtn("editBarcode", "Scan Barcode Kemasan Produk", { rightPx: 5, padRightPx: 38 }, (code) => {
+                const inp = document.getElementById("editBarcode");
+                if (inp) inp.value = code;
+            });
+        }
+    }
+
+    function injectInlineScanBtn(inputId, title, { rightPx = 5, padRightPx = 38 }, onScanned) {
+        const inp = document.getElementById(inputId);
+        if (!inp || !inp.parentElement || inp.parentElement.querySelector(`[data-nf-scan="${inputId}"]`)) return;
+        const parent = inp.parentElement;
+        if (getComputedStyle(parent).position === "static") {
+            parent.style.position = "relative";
+        }
+        inp.style.paddingRight = padRightPx + "px";
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.setAttribute("data-nf-scan", inputId);
+        btn.title = title;
+        btn.style.cssText = `position:absolute;right:${rightPx}px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:9999px;border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:6;box-shadow:0 2px 6px rgba(37,99,235,.4);`;
+        btn.innerHTML = `<i class="fa-solid fa-camera" style="font-size:11px;"></i>`;
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openCameraScannerOverlay({ title, onScanned });
+        });
+        parent.appendChild(btn);
+    }
 
     // =========================================================================
     // CLEAN NATIVE PRINTER PICKER MODAL (Windows Spooler & Android Bluetooth)
@@ -122,103 +399,21 @@
         });
     }
 
-    function escapeHtml(s) {
-        return String(s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-    }
-
     // =========================================================================
-    // LIVE CAMERA BARCODE / QR SCANNER (html5-qrcode lazy-loaded)
+    // HOOK INTO REAL POS APP (window.__nutriReadyApp) FOR NATIVE FEATURES
     // =========================================================================
-    let __html5QrPromise = null;
-    function ensureHtml5QrLoaded() {
-        if (window.Html5Qrcode) return Promise.resolve();
-        if (__html5QrPromise) return __html5QrPromise;
-        __html5QrPromise = new Promise((resolve, reject) => {
-            const sc = document.createElement("script");
-            sc.src = "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
-            sc.onload = () => resolve();
-            sc.onerror = () => reject(new Error("Gagal memuat modul kamera scanner (pastikan koneksi internet aktif)."));
-            document.head.appendChild(sc);
-        });
-        return __html5QrPromise;
-    }
+    let posNativePatched = false;
 
-    async function openCameraScannerOverlay({ title, onScanned }) {
-        try {
-            if (isAndroidNative() && window.NfAndroidNative.requestCameraPermission) {
-                window.NfAndroidNative.requestCameraPermission();
-            }
-            await ensureHtml5QrLoaded();
-        } catch (err) {
-            alert(err?.message || "Kamera scanner tidak tersedia.");
-            return;
-        }
+    function patchPosNativeApp(app) {
+        if (!app || posNativePatched) return;
+        posNativePatched = true;
 
-        document.getElementById("nfCamScanOverlay")?.remove();
-        const overlay = document.createElement("div");
-        overlay.id = "nfCamScanOverlay";
-        overlay.style.cssText = "position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;font-family:Inter,system-ui,sans-serif;";
-        overlay.innerHTML = `
-            <div style="width:100%;max-width:420px;background:#0f172a;border:1px solid rgba(255,255,255,.18);border-radius:24px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.55);">
-                <div style="padding:13px 16px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;">
-                    <div style="font-weight:900;font-size:14px;">📷 ${escapeHtml(title || "Scan Barcode / QR")}</div>
-                    <button type="button" id="nfCamClose" style="background:rgba(255,255,255,.22);border:none;color:#fff;width:30px;height:30px;border-radius:999px;font-weight:900;cursor:pointer;">✕</button>
-                </div>
-                <div id="nfCamReader" style="width:100%;min-height:290px;background:#000;"></div>
-                <div style="padding:12px 14px;color:#cbd5e1;font-size:12px;text-align:center;">
-                    Arahkan kamera ke stiker barcode PLU produk atau kartu QR Member
-                </div>
-            </div>`;
-        document.body.appendChild(overlay);
+        // Selalu pastikan tombol scan terpasang di UI
+        injectPosCameraButtons();
 
-        const qr = new window.Html5Qrcode("nfCamReader");
-        let closed = false;
-        const stopAndClose = async () => {
-            if (closed) return;
-            closed = true;
-            try { await qr.stop(); } catch (_) {}
-            try { qr.clear(); } catch (_) {}
-            overlay.remove();
-        };
-
-        overlay.querySelector("#nfCamClose").onclick = stopAndClose;
-        try {
-            await qr.start(
-                { facingMode: "environment" },
-                { fps: 12, qrbox: { width: 250, height: 150 }, aspectRatio: 1.33 },
-                async (decodedText) => {
-                    const clean = String(decodedText || "").trim();
-                    if (!clean || closed) return;
-                    await stopAndClose();
-                    if (typeof onScanned === "function") onScanned(clean);
-                },
-                () => {}
-            );
-        } catch (err) {
-            await stopAndClose();
-            alert("Gagal membuka kamera: " + (err?.message || "Izinkan akses kamera pada perangkat."));
-        }
-    }
-
-    window.__nfOpenCameraScanner = openCameraScannerOverlay;
-
-    // =========================================================================
-    // HOOK INTO POS APP (pos.html) ONCE window.app IS READY
-    // =========================================================================
-    function patchPosApp() {
         if (nativeAppRole !== "pos") return;
-        const app = window.app;
-        if (!app || !app.state || app.__nfNativePatched) return;
-        app.__nfNativePatched = true;
 
-        // 1. Sembunyikan menu Absensi (khusus aplikasi Staff) & link pindah ke Office (terpisah)
-        const styleEl = document.createElement("style");
-        styleEl.textContent = `
-            #tab-absensi, #content-absensi { display: none !important; }
-            a[href="office.html"] { display: none !important; }
-        `;
-        document.head.appendChild(styleEl);
-
+        // 1. Keluarkan tab Absensi dari daftar tab di aplikasi POS Native
         if (typeof app.getAllowedTabsForCurrentStaff === "function") {
             const origAllowed = app.getAllowedTabsForCurrentStaff.bind(app);
             app.getAllowedTabsForCurrentStaff = function () {
@@ -228,7 +423,13 @@
             };
         }
 
-        // Pastikan tab awal tidak pernah nyangkut di absensi
+        if (typeof app.switchAdminTab === "function") {
+            const origSwitch = app.switchAdminTab.bind(app);
+            app.switchAdminTab = function (t) {
+                return origSwitch(t === "absensi" ? "kasir" : t);
+            };
+        }
+
         if (app.state.currentAdminTab === "absensi") {
             app.state.currentAdminTab = "kasir";
             try { app.switchAdminTab("kasir"); } catch (_) {}
@@ -311,7 +512,6 @@
                 }
             };
 
-            // Auto-restore last selected Android Bluetooth printer
             try {
                 const savedBt = JSON.parse(localStorage.getItem(PREF_BT_PRINTER) || "null");
                 if (savedBt && savedBt.address) {
@@ -355,7 +555,6 @@
             app.connectUsbPrinter = pickWindowsPrinter;
             app.connectBluetoothPrinter = pickWindowsPrinter;
 
-            // Auto-restore last selected Windows printer
             const savedWin = (localStorage.getItem(PREF_WIN_PRINTER) || "").trim();
             if (savedWin) {
                 app.state.directPrinter = {
@@ -366,65 +565,24 @@
                 app.updateDirectPrinterStatusUI();
             }
         }
-
-        // 3. Inject Kamera Scan Buttons (Kasir PLU/QR, Member QR, Stok Search, Edit Produk Barcode)
-        injectCameraScanButton("posSearch", "Scan Barcode PLU / QR Member", (code) => {
-            const inp = document.getElementById("posSearch");
-            if (!inp) return;
-            inp.value = code;
-            app.handleBarcodeScan({ key: "Enter", target: inp });
-        });
-        injectCameraScanButton("posCustomerPhone", "Scan Kartu QR Member", (code) => {
-            const inp = document.getElementById("posCustomerPhone");
-            if (!inp) return;
-            inp.value = code;
-            if (typeof app.lookupPosMemberDirect === "function") app.lookupPosMemberDirect(code);
-        });
-        injectCameraScanButton("invSearchInput", "Scan Barcode Stok", (code) => {
-            const inp = document.getElementById("invSearchInput");
-            if (!inp) return;
-            inp.value = code;
-            if (typeof app.filterInventory === "function") app.filterInventory();
-        });
-        injectCameraScanButton("editBarcode", "Scan Barcode Kemasan Produk", (code) => {
-            const inp = document.getElementById("editBarcode");
-            if (inp) inp.value = code;
-        });
     }
 
-    function injectCameraScanButton(inputId, title, onScanned) {
-        const inp = document.getElementById(inputId);
-        if (!inp || !inp.parentElement || inp.parentElement.querySelector(`[data-nf-scan="${inputId}"]`)) return;
-        const parent = inp.parentElement;
-        if (getComputedStyle(parent).position === "static") {
-            parent.style.position = "relative";
+    // Boot cleanly: inject camera buttons as soon as DOM is ready, then patch __nutriReadyApp when loaded
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", injectPosCameraButtons);
+    } else {
+        injectPosCameraButtons();
+    }
+
+    let tries = 0;
+    const poll = setInterval(() => {
+        tries++;
+        const realApp = getReadyApp();
+        if (realApp) {
+            patchPosNativeApp(realApp);
+            clearInterval(poll);
+        } else if (tries > 200) {
+            clearInterval(poll);
         }
-        inp.style.paddingRight = "38px";
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.setAttribute("data-nf-scan", inputId);
-        btn.title = title;
-        btn.style.cssText = "position:absolute;right:5px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:999px;border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;box-shadow:0 2px 6px rgba(37,99,235,.35);";
-        btn.innerHTML = `<i class="fa-solid fa-camera" style="font-size:12px;"></i>`;
-        btn.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openCameraScannerOverlay({ title, onScanned });
-        });
-        parent.appendChild(btn);
-    }
-
-    // Poll cleanly until pos.html finishes initializing window.app.state
-    if (nativeAppRole === "pos") {
-        let tries = 0;
-        const t = setInterval(() => {
-            tries++;
-            if (window.app && window.app.state) {
-                patchPosApp();
-                clearInterval(t);
-            } else if (tries > 120) {
-                clearInterval(t);
-            }
-        }, 120);
-    }
+    }, 150);
 })();

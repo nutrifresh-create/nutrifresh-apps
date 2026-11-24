@@ -41,6 +41,7 @@ public class MainActivity extends BridgeActivity {
     private static final int REQ_BT_PERMS = 4382;
     private static final int REQ_CAM_PERM = 4383;
     private String pendingOAuthUrl = null;
+    private PermissionRequest pendingWebPermReq = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -86,8 +87,12 @@ public class MainActivity extends BridgeActivity {
             @Override
             public void onPermissionRequest(final PermissionRequest request) {
                 runOnUiThread(() -> {
-                    ensureCameraPermission();
-                    request.grant(request.getResources());
+                    if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                        request.grant(request.getResources());
+                    } else {
+                        pendingWebPermReq = request;
+                        ensureCameraPermission();
+                    }
                 });
             }
 
@@ -107,6 +112,20 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_CAM_PERM && pendingWebPermReq != null) {
+            final PermissionRequest req = pendingWebPermReq;
+            pendingWebPermReq = null;
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                runOnUiThread(() -> req.grant(req.getResources()));
+            } else {
+                runOnUiThread(req::deny);
+            }
+        }
+    }
+
     private void ensureBluetoothPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             List<String> need = new ArrayList<>();
@@ -123,6 +142,11 @@ public class MainActivity extends BridgeActivity {
     }
 
     public class NfAndroidNativeBridge {
+        @JavascriptInterface
+        public boolean hasCameraPermission() {
+            return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+        }
+
         @JavascriptInterface
         public void requestCameraPermission() {
             runOnUiThread(() -> ensureCameraPermission());
