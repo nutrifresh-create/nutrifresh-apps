@@ -1,0 +1,23 @@
+name: nutrifresh_pos
+description: NutriFresh POS — Aplikasi Native Kasir, Antrean Order, PO Parsel & Stok untuk PC Windows (.exe) dan Tablet Android (.apk).
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  nf_core:
+    path: ../../packages/nf_core
+  supabase_flutter: ^2.8.0
+  shared_preferences: ^2.3.2
+  printing: ^5.13.4
+  pdf: ^3.11.1
+  path_provider: ^2.1.4
+  url_launcher: ^6.3.1
+  intl: ">=0.19.0 <0.22.0"
+
+flutter:
+  uses-material-design: true
