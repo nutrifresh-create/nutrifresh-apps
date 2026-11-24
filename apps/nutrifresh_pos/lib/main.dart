@@ -25,24 +25,49 @@ class NutriFreshPosApp extends StatelessWidget {
           title: 'NutriFresh POS',
           debugShowCheckedModeBanner: false,
           theme: NfTheme.light(style: controller.uiStyle),
-          home: controller.isInitializing
-              ? const Scaffold(
-                  body: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.storefront_rounded, size: 54, color: NfColors.greenDark),
-                        SizedBox(height: 12),
-                        Text('NutriFresh POS', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: NfColors.greenDark)),
-                        SizedBox(height: 12),
-                        CircularProgressIndicator(),
-                      ],
+          home: NfAmbientBackdrop(
+            style: controller.uiStyle,
+            child: controller.isInitializing
+                ? Scaffold(
+                    backgroundColor: Colors.transparent,
+                    body: Center(
+                      child: NfGlassSurface(
+                        style: controller.uiStyle,
+                        borderRadius: 28,
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+                        child: const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            NfBrandLogoPill(height: 52),
+                            SizedBox(height: 14),
+                            Text(
+                              'NutriFresh POS',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: NfColors.greenDark,
+                              ),
+                            ),
+                            SizedBox(height: 6),
+                            Text(
+                              'Menyiapkan kasir & sinkronisasi cloud...',
+                              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                            ),
+                            SizedBox(height: 16),
+                            SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2.5),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                )
-              : (controller.isLoggedIn
-                  ? PosShellScreen(controller: controller)
-                  : LoginScreen(controller: controller)),
+                  )
+                : (controller.isLoggedIn
+                    ? PosShellScreen(controller: controller)
+                    : LoginScreen(controller: controller)),
+          ),
         );
       },
     );

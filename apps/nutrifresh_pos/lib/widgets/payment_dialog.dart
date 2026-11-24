@@ -2,15 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:nf_core/nf_core.dart';
 import '../state/pos_controller.dart';
 
-class PaymentDialog extends StatefulWidget {
-  final PosController controller;
-  const PaymentDialog({super.key, required this.controller});
-
-  @override
-  State<PaymentDialog> createState() => _PaymentDialogState();
+Future<NfTransaction?> showPaymentGlassModal({
+  required BuildContext context,
+  required PosController controller,
+}) {
+  return showNfGlassModal<NfTransaction>(
+    context: context,
+    style: controller.uiStyle,
+    title: 'Pembayaran Kasir',
+    subtitle: '${controller.customerName} • ${controller.cart.length} item',
+    icon: Icons.payments_rounded,
+    headerGradient: const [Color(0xFF558B2F), Color(0xFF7CB342)],
+    builder: (_) => _PaymentContent(controller: controller),
+  );
 }
 
-class _PaymentDialogState extends State<PaymentDialog> {
+class _PaymentContent extends StatefulWidget {
+  final PosController controller;
+  const _PaymentContent({required this.controller});
+
+  @override
+  State<_PaymentContent> createState() => _PaymentContentState();
+}
+
+class _PaymentContentState extends State<_PaymentContent> {
   String _method = 'Tunai';
   late final TextEditingController _cashCtrl;
   late final TextEditingController _discCtrl;
@@ -73,132 +88,148 @@ class _PaymentDialogState extends State<PaymentDialog> {
     final cashVal = int.tryParse(_cashCtrl.text.trim()) ?? 0;
     final change = _method == 'Tunai' ? (cashVal - total) : 0;
 
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: const Text('Pembayaran Transaksi', style: TextStyle(fontWeight: FontWeight.w900)),
-      content: SizedBox(
-        width: 440,
-        child: SingleChildScrollView(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: NfColors.lightBg,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: NfColors.green.withAlpha(110)),
+          ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: NfColors.lightBg,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: NfColors.green.withAlpha(100)),
-                ),
-                child: Column(
-                  children: [
-                    const Text('TOTAL TAGIHAN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: NfColors.greenDark)),
-                    const SizedBox(height: 4),
-                    Text(
-                      NfFormatters.rupiah(total),
-                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: NfColors.brown),
-                    ),
-                    Text('${c.customerName} • ${c.cart.length} item', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                  ],
-                ),
+              const Text('TOTAL TAGIHAN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: NfColors.greenDark)),
+              const SizedBox(height: 4),
+              Text(
+                NfFormatters.rupiah(total),
+                style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: NfColors.brown),
               ),
-              const SizedBox(height: 14),
-              const Text('Metode Pembayaran', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: ['Tunai', 'QRIS', 'Transfer', 'Debit'].map((m) {
-                  final sel = _method == m;
-                  return ChoiceChip(
-                    label: Text(m, style: TextStyle(fontWeight: FontWeight.w800, color: sel ? Colors.white : const Color(0xFF334155))),
-                    selected: sel,
-                    selectedColor: NfColors.green,
-                    onSelected: (_) {
-                      setState(() {
-                        _method = m;
-                        if (m == 'Tunai') _cashCtrl.text = total.toString();
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _discCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Diskon Tambahan Nota (Rp)',
-                  hintText: '0',
-                ),
-                onChanged: (v) {
-                  c.overallDiscountRp = double.tryParse(v.trim()) ?? 0;
-                  setState(() {
-                    if (_method == 'Tunai') _cashCtrl.text = c.cartGrandTotal.toString();
-                  });
-                },
-              ),
-              if (_method == 'Tunai') ...[
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _cashCtrl,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                  decoration: const InputDecoration(labelText: 'Uang Diterima (Rp)'),
-                  onChanged: (_) => setState(() {}),
-                  onSubmitted: (_) => _pay(),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  children: [total, 20000, 50000, 100000].toSet().map((amt) {
-                    return ActionChip(
-                      label: Text(amt == total ? 'Uang Pas' : NfFormatters.rupiah(amt),
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
-                      onPressed: () => setState(() => _cashCtrl.text = amt.toString()),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Kembalian:', style: TextStyle(fontWeight: FontWeight.w800)),
-                    Text(
-                      change >= 0 ? NfFormatters.rupiah(change) : 'Kurang ${NfFormatters.rupiah(change.abs())}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: change >= 0 ? NfColors.greenDark : NfColors.danger,
-                      ),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _refCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Catatan / Referensi Transfer / QRIS (Opsional)',
-                    hintText: 'Misal: BCA a.n Ibu Sari / QRIS Lunas',
-                  ),
-                ),
-              ],
             ],
           ),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _submitting ? null : () => Navigator.of(context).pop(),
-          child: const Text('Batal'),
+        const SizedBox(height: 14),
+        NfSlidingSegmented<String>(
+          style: c.uiStyle,
+          greenActive: true,
+          selected: _method,
+          onChanged: (m) {
+            setState(() {
+              _method = m;
+              if (m == 'Tunai') _cashCtrl.text = total.toString();
+            });
+          },
+          items: const [
+            ('Tunai', 'Tunai', null),
+            ('QRIS', 'QRIS', null),
+            ('Transfer', 'Transfer', null),
+            ('Debit', 'Debit', null),
+          ],
         ),
-        FilledButton.icon(
-          onPressed: _submitting ? null : _pay,
-          icon: _submitting
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Icon(Icons.check_circle_rounded),
-          label: Text(_submitting ? 'Memproses...' : 'Bayar & Cetak Struk'),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _discCtrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Diskon Tambahan Nota (Rp)',
+            hintText: '0',
+          ),
+          onChanged: (v) {
+            c.overallDiscountRp = double.tryParse(v.trim()) ?? 0;
+            setState(() {
+              if (_method == 'Tunai') _cashCtrl.text = c.cartGrandTotal.toString();
+            });
+          },
+        ),
+        if (_method == 'Tunai') ...[
+          const SizedBox(height: 12),
+          TextField(
+            controller: _cashCtrl,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
+            decoration: const InputDecoration(labelText: 'Uang Diterima (Rp)'),
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) => _pay(),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 7,
+            runSpacing: 7,
+            children: [total, 20000, 50000, 100000].toSet().map((amt) {
+              return InkWell(
+                onTap: () => setState(() => _cashCtrl.text = amt.toString()),
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: const Color(0xFFD5E0D9)),
+                  ),
+                  child: Text(
+                    amt == total ? 'Uang Pas' : NfFormatters.rupiah(amt),
+                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Kembalian:', style: TextStyle(fontWeight: FontWeight.w800)),
+                Text(
+                  change >= 0 ? NfFormatters.rupiah(change) : 'Kurang ${NfFormatters.rupiah(change.abs())}',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    color: change >= 0 ? NfColors.greenDark : NfColors.danger,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          const SizedBox(height: 12),
+          TextField(
+            controller: _refCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Catatan / Referensi Transfer / QRIS',
+              hintText: 'Misal: BCA a.n Ibu Sari / QRIS Lunas',
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+                child: const Text('Batal'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 2,
+              child: FilledButton.icon(
+                onPressed: _submitting ? null : _pay,
+                icon: _submitting
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.check_circle_rounded),
+                label: Text(_submitting ? 'Memproses...' : 'Bayar & Cetak Struk'),
+              ),
+            ),
+          ],
         ),
       ],
     );

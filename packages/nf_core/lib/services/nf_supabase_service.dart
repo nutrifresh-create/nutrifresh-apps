@@ -533,6 +533,193 @@ class NfSupabaseService {
     }
   }
 
+
+  // ---------- FULL OPERATIONAL CRUD (SUPPLIER, RESELLER, REWARDS, LAPORAN & PO MANUAL) ----------
+  Future<List<Map<String, dynamic>>> fetchTableRows(
+    String table, {
+    String? orderByCol,
+    bool ascending = false,
+    int limit = 150,
+  }) async {
+    dynamic qb = client.from(table).select('*').eq('tenant_id', NfConfig.tenantId);
+    if (orderByCol != null) {
+      qb = qb.order(orderByCol, ascending: ascending);
+    }
+    final rows = await qb.limit(limit);
+    return (rows as List).whereType<Map>().map((r) {
+      final map = Map<String, dynamic>.from(r);
+      final data = map['data'] is Map
+          ? Map<String, dynamic>.from(map['data'] as Map)
+          : <String, dynamic>{};
+      data['id'] = map['id'] ?? data['id'];
+      return data;
+    }).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> fetchExpenses({int limit = 120}) =>
+      fetchTableRows('nf_expenses', orderByCol: 'expense_date', ascending: false, limit: limit);
+
+  Future<List<Map<String, dynamic>>> fetchPurchases({int limit = 120}) =>
+      fetchTableRows('nf_purchases', orderByCol: 'purchase_date', ascending: false, limit: limit);
+
+  Future<List<Map<String, dynamic>>> fetchWasteLogs({int limit = 120}) =>
+      fetchTableRows('nf_waste_logs', orderByCol: 'waste_date', ascending: false, limit: limit);
+
+  Future<List<Map<String, dynamic>>> fetchSuppliers() =>
+      fetchTableRows('nf_suppliers', orderByCol: 'name', ascending: true, limit: 200);
+
+  Future<void> upsertSupplier({required String id, required String name, String phone = '', String note = ''}) async {
+    final nowIso = DateTime.now().toIso8601String();
+    final data = {'id': id, 'name': name, 'phone': phone, 'note': note, 'updatedAt': nowIso};
+    await client.from('nf_suppliers').upsert({
+      'tenant_id': NfConfig.tenantId,
+      'branch_id': _branchId,
+      'id': id,
+      'name': name,
+      'phone': phone,
+      'data': data,
+      'updated_at': nowIso,
+    }, onConflict: 'tenant_id,id');
+  }
+
+  Future<void> deleteRow(String table, String id) async {
+    await client.from(table).delete().eq('tenant_id', NfConfig.tenantId).eq('id', id);
+  }
+
+  Future<List<Map<String, dynamic>>> fetchResellers() =>
+      fetchTableRows('nf_resellers', orderByCol: 'name', ascending: true, limit: 200);
+
+  Future<void> upsertReseller({
+    required String id,
+    required String name,
+    String shopName = '',
+    String phone = '',
+    String address = '',
+    String notes = '',
+    String status = 'Aktif',
+  }) async {
+    final nowIso = DateTime.now().toIso8601String();
+    final data = {
+      'id': id,
+      'name': name,
+      'shopName': shopName,
+      'phone': phone,
+      'address': address,
+      'notes': notes,
+      'status': status,
+      'updatedAt': nowIso,
+    };
+    await client.from('nf_resellers').upsert({
+      'tenant_id': NfConfig.tenantId,
+      'branch_id': _branchId,
+      'id': id,
+      'name': name,
+      'shop_name': shopName,
+      'phone': phone,
+      'address': address,
+      'notes': notes,
+      'status': status,
+      'data': data,
+      'updated_at': nowIso,
+    }, onConflict: 'tenant_id,id');
+  }
+
+  Future<List<Map<String, dynamic>>> fetchPointRewards() =>
+      fetchTableRows('nf_point_rewards', orderByCol: 'points_cost', ascending: true, limit: 100);
+
+  Future<void> upsertPointReward({
+    required String id,
+    required String title,
+    String description = '',
+    String rewardType = 'voucher_rp',
+    required int pointsCost,
+    int discountRp = 0,
+    int minSpend = 0,
+    int validDays = 30,
+    bool active = true,
+  }) async {
+    final nowIso = DateTime.now().toIso8601String();
+    final data = {
+      'id': id,
+      'title': title,
+      'description': description,
+      'rewardType': rewardType,
+      'pointsCost': pointsCost,
+      'discountRp': discountRp,
+      'minSpend': minSpend,
+      'validDays': validDays,
+      'active': active,
+      'updatedAt': nowIso,
+    };
+    await client.from('nf_point_rewards').upsert({
+      'tenant_id': NfConfig.tenantId,
+      'branch_id': _branchId,
+      'id': id,
+      'title': title,
+      'description': description,
+      'reward_type': rewardType,
+      'points_cost': pointsCost,
+      'discount_rp': discountRp,
+      'min_spend': minSpend,
+      'valid_days': validDays,
+      'active': active,
+      'data': data,
+      'updated_at': nowIso,
+    }, onConflict: 'tenant_id,id');
+  }
+
+  Future<void> createManualParcelOrder({
+    required String id,
+    required String orderCode,
+    required String customerName,
+    required String customerPhone,
+    String institution = '',
+    required String deliveryDate,
+    required String deliveryTime,
+    required double totalAmount,
+    double dpAmount = 0,
+    required String paymentStatus,
+    required String orderStatus,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final nowIso = DateTime.now().toIso8601String();
+    final data = {
+      'id': id,
+      'orderCode': orderCode,
+      'customerName': customerName,
+      'customerPhone': customerPhone,
+      'institution': institution,
+      'source': 'pos',
+      'deliveryDate': deliveryDate,
+      'deliveryTime': deliveryTime,
+      'totalAmount': totalAmount,
+      'dpAmount': dpAmount,
+      'paymentStatus': paymentStatus,
+      'orderStatus': orderStatus,
+      'items': items,
+      'createdAt': nowIso,
+    };
+    await client.from('nf_parcel_orders').upsert({
+      'tenant_id': NfConfig.tenantId,
+      'branch_id': _branchId,
+      'id': id,
+      'order_code': orderCode,
+      'customer_name': customerName,
+      'customer_phone': customerPhone,
+      'institution': institution,
+      'source': 'pos',
+      'delivery_date': deliveryDate,
+      'delivery_time': deliveryTime,
+      'total_amount': totalAmount,
+      'dp_amount': dpAmount,
+      'payment_status': paymentStatus,
+      'order_status': orderStatus,
+      'items': items,
+      'data': data,
+      'updated_at': nowIso,
+    }, onConflict: 'tenant_id,id');
+  }
+
   // ---------- REALTIME SUBSCRIPTION (KHUSUS POS/INTERNAL) ----------
   RealtimeChannel subscribeTable({
     required String table,

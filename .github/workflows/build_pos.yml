@@ -23,7 +23,7 @@ jobs:
         working-directory: apps/nutrifresh_pos
         run: flutter create --org id.my.nutrifresh --project-name nutrifresh_pos --platforms=windows .
 
-      - name: Configure Windows metadata
+      - name: Configure Windows icon & metadata
         run: python scripts/configure_pos_platforms.py
 
       - name: Install dependencies
@@ -73,7 +73,7 @@ jobs:
         working-directory: apps/nutrifresh_pos
         run: flutter create --org id.my.nutrifresh --project-name nutrifresh_pos --platforms=android .
 
-      - name: Configure Android manifest & OAuth deep link
+      - name: Configure Android icons, OAuth deep link & Bluetooth bridge
         run: python3 scripts/configure_pos_platforms.py
 
       - name: Install dependencies

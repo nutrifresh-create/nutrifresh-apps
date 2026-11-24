@@ -27,6 +27,7 @@ class _CashierScreenState extends State<CashierScreen> {
   final _searchCtrl = TextEditingController();
   final _memberSearchCtrl = TextEditingController();
   String _selectedCategory = 'Semua';
+  int _mobileSubTab = 0; // 0 = Produk, 1 = Keranjang
 
   @override
   void dispose() {
@@ -45,12 +46,22 @@ class _CashierScreenState extends State<CashierScreen> {
     return set.toList();
   }
 
+  String _catLabel(String cat) {
+    if (cat == 'Semua') return 'Semua';
+    if (cat == 'Obral') return '🔥 Obral';
+    if (cat == 'Buah Lokal') return '🥭 Buah Lokal';
+    if (cat == 'Buah Impor') return '🍎 Buah Impor';
+    if (cat == 'Buah Potong / Pack') return '🥗 Buah Potong';
+    if (cat == 'Parsel & Gift') return '🎁 Parsel Gift';
+    return cat;
+  }
+
   Future<void> _tapProduct(NfProduct p) async {
     final c = widget.controller;
     if (!c.activeShift.isOpen) {
-      final opened = await showDialog<bool>(
+      final opened = await showOpenShiftGlassModal(
         context: context,
-        builder: (_) => OpenShiftDialog(controller: c),
+        controller: c,
       );
       if (opened != true) return;
     }
@@ -69,17 +80,44 @@ class _CashierScreenState extends State<CashierScreen> {
     final initNote = existingIdx >= 0 ? c.cart[existingIdx].itemNote : '';
 
     if (!mounted) return;
-    final res = await showDialog<WeightQtyResult>(
+    final res = await showWeightQtyGlassModal(
       context: context,
-      builder: (_) => WeightQtyDialog(
-        product: p,
-        buyerMode: c.buyerMode,
-        initialQty: initQty,
-        initialNote: initNote,
-      ),
+      style: c.uiStyle,
+      product: p,
+      buyerMode: c.buyerMode,
+      initialQty: initQty,
+      initialNote: initNote,
     );
     if (res != null) {
       c.addOrUpdateCartItem(p, res.qty, customNominal: res.customNominal, note: res.note);
+    }
+  }
+
+  Future<void> _quickAddProduct(NfProduct p) async {
+    final c = widget.controller;
+    if (!c.activeShift.isOpen) {
+      final opened = await showOpenShiftGlassModal(
+        context: context,
+        controller: c,
+      );
+      if (opened != true) return;
+    }
+    if (p.stock <= 0) return;
+    final existingIdx = c.cart.indexWhere((x) => x.product.id == p.id && x.linkedPoId == null);
+    final step = p.unit == 'Gram' ? 500 : 1;
+    final nextQty = existingIdx >= 0
+        ? (c.cart[existingIdx].qty + step).clamp(1, p.stock)
+        : step.clamp(1, p.stock);
+    c.addOrUpdateCartItem(p, nextQty);
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(milliseconds: 1100),
+          behavior: SnackBarBehavior.floating,
+          content: Text('${p.name} (${NfFormatters.stockDisplay(nextQty, p.unit)}) masuk keranjang'),
+        ),
+      );
     }
   }
 
@@ -100,25 +138,27 @@ class _CashierScreenState extends State<CashierScreen> {
     final c = widget.controller;
     if (c.cart.isEmpty) return;
     if (!c.activeShift.isOpen) {
-      final opened = await showDialog<bool>(
+      final opened = await showOpenShiftGlassModal(
         context: context,
-        builder: (_) => OpenShiftDialog(controller: c),
+        controller: c,
       );
       if (opened != true) return;
     }
     if (!mounted) return;
-    final tx = await showDialog<NfTransaction>(
+    final tx = await showPaymentGlassModal(
       context: context,
-      builder: (_) => PaymentDialog(controller: c),
+      controller: c,
     );
     if (tx != null && mounted) {
-      // Cetak langsung jika printer default sudah terpasang
-      if (PosPrintService.instance.defaultPrinterName != null) {
+      if (PosPrintService.instance.hasDirectPrinter) {
         PosPrintService.instance.printReceipt(tx, c.settings).catchError((_) {});
       }
-      await showDialog<void>(
+      await showDigitalReceiptGlassModal(
         context: context,
-        builder: (_) => DigitalReceiptDialog(tx: tx, settings: c.settings, justPaid: true),
+        style: c.uiStyle,
+        tx: tx,
+        settings: c.settings,
+        justPaid: true,
       );
     }
   }
@@ -132,48 +172,65 @@ class _CashierScreenState extends State<CashierScreen> {
     );
     final sendAlsoWa = ValueNotifier<bool>(false);
 
-    final ok = await showDialog<bool>(
+    final ok = await showNfGlassModal<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Kirim Tagihan Timbang Riil (Skema A)', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-        content: SizedBox(
-          width: 400,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+      style: c.uiStyle,
+      title: 'Kirim Tagihan Timbang (Skema A)',
+      subtitle: 'Order ${ord.orderCode} • ${ord.customerName}',
+      icon: Icons.notifications_active_rounded,
+      headerGradient: const [Color(0xFF558B2F), Color(0xFF7CB342)],
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: NfColors.lightBg,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: NfColors.green.withAlpha(90)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Hasil Timbang Buah:', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
+                Text(NfFormatters.rupiah(c.cartGrandTotal), style: const TextStyle(color: NfColors.brown, fontWeight: FontWeight.w900, fontSize: 17)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: shipCtrl,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Ongkir Kurir Toko (Rp)',
+              hintText: '0 jika gratis / ambil di toko',
+            ),
+          ),
+          const SizedBox(height: 8),
+          ValueListenableBuilder<bool>(
+            valueListenable: sendAlsoWa,
+            builder: (_, val, __) => CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: val,
+              onChanged: (v) => sendAlsoWa.value = v ?? false,
+              title: const Text('Sekalian buka WhatsApp untuk info tambahan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
             children: [
-              Text('Order ${ord.orderCode} • ${ord.customerName}', style: const TextStyle(fontWeight: FontWeight.w800)),
-              const SizedBox(height: 6),
-              Text('Total Buah Hasil Timbang: ${NfFormatters.rupiah(c.cartGrandTotal)}', style: const TextStyle(color: NfColors.greenDark, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 12),
-              TextField(
-                controller: shipCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Ongkir Kurir Toko (Rp)',
-                  hintText: '0 jika gratis / ambil di toko',
-                ),
-              ),
-              const SizedBox(height: 8),
-              ValueListenableBuilder<bool>(
-                valueListenable: sendAlsoWa,
-                builder: (_, val, __) => CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: val,
-                  onChanged: (v) => sendAlsoWa.value = v ?? false,
-                  title: const Text('Sekalian buka WhatsApp untuk info tambahan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              Expanded(child: OutlinedButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Batal'))),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 2,
+                child: FilledButton.icon(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  icon: const Icon(Icons.send_rounded),
+                  label: const Text('Kirim Tagihan'),
                 ),
               ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Batal')),
-          FilledButton.icon(
-            onPressed: () => Navigator.of(context).pop(true),
-            icon: const Icon(Icons.send_rounded),
-            label: const Text('Kirim Tagihan ke Pelanggan'),
           ),
         ],
       ),
@@ -195,7 +252,7 @@ class _CashierScreenState extends State<CashierScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Tagihan ${ord.orderCode} terkirim (Status: Menunggu Pembayaran).')),
+          SnackBar(content: Text('Tagihan ${ord.orderCode} terkirim (Menunggu Pembayaran).')),
         );
       }
     }
@@ -226,41 +283,99 @@ class _CashierScreenState extends State<CashierScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth >= 820;
-            final productPane = _buildProductPane(c, filtered, constraints.maxWidth);
-            final cartPane = _buildCartPane(c);
+            final productPane = _buildProductPane(c, filtered, constraints.maxWidth, isWide);
+            final cartPane = _buildCartPane(c, isWide);
 
             if (isWide) {
-              return Row(
-                children: [
-                  Expanded(flex: 3, child: productPane),
-                  const VerticalDivider(width: 1),
-                  SizedBox(width: 390, child: cartPane),
-                ],
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(6, 6, 12, 14),
+                child: Row(
+                  children: [
+                    Expanded(flex: 3, child: productPane),
+                    const SizedBox(width: 12),
+                    SizedBox(width: 390, child: cartPane),
+                  ],
+                ),
               );
             }
-            return DefaultTabController(
-              length: 2,
-              child: Column(
-                children: [
-                  Container(
-                    color: Colors.white,
-                    child: TabBar(
-                      labelColor: NfColors.greenDark,
-                      indicatorColor: NfColors.green,
-                      tabs: [
-                        const Tab(icon: Icon(Icons.grid_view_rounded, size: 18), text: 'Produk'),
-                        Tab(
-                          icon: const Icon(Icons.shopping_basket_rounded, size: 18),
-                          text: 'Keranjang (${c.cart.length})',
+
+            return Stack(
+              children: [
+                Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
+                      child: NfSlidingSegmented<int>(
+                        style: c.uiStyle,
+                        selected: _mobileSubTab,
+                        onChanged: (v) => setState(() => _mobileSubTab = v),
+                        items: [
+                          (0, 'Etalase Buah', Icons.grid_view_rounded),
+                          (1, 'Keranjang (${c.cart.length})', Icons.shopping_basket_rounded),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: _mobileSubTab == 0 ? productPane : cartPane,
+                    ),
+                  ],
+                ),
+                // Pita Keranjang Mengambang (muncul di tab Produk jika sudah ada item)
+                if (_mobileSubTab == 0 && c.cart.isNotEmpty)
+                  Positioned(
+                    left: 12,
+                    right: 12,
+                    bottom: 84,
+                    child: InkWell(
+                      onTap: () => setState(() => _mobileSubTab = 1),
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF558B2F), Color(0xFF7CB342)],
+                          ),
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: [
+                            BoxShadow(
+                              color: NfColors.greenDark.withAlpha(90),
+                              blurRadius: 18,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
-                      ],
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                '${c.cart.length}',
+                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: NfColors.greenDark),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: Text(
+                                'Lihat Keranjang & Bayar',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                              ),
+                            ),
+                            Text(
+                              NfFormatters.rupiah(c.cartGrandTotal),
+                              style: const TextStyle(color: Color(0xFFFDE047), fontWeight: FontWeight.w900, fontSize: 14),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 18),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                  Expanded(
-                    child: TabBarView(children: [productPane, cartPane]),
-                  ),
-                ],
-              ),
+              ],
             );
           },
         ),
@@ -268,102 +383,166 @@ class _CashierScreenState extends State<CashierScreen> {
     );
   }
 
-  Widget _buildProductPane(PosController c, List<NfProduct> filtered, double width) {
+  Widget _buildProductPane(PosController c, List<NfProduct> filtered, double width, bool isWide) {
     final cats = _categories(c.inventory);
-    final cols = width >= 1300 ? 4 : (width >= 960 ? 3 : 2);
+    final cols = width >= 1320 ? 4 : (width >= 960 ? 3 : 2);
+    final bottomPad = isWide ? 18.0 : (c.cart.isNotEmpty ? 150.0 : 94.0);
+
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+          padding: EdgeInsets.fromLTRB(isWide ? 4 : 12, 4, isWide ? 4 : 12, 8),
           child: Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _searchCtrl,
-                  decoration: InputDecoration(
-                    hintText: 'Scan barcode PLU atau ketik nama buah... (Enter)',
-                    prefixIcon: const Icon(Icons.qr_code_scanner_rounded, color: NfColors.greenDark),
-                    suffixIcon: _searchCtrl.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchCtrl.clear();
-                              setState(() {});
-                            },
-                          )
-                        : null,
+                child: NfGlassSurface(
+                  style: c.uiStyle,
+                  borderRadius: 999,
+                  elevated: false,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.qr_code_scanner_rounded, color: NfColors.greenDark, size: 19),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchCtrl,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                          decoration: const InputDecoration(
+                            hintText: 'Cari buah / scan PLU...',
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            filled: false,
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          onChanged: (_) => setState(() {}),
+                          onSubmitted: _handleBarcodeOrSearchSubmit,
+                        ),
+                      ),
+                      if (_searchCtrl.text.isNotEmpty)
+                        InkWell(
+                          onTap: () {
+                            _searchCtrl.clear();
+                            setState(() {});
+                          },
+                          child: const Icon(Icons.cancel_rounded, size: 18, color: Color(0xFF94A3B8)),
+                        ),
+                    ],
                   ),
-                  onChanged: (_) => setState(() {}),
-                  onSubmitted: _handleBarcodeOrSearchSubmit,
                 ),
               ),
-              const SizedBox(width: 10),
-              FilledButton.tonalIcon(
-                onPressed: widget.onOpenOnlineOrders,
-                icon: const Icon(Icons.shopping_bag_rounded, size: 18),
-                label: Text(
-                  c.pendingOnlineOrdersCount > 0
-                      ? 'Order (${c.pendingOnlineOrdersCount})'
-                      : 'Order Web',
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: widget.onOpenOnlineOrders,
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Color(0xFF7CB342), Color(0xFF558B2F)]),
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: [
+                      BoxShadow(
+                        color: NfColors.greenDark.withAlpha(65),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.shopping_bag_rounded, size: 16, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Text(
+                        c.pendingOnlineOrdersCount > 0
+                            ? 'Order (${c.pendingOnlineOrdersCount})'
+                            : 'Order',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        SizedBox(
-          height: 44,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            itemCount: cats.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (_, idx) {
-              final cat = cats[idx];
-              final active = cat == _selectedCategory;
-              return ChoiceChip(
-                label: Text(
-                  cat,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                    color: active ? Colors.white : const Color(0xFF334155),
-                  ),
-                ),
-                selected: active,
-                selectedColor: NfColors.green,
-                onSelected: (_) => setState(() => _selectedCategory = cat),
-              );
-            },
+        // Bilah Kategori Kapsul Bersih (TANPA centang Material 3!)
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: isWide ? 4 : 12),
+          child: NfGlassSurface(
+            style: c.uiStyle,
+            borderRadius: 999,
+            elevated: false,
+            padding: const EdgeInsets.all(4),
+            child: SizedBox(
+              height: 34,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: cats.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 4),
+                itemBuilder: (_, idx) {
+                  final cat = cats[idx];
+                  final active = cat == _selectedCategory;
+                  return InkWell(
+                    onTap: () => setState(() => _selectedCategory = cat),
+                    borderRadius: BorderRadius.circular(999),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 13),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        gradient: active
+                            ? const LinearGradient(colors: [Color(0xFF8BC34A), Color(0xFF558B2F)])
+                            : null,
+                        color: active ? null : Colors.transparent,
+                      ),
+                      child: Text(
+                        _catLabel(cat),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: active ? FontWeight.w900 : FontWeight.w700,
+                          color: active ? Colors.white : const Color(0xFF334155),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Expanded(
           child: filtered.isEmpty
-              ? const Center(child: Text('Produk tidak ditemukan.', style: TextStyle(color: Color(0xFF64748B))))
+              ? const Center(
+                  child: Text('Produk tidak ditemukan.', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w700)),
+                )
               : GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 16),
+                  padding: EdgeInsets.fromLTRB(isWide ? 4 : 12, 2, isWide ? 4 : 12, bottomPad),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: cols,
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    childAspectRatio: 0.92,
+                    mainAxisSpacing: 11,
+                    crossAxisSpacing: 11,
+                    childAspectRatio: 0.84,
                   ),
                   itemCount: filtered.length,
                   itemBuilder: (_, idx) {
                     final p = filtered[idx];
                     final outOfStock = p.stock <= 0;
+                    final inCart = c.cart.where((x) => x.product.id == p.id && x.linkedPoId == null).toList();
+                    final cartQty = inCart.isNotEmpty ? inCart.first.qty : 0;
+
                     return InkWell(
                       onTap: () => _tapProduct(p),
-                      borderRadius: BorderRadius.circular(18),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: outOfStock ? const Color(0xFFFECACA) : const Color(0xFFE2E8F0),
-                          ),
-                        ),
+                      borderRadius: BorderRadius.circular(24),
+                      child: NfGlassSurface(
+                        style: c.uiStyle,
+                        borderRadius: 24,
+                        padding: EdgeInsets.zero,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -373,7 +552,7 @@ class _CashierScreenState extends State<CashierScreen> {
                                 children: [
                                   NfCachedImage(
                                     url: p.img,
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(17)),
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(23)),
                                   ),
                                   Positioned(
                                     left: 8,
@@ -381,11 +560,14 @@ class _CashierScreenState extends State<CashierScreen> {
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
-                                        color: outOfStock ? NfColors.danger : Colors.white.withAlpha(235),
+                                        color: outOfStock ? NfColors.danger : Colors.white.withAlpha(240),
                                         borderRadius: BorderRadius.circular(10),
+                                        boxShadow: [
+                                          BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 6),
+                                        ],
                                       ),
                                       child: Text(
-                                        outOfStock ? 'HABIS' : NfFormatters.stockDisplay(p.stock, p.unit),
+                                        outOfStock ? 'HABIS' : 'Stok: ${NfFormatters.stockDisplay(p.stock, p.unit)}',
                                         style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w800,
@@ -394,28 +576,92 @@ class _CashierScreenState extends State<CashierScreen> {
                                       ),
                                     ),
                                   ),
+                                  if (!outOfStock)
+                                    Positioned(
+                                      right: 8,
+                                      bottom: 8,
+                                      child: InkWell(
+                                        onTap: () => _quickAddProduct(p),
+                                        borderRadius: BorderRadius.circular(999),
+                                        child: Container(
+                                          width: 32,
+                                          height: 32,
+                                          decoration: BoxDecoration(
+                                            color: NfColors.green,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: Colors.white, width: 1.5),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: NfColors.greenDark.withAlpha(90),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 3),
+                                              ),
+                                            ],
+                                          ),
+                                          child: const Icon(Icons.add_rounded, color: Colors.white, size: 19),
+                                        ),
+                                      ),
+                                    ),
+                                  if (cartQty > 0)
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: NfColors.greenDark,
+                                          borderRadius: BorderRadius.circular(999),
+                                        ),
+                                        child: Text(
+                                          NfFormatters.stockDisplay(cartQty, p.unit),
+                                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900),
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.all(10),
+                              padding: const EdgeInsets.fromLTRB(11, 9, 11, 11),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    p.name,
+                                    p.category.toUpperCase(),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                                    style: const TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: NfColors.greenDark,
+                                      letterSpacing: 0.3,
+                                    ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '${NfFormatters.rupiah(p.effectivePriceForMode(c.buyerMode))}/${NfFormatters.catalogPriceUnit(p.unit)}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 13,
-                                      color: NfColors.brown,
-                                    ),
+                                    p.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Color(0xFF0F172A)),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                                    textBaseline: TextBaseline.alphabetic,
+                                    children: [
+                                      Text(
+                                        NfFormatters.rupiah(p.effectivePriceForMode(c.buyerMode)),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 13.5,
+                                          color: NfColors.brown,
+                                        ),
+                                      ),
+                                      Text(
+                                        '/${NfFormatters.catalogPriceUnit(p.unit)}',
+                                        style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -431,62 +677,54 @@ class _CashierScreenState extends State<CashierScreen> {
     );
   }
 
-  Widget _buildCartPane(PosController c) {
-    return Container(
-      color: Colors.white,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-            child: Row(
+  Widget _buildCartPane(PosController c, bool isWide) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(isWide ? 0 : 12, isWide ? 4 : 4, isWide ? 0 : 12, isWide ? 0 : 88),
+      child: NfGlassSurface(
+        style: c.uiStyle,
+        borderRadius: 26,
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Row(
               children: [
-                const Text('Keranjang Kasir', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+                const Icon(Icons.shopping_basket_rounded, color: NfColors.greenDark, size: 19),
+                const SizedBox(width: 6),
+                const Text('Keranjang Kasir', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5)),
                 const Spacer(),
                 if (c.heldBills.isNotEmpty)
-                  TextButton.icon(
+                  TextButton(
                     onPressed: () => _showHeldBillsSheet(c),
-                    icon: const Icon(Icons.restore_rounded, size: 16),
-                    label: Text('Antrean (${c.heldBills.length})', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                    child: Text('Antrean (${c.heldBills.length})', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
                   ),
                 IconButton(
                   tooltip: 'Tahan Nota (F4)',
                   onPressed: c.cart.isEmpty ? null : () => c.holdCurrentBill(),
-                  icon: const Icon(Icons.pause_circle_outline_rounded),
+                  icon: const Icon(Icons.pause_circle_outline_rounded, size: 20),
                 ),
                 IconButton(
-                  tooltip: 'Kosongkan Keranjang',
+                  tooltip: 'Kosongkan',
                   onPressed: c.cart.isEmpty ? null : () => c.clearCart(),
-                  icon: const Icon(Icons.delete_outline_rounded, color: NfColors.danger),
+                  icon: const Icon(Icons.delete_outline_rounded, color: NfColors.danger, size: 20),
                 ),
               ],
             ),
-          ),
-          // 4 Mode Pembeli
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Wrap(
-              spacing: 6,
-              children: [
-                ('reguler', 'Reguler'),
-                ('member', 'Member'),
-                ('karyawan', 'Karyawan'),
-                ('reseller', 'Reseller'),
-              ].map((pair) {
-                final active = c.buyerMode == pair.$1;
-                return ChoiceChip(
-                  label: Text(pair.$2, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: active ? Colors.white : const Color(0xFF334155))),
-                  selected: active,
-                  selectedColor: NfColors.greenDark,
-                  visualDensity: VisualDensity.compact,
-                  onSelected: (_) => c.setBuyerMode(pair.$1),
-                );
-              }).toList(),
+            const SizedBox(height: 4),
+            NfSlidingSegmented<String>(
+              style: c.uiStyle,
+              greenActive: true,
+              selected: c.buyerMode,
+              onChanged: (m) => c.setBuyerMode(m),
+              items: const [
+                ('reguler', 'Reguler', null),
+                ('member', 'Member', null),
+                ('karyawan', 'Staf', null),
+                ('reseller', 'Reseller', null),
+              ],
             ),
-          ),
-          if (c.buyerMode == 'member')
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-              child: Row(
+            if (c.buyerMode == 'member') ...[
+              const SizedBox(height: 8),
+              Row(
                 children: [
                   Expanded(
                     child: TextField(
@@ -519,156 +757,160 @@ class _CashierScreenState extends State<CashierScreen> {
                   ),
                 ],
               ),
-            ),
-          if (c.activeMemberDetails != null)
-            Container(
-              margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFFBEB),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFCD34D)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '👑 ${c.customerName} (${c.activeMemberDetails!['points'] ?? 0} Poin)',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF92400E)),
-                  ),
-                  if (((c.activeMemberDetails!['points'] as num?) ?? 0) >= c.settings.redeemUnitPoints)
-                    TextButton(
-                      onPressed: () {
-                        final avail = ((c.activeMemberDetails!['points'] as num?) ?? 0).round();
-                        c.pointsToRedeem = c.pointsToRedeem > 0 ? 0 : (avail ~/ c.settings.redeemUnitPoints) * c.settings.redeemUnitPoints;
-                        setState(() {});
-                      },
-                      child: Text(
-                        c.pointsToRedeem > 0 ? 'Batal Potong' : 'Potong Poin',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          // Banner Linked Order Online (Skema A)
-          if (c.linkedOnlineOrder != null)
-            Container(
-              margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: NfColors.lightBg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: NfColors.green),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'ORDER ONLINE: ${c.linkedOnlineOrder!.orderCode} • ${c.linkedOnlineOrder!.customerName}',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: NfColors.greenDark),
-                  ),
-                  const SizedBox(height: 6),
-                  FilledButton.icon(
-                    onPressed: _sendSkemaABillDialog,
-                    icon: const Icon(Icons.notifications_active_rounded, size: 16),
-                    label: const Text('Kirim Tagihan Hasil Timbang (Skema A)', style: TextStyle(fontSize: 11)),
-                  ),
-                ],
-              ),
-            ),
-          const Divider(height: 16),
-          Expanded(
-            child: c.cart.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Belum ada item.\nKetuk produk atau scan barcode.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: c.cart.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (_, idx) {
-                      final it = c.cart[idx];
-                      final sub = it.subtotal(c.buyerMode);
-                      return InkWell(
-                        onTap: it.skipStockDeduction ? null : () => _tapProduct(it.product),
-                        borderRadius: BorderRadius.circular(14),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(it.product.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
-                                    Text(
-                                      '${NfFormatters.stockDisplay(it.qty, it.product.unit)} × ${NfFormatters.rupiah(it.product.effectivePriceForMode(c.buyerMode))}',
-                                      style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                                    ),
-                                    if (it.itemNote.isNotEmpty)
-                                      Text(it.itemNote, style: const TextStyle(fontSize: 10, color: NfColors.brown, fontStyle: FontStyle.italic)),
-                                  ],
-                                ),
-                              ),
-                              Text(NfFormatters.rupiah(sub), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
-                              IconButton(
-                                icon: const Icon(Icons.close, size: 16, color: NfColors.danger),
-                                onPressed: () => c.removeCartItemAt(idx),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF8FAFC),
-              border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (c.pointsDiscountRp > 0)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Potongan Poin (${c.pointsToRedeem} pts)', style: const TextStyle(fontSize: 12, color: NfColors.greenDark, fontWeight: FontWeight.w700)),
-                      Text('-${NfFormatters.rupiah(c.pointsDiscountRp)}', style: const TextStyle(fontSize: 12, color: NfColors.greenDark, fontWeight: FontWeight.w800)),
-                    ],
-                  ),
-                Row(
+            ],
+            if (c.activeMemberDetails != null)
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFFCD34D)),
+                ),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+                    Expanded(
+                      child: Text(
+                        '👑 ${c.customerName} (${c.activeMemberDetails!['points'] ?? 0} Poin)',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF92400E)),
+                      ),
+                    ),
+                    if (((c.activeMemberDetails!['points'] as num?) ?? 0) >= c.settings.redeemUnitPoints)
+                      TextButton(
+                        onPressed: () {
+                          final avail = ((c.activeMemberDetails!['points'] as num?) ?? 0).round();
+                          c.pointsToRedeem = c.pointsToRedeem > 0 ? 0 : (avail ~/ c.settings.redeemUnitPoints) * c.settings.redeemUnitPoints;
+                          setState(() {});
+                        },
+                        child: Text(
+                          c.pointsToRedeem > 0 ? 'Batal Potong' : 'Potong Poin',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            if (c.linkedOnlineOrder != null)
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: NfColors.lightBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: NfColors.green),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                     Text(
-                      NfFormatters.rupiah(c.cartGrandTotal),
-                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 22, color: NfColors.brown),
+                      'ORDER WEB: ${c.linkedOnlineOrder!.orderCode} • ${c.linkedOnlineOrder!.customerName}',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: NfColors.greenDark),
+                    ),
+                    const SizedBox(height: 6),
+                    FilledButton.icon(
+                      onPressed: _sendSkemaABillDialog,
+                      icon: const Icon(Icons.notifications_active_rounded, size: 15),
+                      label: const Text('Kirim Tagihan Timbang (Skema A)', style: TextStyle(fontSize: 11)),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                FilledButton.icon(
-                  onPressed: c.cart.isEmpty ? null : _openPayment,
-                  icon: const Icon(Icons.payments_rounded),
-                  label: const Text('BAYAR TRANSAKSI (F2)', style: TextStyle(fontSize: 14)),
+              ),
+            const Divider(height: 16),
+            Expanded(
+              child: c.cart.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.shopping_basket_outlined, size: 40, color: Color(0xFFCBD5E1)),
+                          SizedBox(height: 8),
+                          Text(
+                            'Keranjang masih kosong.\nKetuk produk atau scan barcode PLU.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
+                      itemCount: c.cart.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (_, idx) {
+                        final it = c.cart[idx];
+                        final sub = it.subtotal(c.buyerMode);
+                        return InkWell(
+                          onTap: it.skipStockDeduction ? null : () => _tapProduct(it.product),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(225),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(it.product.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
+                                      Text(
+                                        '${NfFormatters.stockDisplay(it.qty, it.product.unit)} × ${NfFormatters.rupiah(it.product.effectivePriceForMode(c.buyerMode))}',
+                                        style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                      ),
+                                      if (it.itemNote.isNotEmpty)
+                                        Text(it.itemNote, style: const TextStyle(fontSize: 10, color: NfColors.brown, fontStyle: FontStyle.italic)),
+                                    ],
+                                  ),
+                                ),
+                                Text(NfFormatters.rupiah(sub), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
+                                IconButton(
+                                  icon: const Icon(Icons.close_rounded, size: 17, color: NfColors.danger),
+                                  onPressed: () => c.removeCartItemAt(idx),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            const Divider(height: 16),
+            if (c.pointsDiscountRp > 0)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Potongan Poin (${c.pointsToRedeem} pts)', style: const TextStyle(fontSize: 12, color: NfColors.greenDark, fontWeight: FontWeight.w700)),
+                    Text('-${NfFormatters.rupiah(c.pointsDiscountRp)}', style: const TextStyle(fontSize: 12, color: NfColors.greenDark, fontWeight: FontWeight.w800)),
+                  ],
+                ),
+              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+                Text(
+                  NfFormatters.rupiah(c.cartGrandTotal),
+                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 21, color: NfColors.brown),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: c.cart.isEmpty ? null : _openPayment,
+                icon: const Icon(Icons.payments_rounded),
+                label: const Text('BAYAR TRANSAKSI (F2)', style: TextStyle(fontSize: 14)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

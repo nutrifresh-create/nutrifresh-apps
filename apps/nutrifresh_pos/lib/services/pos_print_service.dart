@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/services.dart';
 import 'package:nf_core/nf_core.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -7,19 +9,61 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+class BtPrinterDevice {
+  final String name;
+  final String address;
+  const BtPrinterDevice({required this.name, required this.address});
+}
+
 class PosPrintService {
   PosPrintService._();
   static final PosPrintService instance = PosPrintService._();
 
-  static const String _prefPrinterKey = 'nf_pos_default_printer_name';
+  static const MethodChannel _btChannel =
+      MethodChannel('id.my.nutrifresh.pos/bt_printer');
+
+  static const String _prefWinPrinterKey = 'nf_pos_default_printer_name';
+  static const String _prefBtAddrKey = 'nf_pos_bt_printer_addr';
+  static const String _prefBtNameKey = 'nf_pos_bt_printer_name';
+  static const String _prefBtLabelProtoKey = 'nf_pos_bt_label_protocol';
+
   String? _defaultPrinterName;
+  String? _btAddress;
+  String? _btName;
+  String _btLabelProtocol = 'escpos'; // 'escpos' | 'tspl'
+  Uint8List? _cachedLogoPBytes;
 
   String? get defaultPrinterName => _defaultPrinterName;
+  String? get btPrinterAddress => _btAddress;
+  String? get btPrinterName => _btName;
+  String get btLabelProtocol => _btLabelProtocol;
+
+  bool get hasDirectPrinter => Platform.isAndroid
+      ? (_btAddress != null && _btAddress!.isNotEmpty)
+      : (_defaultPrinterName != null && _defaultPrinterName!.isNotEmpty);
+
+  String get activePrinterSummary {
+    if (Platform.isAndroid) {
+      if (_btName != null && _btName!.isNotEmpty) {
+        return 'Bluetooth: $_btName (${_btLabelProtocol.toUpperCase()})';
+      }
+      return 'Dialog Sistem (Belum pilih Bluetooth)';
+    }
+    return (_defaultPrinterName != null && _defaultPrinterName!.isNotEmpty)
+        ? 'Windows: $_defaultPrinterName'
+        : 'Dialog Sistem (Belum pilih Printer)';
+  }
 
   Future<void> loadSavedPrinter() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = (prefs.getString(_prefPrinterKey) ?? '').trim();
-    _defaultPrinterName = saved.isEmpty ? null : saved;
+    final savedWin = (prefs.getString(_prefWinPrinterKey) ?? '').trim();
+    _defaultPrinterName = savedWin.isEmpty ? null : savedWin;
+    final savedBtAddr = (prefs.getString(_prefBtAddrKey) ?? '').trim();
+    final savedBtName = (prefs.getString(_prefBtNameKey) ?? '').trim();
+    _btAddress = savedBtAddr.isEmpty ? null : savedBtAddr;
+    _btName = savedBtName.isEmpty ? null : savedBtName;
+    final proto = (prefs.getString(_prefBtLabelProtoKey) ?? 'escpos').trim();
+    _btLabelProtocol = proto == 'tspl' ? 'tspl' : 'escpos';
   }
 
   Future<void> setDefaultPrinterName(String? name) async {
@@ -27,13 +71,36 @@ class PosPrintService {
     final clean = (name ?? '').trim();
     _defaultPrinterName = clean.isEmpty ? null : clean;
     if (_defaultPrinterName == null) {
-      await prefs.remove(_prefPrinterKey);
+      await prefs.remove(_prefWinPrinterKey);
     } else {
-      await prefs.setString(_prefPrinterKey, _defaultPrinterName!);
+      await prefs.setString(_prefWinPrinterKey, _defaultPrinterName!);
     }
   }
 
-  Future<List<Printer>> listPrinters() async {
+  Future<void> setBluetoothPrinter(BtPrinterDevice? dev) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (dev == null || dev.address.trim().isEmpty) {
+      _btAddress = null;
+      _btName = null;
+      await prefs.remove(_prefBtAddrKey);
+      await prefs.remove(_prefBtNameKey);
+    } else {
+      _btAddress = dev.address.trim();
+      _btName = dev.name.trim();
+      await prefs.setString(_prefBtAddrKey, _btAddress!);
+      await prefs.setString(_prefBtNameKey, _btName!);
+    }
+  }
+
+  Future<void> setBtLabelProtocol(String proto) async {
+    final clean = proto == 'tspl' ? 'tspl' : 'escpos';
+    _btLabelProtocol = clean;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefBtLabelProtoKey, clean);
+  }
+
+  Future<List<Printer>> listWindowsPrinters() async {
+    if (Platform.isAndroid) return [];
     try {
       return await Printing.listPrinters();
     } catch (_) {
@@ -41,31 +108,198 @@ class PosPrintService {
     }
   }
 
-  Future<bool> _printPdfBytes(Uint8List bytes, String jobName) async {
-    if (_defaultPrinterName != null && _defaultPrinterName!.isNotEmpty) {
-      final printers = await listPrinters();
+  Future<List<BtPrinterDevice>> listBluetoothPrinters() async {
+    if (!Platform.isAndroid) return [];
+    try {
+      await _btChannel.invokeMethod('requestPermissions');
+      final raw = await _btChannel.invokeMethod<List<dynamic>>('getBondedDevices');
+      if (raw == null) return [];
+      return raw
+          .whereType<Map>()
+          .map((m) => BtPrinterDevice(
+                name: (m['name'] ?? 'Printer Bluetooth').toString(),
+                address: (m['address'] ?? '').toString(),
+              ))
+          .where((d) => d.address.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<Uint8List?> _loadThermalLogoBytes() async {
+    if (_cachedLogoPBytes != null) return _cachedLogoPBytes;
+    try {
+      final bd = await rootBundle.load('assets/images/iconP.png');
+      _cachedLogoPBytes = bd.buffer.asUint8List();
+      return _cachedLogoPBytes;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Uint8List _rgbaToEscPosRaster(Uint8List rgba, int width, int height) {
+    final widthBytes = (width + 7) >> 3;
+    final out = BytesBuilder(copy: false);
+    out.add(const [0x1B, 0x40, 0x1B, 0x61, 0x01]);
+    const maxBandH = 120;
+    for (int y0 = 0; y0 < height; y0 += maxBandH) {
+      final bandH = (y0 + maxBandH <= height) ? maxBandH : (height - y0);
+      out.add([
+        0x1D, 0x76, 0x30, 0x00,
+        widthBytes & 0xFF, (widthBytes >> 8) & 0xFF,
+        bandH & 0xFF, (bandH >> 8) & 0xFF,
+      ]);
+      final bandBuf = Uint8List(widthBytes * bandH);
+      for (int y = 0; y < bandH; y++) {
+        final sy = y0 + y;
+        for (int x = 0; x < width; x++) {
+          final idx = (sy * width + x) * 4;
+          final r = rgba[idx];
+          final g = rgba[idx + 1];
+          final b = rgba[idx + 2];
+          final a = rgba[idx + 3];
+          final lum = (299 * r + 587 * g + 114 * b) ~/ 1000;
+          if (a > 128 && lum < 170) {
+            bandBuf[y * widthBytes + (x >> 3)] |= (0x80 >> (x & 7));
+          }
+        }
+      }
+      out.add(bandBuf);
+    }
+    out.add(const [0x1B, 0x64, 0x03, 0x1D, 0x56, 0x42, 0x00]);
+    return out.toBytes();
+  }
+
+  Uint8List _rgbaToTsplBitmap(
+    Uint8List rgba,
+    int width,
+    int height, {
+    required double widthMm,
+    required double heightMm,
+  }) {
+    final widthBytes = (width + 7) >> 3;
+    final bitmap = Uint8List(widthBytes * height);
+    bitmap.fillRange(0, bitmap.length, 0xFF);
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        final idx = (y * width + x) * 4;
+        final r = rgba[idx];
+        final g = rgba[idx + 1];
+        final b = rgba[idx + 2];
+        final a = rgba[idx + 3];
+        final lum = (299 * r + 587 * g + 114 * b) ~/ 1000;
+        if (a > 128 && lum < 170) {
+          bitmap[y * widthBytes + (x >> 3)] &= ~(0x80 >> (x & 7));
+        }
+      }
+    }
+    final header = 'SIZE ${widthMm.toStringAsFixed(0)} mm, ${heightMm.toStringAsFixed(0)} mm\r\n'
+        'GAP 2 mm, 0 mm\r\n'
+        'DIRECTION 1\r\n'
+        'CLS\r\n'
+        'BITMAP 0,0,$widthBytes,$height,0,';
+    const footer = '\r\nPRINT 1,1\r\n';
+    final out = BytesBuilder(copy: false);
+    out.add(ascii.encode(header));
+    out.add(bitmap);
+    out.add(ascii.encode(footer));
+    return out.toBytes();
+  }
+
+  Future<bool> _printPdfBytes(
+    Uint8List pdfBytes,
+    String jobName, {
+    bool isLabelJob = false,
+    double labelWidthMm = 50,
+    double labelHeightMm = 35,
+  }) async {
+    if (Platform.isAndroid && _btAddress != null && _btAddress!.isNotEmpty) {
+      try {
+        final allBytes = BytesBuilder(copy: false);
+        final useTspl = isLabelJob && _btLabelProtocol == 'tspl';
+        await for (final page in Printing.raster(pdfBytes, dpi: 203)) {
+          if (useTspl) {
+            allBytes.add(_rgbaToTsplBitmap(
+              page.pixels,
+              page.width,
+              page.height,
+              widthMm: labelWidthMm,
+              heightMm: labelHeightMm,
+            ));
+          } else {
+            allBytes.add(_rgbaToEscPosRaster(page.pixels, page.width, page.height));
+          }
+        }
+        final payload = allBytes.toBytes();
+        if (payload.isNotEmpty) {
+          final ok = await _btChannel.invokeMethod<bool>('printBytes', {
+            'address': _btAddress,
+            'bytes': payload,
+          });
+          if (ok == true) return true;
+        }
+      } catch (_) {}
+    }
+
+    if (!Platform.isAndroid && _defaultPrinterName != null && _defaultPrinterName!.isNotEmpty) {
+      final printers = await listWindowsPrinters();
       for (final p in printers) {
         if (p.name == _defaultPrinterName) {
           final ok = await Printing.directPrintPdf(
             printer: p,
             name: jobName,
-            onLayout: (_) async => bytes,
+            onLayout: (_) async => pdfBytes,
           );
           if (ok) return true;
         }
       }
     }
-    await Printing.layoutPdf(
-      name: jobName,
-      onLayout: (_) async => bytes,
-    );
+
+    await Printing.layoutPdf(name: jobName, onLayout: (_) async => pdfBytes);
     return true;
+  }
+
+  Future<void> printTestPage(NfStoreSettings settings) async {
+    final doc = pw.Document();
+    final fmt = _thermalFormat(settings);
+    final logoBytes = await _loadThermalLogoBytes();
+    final logoImg = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
+    doc.addPage(
+      pw.Page(
+        pageFormat: fmt,
+        build: (_) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            if (logoImg != null) pw.Image(logoImg, width: 90, fit: pw.BoxFit.contain),
+            pw.SizedBox(height: 4),
+            pw.Text('TES PRINTER NUTRIFRESH POS', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+            pw.Text('Koneksi: $activePrinterSummary', style: const pw.TextStyle(fontSize: 7.5)),
+            pw.Text('Waktu: ${NfFormatters.dateTimeShort(DateTime.now())}', style: const pw.TextStyle(fontSize: 7.5)),
+            pw.Divider(borderStyle: pw.BorderStyle.dashed),
+            pw.Text('Printer siap digunakan!', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    await _printPdfBytes(await doc.save(), 'Test_Print_NutriFresh');
   }
 
   PdfPageFormat _thermalFormat(NfStoreSettings settings) {
     final is80 = settings.thermalWidth == '80mm';
-    final w = is80 ? 80 * PdfPageFormat.mm : 58 * PdfPageFormat.mm;
-    return PdfPageFormat(w, double.infinity, marginAll: 3 * PdfPageFormat.mm);
+    final w = is80 ? 76 * PdfPageFormat.mm : 48 * PdfPageFormat.mm;
+    return PdfPageFormat(w, double.infinity, marginAll: 2 * PdfPageFormat.mm);
+  }
+
+  List<double> _labelDims(NfStoreSettings settings) {
+    return <String, List<double>>{
+          '30x20': [30, 20],
+          '40x30': [40, 30],
+          '50x35': [50, 35],
+          '58x40': [58, 40],
+        }[settings.labelSize] ??
+        [50, 35];
   }
 
   Future<Uint8List> buildReceiptPdf(
@@ -76,6 +310,8 @@ class PosPrintService {
     final fmt = _thermalFormat(settings);
     final is80 = settings.thermalWidth == '80mm';
     final fs = is80 ? 9.0 : 8.0;
+    final logoBytes = await _loadThermalLogoBytes();
+    final logoImg = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
 
     doc.addPage(
       pw.Page(
@@ -83,21 +319,17 @@ class PosPrintService {
         build: (_) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: [
-            pw.Center(
-              child: pw.Text(
-                'NUTRIFRESH',
-                style: pw.TextStyle(
-                  fontSize: is80 ? 15 : 13,
-                  fontWeight: pw.FontWeight.bold,
+            if (logoImg != null)
+              pw.Center(child: pw.Image(logoImg, width: is80 ? 115 : 88, fit: pw.BoxFit.contain))
+            else
+              pw.Center(
+                child: pw.Text(
+                  'NUTRIFRESH',
+                  style: pw.TextStyle(fontSize: is80 ? 15 : 13, fontWeight: pw.FontWeight.bold),
                 ),
               ),
-            ),
-            pw.Center(
-              child: pw.Text(
-                settings.receiptHeaderSub,
-                style: pw.TextStyle(fontSize: fs - 0.5),
-              ),
-            ),
+            pw.SizedBox(height: 2),
+            pw.Center(child: pw.Text(settings.receiptHeaderSub, style: pw.TextStyle(fontSize: fs - 0.5))),
             if (settings.shopAddress.isNotEmpty)
               pw.Center(
                 child: pw.Text(
@@ -131,13 +363,7 @@ class PosPrintService {
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text(
-                      name,
-                      style: pw.TextStyle(
-                        fontSize: fs,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
+                    pw.Text(name, style: pw.TextStyle(fontSize: fs, fontWeight: pw.FontWeight.bold)),
                     pw.Row(
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
@@ -147,10 +373,7 @@ class PosPrintService {
                         ),
                         pw.Text(
                           NfFormatters.rupiah(sub),
-                          style: pw.TextStyle(
-                            fontSize: fs,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
+                          style: pw.TextStyle(fontSize: fs, fontWeight: pw.FontWeight.bold),
                         ),
                       ],
                     ),
@@ -164,20 +387,8 @@ class PosPrintService {
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Text(
-                  'TOTAL',
-                  style: pw.TextStyle(
-                    fontSize: fs + 2,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.Text(
-                  NfFormatters.rupiah(tx.total),
-                  style: pw.TextStyle(
-                    fontSize: fs + 2,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
+                pw.Text('TOTAL', style: pw.TextStyle(fontSize: fs + 2, fontWeight: pw.FontWeight.bold)),
+                pw.Text(NfFormatters.rupiah(tx.total), style: pw.TextStyle(fontSize: fs + 2, fontWeight: pw.FontWeight.bold)),
               ],
             ),
             if (tx.paymentMethod == 'Tunai') ...[
@@ -190,10 +401,7 @@ class PosPrintService {
                 child: pw.Center(
                   child: pw.Text(
                     '+${tx.pointsEarned} Poin (Saldo: ${tx.pointsAfter})',
-                    style: pw.TextStyle(
-                      fontSize: fs - 0.5,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
+                    style: pw.TextStyle(fontSize: fs - 0.5, fontWeight: pw.FontWeight.bold),
                   ),
                 ),
               ),
@@ -205,7 +413,7 @@ class PosPrintService {
                 style: pw.TextStyle(fontSize: fs - 0.5),
               ),
             ),
-            pw.SizedBox(height: 10),
+            pw.SizedBox(height: 8),
           ],
         ),
       ),
@@ -240,7 +448,7 @@ class PosPrintService {
   ) async {
     final pdfBytes = await buildReceiptPdf(tx, settings);
     Uint8List? pngBytes;
-    await for (final page in Printing.raster(pdfBytes, pages: [0], dpi: 220)) {
+    await for (final page in Printing.raster(pdfBytes, pages: [0], dpi: 240)) {
       pngBytes = await page.toPng();
       break;
     }
@@ -248,65 +456,62 @@ class PosPrintService {
     return _savePngFile('Resi_NutriFresh_${tx.id}.png', pngBytes);
   }
 
-  Future<Uint8List> buildBarcodeLabelPdf(
-    NfProduct product,
-    NfStoreSettings settings, {
-    int copies = 1,
-  }) async {
-    final dims = <String, List<double>>{
-      '30x20': [30, 20],
-      '40x30': [40, 30],
-      '50x35': [50, 35],
-      '58x40': [58, 40],
-    }[settings.labelSize] ?? [50, 35];
-
+  Future<Uint8List> buildBatchBarcodePdf(
+    List<(NfProduct, int)> tasks,
+    NfStoreSettings settings,
+  ) async {
+    final dims = _labelDims(settings);
     final fmt = PdfPageFormat(
       dims[0] * PdfPageFormat.mm,
       dims[1] * PdfPageFormat.mm,
-      marginAll: 2 * PdfPageFormat.mm,
+      marginAll: 1.8 * PdfPageFormat.mm,
     );
-    final codeVal = product.barcode.trim().isEmpty ? product.id : product.barcode.trim();
-    final priceText =
-        '${NfFormatters.rupiah(product.price)} / ${NfFormatters.catalogPriceUnit(product.unit)}';
-
+    final logoBytes = await _loadThermalLogoBytes();
+    final logoImg = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
     final doc = pw.Document();
-    final count = copies < 1 ? 1 : copies;
-    for (int i = 0; i < count; i++) {
-      doc.addPage(
-        pw.Page(
-          pageFormat: fmt,
-          build: (_) => pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.center,
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Text(
-                'NUTRIFRESH',
-                style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
-              ),
-              pw.Text(
-                product.name,
-                maxLines: 1,
-                style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-              ),
-              pw.Text(
-                priceText,
-                style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold),
-              ),
-              pw.Expanded(
-                child: pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(vertical: 2),
-                  child: pw.BarcodeWidget(
-                    barcode: pw.Barcode.code128(),
-                    data: codeVal,
-                    drawText: true,
-                    textStyle: const pw.TextStyle(fontSize: 7),
+
+    for (final (product, copies) in tasks) {
+      final codeVal = product.barcode.trim().isEmpty ? product.id : product.barcode.trim();
+      final priceText =
+          '${NfFormatters.rupiah(product.price)} / ${NfFormatters.catalogPriceUnit(product.unit)}';
+      final count = copies < 1 ? 1 : copies;
+      for (int i = 0; i < count; i++) {
+        doc.addPage(
+          pw.Page(
+            pageFormat: fmt,
+            build: (_) => pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                if (logoImg != null)
+                  pw.Image(logoImg, height: dims[1] <= 22 ? 12 : 16, fit: pw.BoxFit.contain)
+                else
+                  pw.Text('NUTRIFRESH', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
+                pw.Text(
+                  product.name,
+                  maxLines: 1,
+                  style: pw.TextStyle(fontSize: dims[1] <= 22 ? 7.5 : 9, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.Text(
+                  priceText,
+                  style: pw.TextStyle(fontSize: dims[1] <= 22 ? 7.5 : 8.5, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.Expanded(
+                  child: pw.Padding(
+                    padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
+                    child: pw.BarcodeWidget(
+                      barcode: pw.Barcode.code128(),
+                      data: codeVal,
+                      drawText: true,
+                      textStyle: const pw.TextStyle(fontSize: 6.5),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
     return doc.save();
   }
@@ -316,15 +521,38 @@ class PosPrintService {
     NfStoreSettings settings, {
     int copies = 1,
   }) async {
-    final bytes = await buildBarcodeLabelPdf(product, settings, copies: copies);
-    await _printPdfBytes(bytes, 'Barcode_${product.barcode}');
+    final dims = _labelDims(settings);
+    final bytes = await buildBatchBarcodePdf([(product, copies)], settings);
+    await _printPdfBytes(
+      bytes,
+      'Barcode_${product.barcode}',
+      isLabelJob: true,
+      labelWidthMm: dims[0],
+      labelHeightMm: dims[1],
+    );
+  }
+
+  Future<void> printBatchBarcodeLabels(
+    List<(NfProduct, int)> tasks,
+    NfStoreSettings settings,
+  ) async {
+    if (tasks.isEmpty) return;
+    final dims = _labelDims(settings);
+    final bytes = await buildBatchBarcodePdf(tasks, settings);
+    await _printPdfBytes(
+      bytes,
+      'Batch_Barcode_NutriFresh',
+      isLabelJob: true,
+      labelWidthMm: dims[0],
+      labelHeightMm: dims[1],
+    );
   }
 
   Future<String> exportBarcodeLabelPng(
     NfProduct product,
     NfStoreSettings settings,
   ) async {
-    final pdfBytes = await buildBarcodeLabelPdf(product, settings, copies: 1);
+    final pdfBytes = await buildBatchBarcodePdf([(product, 1)], settings);
     Uint8List? pngBytes;
     await for (final page in Printing.raster(pdfBytes, pages: [0], dpi: 240)) {
       pngBytes = await page.toPng();
@@ -342,17 +570,22 @@ class PosPrintService {
     final doc = pw.Document();
     final fmt = _thermalFormat(settings);
     const fs = 8.5;
+    final logoBytes = await _loadThermalLogoBytes();
+    final logoImg = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
+
     doc.addPage(
       pw.Page(
         pageFormat: fmt,
         build: (_) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: [
+            if (logoImg != null)
+              pw.Center(child: pw.Image(logoImg, width: 84, fit: pw.BoxFit.contain)),
             pw.Center(
               child: pw.Text(
-                'NUTRIFRESH\nLAPORAN TUTUP SHIFT',
+                'LAPORAN TUTUP SHIFT KASIR',
                 textAlign: pw.TextAlign.center,
-                style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
               ),
             ),
             pw.Divider(borderStyle: pw.BorderStyle.dashed),
@@ -393,10 +626,14 @@ class PosPrintService {
     NfStoreSettings settings,
   ) async {
     final doc = pw.Document();
-    final fmt = _thermalFormat(settings);
+    final dims = _labelDims(settings);
+    final useTspl = Platform.isAndroid && _btLabelProtocol == 'tspl';
+    final fmt = useTspl
+        ? PdfPageFormat(dims[0] * PdfPageFormat.mm, dims[1] * PdfPageFormat.mm, marginAll: 1.5 * PdfPageFormat.mm)
+        : _thermalFormat(settings);
     final itemsToPrint = po.items.isNotEmpty
         ? po.items
-        : [{'parcelType': 'Parcel Custom', 'qty': 1, 'unitPrice': po.totalAmount, 'deliveryMode': 'Diantar'}];
+        : [{'parcelType': 'Parcel Keranjang', 'qty': 1, 'unitPrice': po.totalAmount, 'deliveryMode': 'Diantar'}];
     for (final it in itemsToPrint) {
       final rawDests = it['destinations'];
       final dests = (rawDests is List && rawDests.isNotEmpty)
@@ -415,56 +652,45 @@ class PosPrintService {
             pageFormat: fmt,
             build: (_) => pw.Container(
               padding: const pw.EdgeInsets.all(4),
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(width: 1.2),
-              ),
+              decoration: pw.BoxDecoration(border: pw.Border.all(width: 1.2)),
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Text(
-                        'NUTRIFRESH PARSEL',
-                        style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-                      ),
-                      pw.Text(
-                        po.orderCode,
-                        style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
-                      ),
+                      pw.Text('NUTRIFRESH PARSEL', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold)),
+                      pw.Text(po.orderCode, style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
                     ],
                   ),
-                  pw.Divider(thickness: 0.8),
+                  pw.Divider(thickness: 0.7),
                   pw.Text(
                     '${po.customerName}${po.institution.isNotEmpty ? ' (${po.institution})' : ''}',
-                    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                    style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold),
                   ),
                   pw.SizedBox(height: 2),
                   pw.Text(
                     '${it['deliveryMode'] ?? 'Diantar'} • ${it['deliveryDate'] ?? po.deliveryDate} • ${it['deliveryTime'] ?? po.deliveryTime}',
+                    style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.SizedBox(height: 2),
+                  pw.Text(
+                    '${qty}x ${it['parcelType'] ?? 'Parcel'} @${NfFormatters.rupiah(unitPrice)}',
+                    style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold),
+                  ),
+                  if ((it['note'] ?? '').toString().isNotEmpty)
+                    pw.Text('Isi: ${it['note']}', style: const pw.TextStyle(fontSize: 7.5)),
+                  pw.SizedBox(height: 2),
+                  pw.Text(
+                    'Tujuan: ${d['address'] ?? '-'}',
                     style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
                   ),
                   pw.SizedBox(height: 3),
-                  pw.Text(
-                    '${qty}x ${it['parcelType'] ?? 'Parcel'} @${NfFormatters.rupiah(unitPrice)}',
-                    style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-                  ),
-                  if ((it['note'] ?? '').toString().isNotEmpty)
-                    pw.Text('Isi: ${it['note']}', style: const pw.TextStyle(fontSize: 8)),
-                  pw.SizedBox(height: 3),
-                  pw.Text(
-                    'Tujuan: ${d['address'] ?? '-'}',
-                    style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold),
-                  ),
-                  pw.SizedBox(height: 4),
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Text('Bayar: ${po.paymentStatus}', style: const pw.TextStyle(fontSize: 7.5)),
-                      pw.Text(
-                        'WA: ${NfFormatters.localWaDisplay(po.customerPhone)}',
-                        style: const pw.TextStyle(fontSize: 7.5),
-                      ),
+                      pw.Text('Bayar: ${po.paymentStatus}', style: const pw.TextStyle(fontSize: 7)),
+                      pw.Text('WA: ${NfFormatters.localWaDisplay(po.customerPhone)}', style: const pw.TextStyle(fontSize: 7)),
                     ],
                   ),
                 ],
@@ -474,7 +700,13 @@ class PosPrintService {
         );
       }
     }
-    await _printPdfBytes(await doc.save(), 'Stiker_${po.orderCode}');
+    await _printPdfBytes(
+      await doc.save(),
+      'Stiker_${po.orderCode}',
+      isLabelJob: true,
+      labelWidthMm: dims[0],
+      labelHeightMm: dims[1],
+    );
   }
 
   Future<String> _savePngFile(String fileName, Uint8List bytes) async {

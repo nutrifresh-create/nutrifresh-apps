@@ -10,3 +10,4 @@ export 'models/nf_staff.dart';
 export 'services/nf_supabase_service.dart';
 export 'services/nf_auth_service.dart';
 export 'widgets/nf_cached_image.dart';
+export 'widgets/nf_glass.dart';

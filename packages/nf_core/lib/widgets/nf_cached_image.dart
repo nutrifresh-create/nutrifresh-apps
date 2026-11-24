@@ -112,15 +112,14 @@ class _NfCachedImageState extends State<NfCachedImage> {
       child = _placeholder();
     } else {
       child = Container(
-        width: widget.width,
-        height: widget.height,
+        width: widget.width ?? 48,
+        height: widget.height ?? 48,
         color: const Color(0xFFE2E8F0),
-        child: const Center(
-          child: SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+        alignment: Alignment.center,
+        child: const SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
         ),
       );
     }
@@ -132,12 +131,11 @@ class _NfCachedImageState extends State<NfCachedImage> {
 
   Widget _placeholder() {
     return Container(
-      width: widget.width,
-      height: widget.height,
+      width: widget.width ?? 48,
+      height: widget.height ?? 48,
       color: const Color(0xFFF4F9F1),
-      child: const Center(
-        child: Icon(Icons.eco_rounded, color: Color(0xFF7CB342), size: 30),
-      ),
+      alignment: Alignment.center,
+      child: const Icon(Icons.eco_rounded, color: Color(0xFF7CB342), size: 24),
     );
   }
 }

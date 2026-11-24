@@ -12,7 +12,7 @@ class PosController extends ChangeNotifier {
 
   bool isInitializing = true;
   bool isSyncing = false;
-  NfUiStyle uiStyle = NfUiStyle.natural;
+  NfUiStyle uiStyle = NfUiStyle.glass;
 
   NfStaffSession? session;
   bool isOwnerUnlocked = false;
@@ -24,6 +24,12 @@ class PosController extends ChangeNotifier {
   List<NfTransaction> transactions = [];
   List<NfOnlineOrder> onlineOrders = [];
   List<NfParcelOrder> parcelOrders = [];
+  List<Map<String, dynamic>> expenses = [];
+  List<Map<String, dynamic>> purchases = [];
+  List<Map<String, dynamic>> wasteLogs = [];
+  List<Map<String, dynamic>> suppliers = [];
+  List<Map<String, dynamic>> resellers = [];
+  List<Map<String, dynamic>> pointRewards = [];
 
   // Cart State
   List<NfCartItem> cart = [];
@@ -68,7 +74,7 @@ class PosController extends ChangeNotifier {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedTheme = prefs.getString('nutri_ui_theme') ?? 'natural';
+      final savedTheme = prefs.getString('nutri_ui_theme') ?? 'glass';
       uiStyle = savedTheme == 'glass' ? NfUiStyle.glass : NfUiStyle.natural;
       await PosPrintService.instance.loadSavedPrinter();
 
@@ -213,6 +219,12 @@ class PosController extends ChangeNotifier {
         _sb.fetchOnlineOrders(limit: 100),
         _sb.fetchParcelOrders(limit: 120),
         _sb.fetchEmployees(),
+        _sb.fetchExpenses(limit: 100).catchError((_) => <Map<String, dynamic>>[]),
+        _sb.fetchPurchases(limit: 100).catchError((_) => <Map<String, dynamic>>[]),
+        _sb.fetchWasteLogs(limit: 100).catchError((_) => <Map<String, dynamic>>[]),
+        _sb.fetchSuppliers().catchError((_) => <Map<String, dynamic>>[]),
+        _sb.fetchResellers().catchError((_) => <Map<String, dynamic>>[]),
+        _sb.fetchPointRewards().catchError((_) => <Map<String, dynamic>>[]),
       ]);
       settings = results[0] as NfStoreSettings;
       activeShift = results[1] as NfActiveShift;
@@ -221,6 +233,12 @@ class PosController extends ChangeNotifier {
       onlineOrders = results[4] as List<NfOnlineOrder>;
       parcelOrders = results[5] as List<NfParcelOrder>;
       employees = results[6] as List<NfEmployee>;
+      expenses = results[7] as List<Map<String, dynamic>>;
+      purchases = results[8] as List<Map<String, dynamic>>;
+      wasteLogs = results[9] as List<Map<String, dynamic>>;
+      suppliers = results[10] as List<Map<String, dynamic>>;
+      resellers = results[11] as List<Map<String, dynamic>>;
+      pointRewards = results[12] as List<Map<String, dynamic>>;
       _lastPendingOrdersCount = pendingOnlineOrdersCount;
     } finally {
       isSyncing = false;
