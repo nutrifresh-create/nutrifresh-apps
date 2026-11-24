@@ -1,17 +1,30 @@
-# NutriFresh POS v1.1 Pro — PC Windows (.exe) & Tablet Android (.apk)
+# NutriFresh Native Ecosystem (Opsi B — Tauri Desktop + Capacitor Android + Cloudflare Pages)
 
-Aplikasi kasir & operasional toko buah NutriFresh berbasis **Flutter Native** dengan tata letak padat & berwarna ala `pos.html`, animasi halus (*spring press*, transisi tab, *shimmer* foto, angka Rupiah bergulir), kamera scanner Barcode PLU & QR Member, cetak langsung **Windows & Bluetooth (ESC/POS + TSPL)**, serta sinkronisasi real-time ke **Supabase PostgreSQL**.
+Sumber kode tunggal **NutriFresh v133** yang otomatis membangun:
+1. **`NutriFresh_POS.exe`** (PC Kasir Windows — 1 file `.exe` mandiri ~6 MB, Direct Print Windows USB/BT tanpa pop-up, tanpa tab Absensi).
+2. **`NutriFresh_Office.exe`** (PC Owner/HR Windows Dark — 1 file `.exe` mandiri ~6 MB terpisah dari kasir).
+3. **`NutriFresh_POS_Tablet.apk`** (Tablet/HP Android — Direct Print Bluetooth ESC/POS & TSPL tanpa pop-up + Kamera Scanner Barcode PLU & QR Member).
+4. **Website `nutrifresh.my.id`** (untuk pengguna **iPhone** & browser — cukup sambungkan folder `web/` ke Cloudflare Pages 1× saja).
 
-## Pembaruan Utama di v1.1 Pro
-1. **Tata Letak Padat & Berwarna (Setara `pos.html`):** Grid etalase otomatis 3–4 kolom di PC/Tablet, sidebar warna khas per menu lengkap dengan kartu **Kas Laci + Kas Out + Tutup Shift**, 4 pil mode pembeli berwarna (*Reguler, Member, Staf, Reseller*), serta pilihan Kanal Penjualan & Nama Pelanggan di keranjang.
-2. **Kamera Scanner Barcode PLU & QR Member (`mobile_scanner`):** Tombol biru **Scan** di Kasir, tombol scan QR di kolom pencarian Member, tombol scan di filter Stok, dan tombol scan barcode kemasan di form Tambah/Edit Produk (di PC Windows langsung mendukung *Barcode Scanner USB*).
-3. **Animasi Halus:** Efek tekan membal (*press scale*), transisi perpindahan tab (*fade+slide*), animasi angka Rupiah bergulir, dan *shimmer* saat foto dimuat.
-4. **Form Produk 100% Lengkap:** Unggah foto produk langsung dari **Kamera Tablet / Galeri / File PC** ke Supabase Storage (`nutrifresh-media`), tombol **Auto-Generate PLU**, **Stok Minimal**, **Promo Paket/Bundle**, sakelar **Tampil di Katalog**, dan penanda **Obral**.
-5. **Produksi Dapur dengan Pencarian Bahan Instan:** Ketik 2–3 huruf nama buah atau kemasan untuk langsung mencari & menambahkan bahan lengkap dengan sisa stok dan kalkulasi HPP otomatis.
-6. **Perbaikan Build Android GitHub Actions:** Workflow otomatis membersihkan ruang disk runner Ubuntu sebelum ekstrak Android NDK agar build `.apk` stabil.
+---
 
-## Cara Update di GitHub Desktop (1× Upload)
-1. Ekstrak **`NutriFresh_Flutter_POS_v1.1_Pro.zip`** (pastikan *Hidden items* di Windows Explorer aktif agar folder `.github` ikut terpilih).
-2. Salin & timpa (**Replace all**) seluruh isinya ke dalam folder repository `nutrifresh-apps`.
-3. Buka **GitHub Desktop**, isi Summary `Upgrade NutriFresh POS v1.1 Pro`, klik **Commit to main**, lalu klik **Push origin**.
-4. Buka tab **Actions** di web GitHub → tunggu ±5–8 menit hingga kedua job (`.exe` & `.apk`) centang hijau → unduh di bagian **Artifacts**.
+## Cara Upload ke GitHub Desktop (Setelah Folder Dibersihkan)
+1. Pastikan isi lama folder `nutrifresh-apps` sudah dihapus (**KECUALI folder tersembunyi `.git`**, jangan dihapus!).
+2. Ekstrak **`NutriFresh_Hybrid_Stage1_POS_Office.zip`**, aktifkan *Hidden items* di Windows Explorer agar `.github` & `.gitignore` ikut terpilih, lalu salin semua isinya ke dalam folder `nutrifresh-apps`.
+3. Di **GitHub Desktop**, isi Summary `Migrasi Opsi B - POS & Office Native v133`, klik **Commit to main**, lalu klik **Push origin**.
+4. Buka tab **Actions** di web GitHub — akan jalan 2 workflow paralel (±3–5 menit):
+   - **Build NutriFresh Desktop (.exe POS & Office)** → unduh **`NutriFresh_POS_Windows_EXE`** (`NutriFresh_POS.exe`) dan **`NutriFresh_Office_Windows_EXE`** (`NutriFresh_Office.exe`).
+   - **Build NutriFresh POS Tablet (.apk)** → unduh **`NutriFresh_POS_Tablet_APK`** (`NutriFresh_POS_Tablet.apk`).
+
+---
+
+## Cara Sambungkan GitHub ke Cloudflare Pages (Cukup 1× — Tidak Perlu Upload Web Manual Lagi!)
+1. Buka **Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git**.
+2. Pilih repository GitHub **`nutrifresh-apps`**.
+3. Isi pengaturan build seperti ini:
+   - **Production branch:** `main`
+   - **Framework preset:** `None`
+   - **Build command:** *(kosongkan)*
+   - **Build output directory:** `web`
+4. Klik **Save and Deploy**, lalu sambungkan custom domain **`nutrifresh.my.id`**.
+5. Selesai! Mulai saat itu, setiap kali Anda menekan **Push origin** di GitHub Desktop, website `nutrifresh.my.id` untuk pengguna iPhone & browser otomatis terbarui dalam ±30 detik bersamaan dengan build `.exe` dan `.apk`.

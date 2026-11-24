@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "id.nutrifresh.app",
+        "sha256_cert_fingerprints": ["78:35:5F:4B:7C:73:3D:D3:AC:CB:10:2E:33:F0:6A:B8:82:1B:79:56:E0:0F:58:90:0B:67:27:5D:EB:E1:73:75"]
+      }
+    }]

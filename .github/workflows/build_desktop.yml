@@ -1,0 +1,91 @@
+name: Build NutriFresh Desktop (.exe POS & Office)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-pos-exe:
+    name: Build NutriFresh POS (.exe)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust build cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/pos-tauri/src-tauri
+
+      - name: Prepare web bundle for POS
+        run: python scripts/prepare_web_bundles.py
+
+      - name: Install Tauri CLI v2
+        run: npm install -g @tauri-apps/cli@2
+
+      - name: Build NutriFresh POS (.exe)
+        working-directory: desktop/pos-tauri
+        run: tauri build --no-bundle
+
+      - name: Package NutriFresh_POS.exe
+        shell: pwsh
+        run: |
+          Copy-Item "desktop/pos-tauri/src-tauri/target/release/nutrifresh_pos.exe" "NutriFresh_POS.exe" -Force
+
+      - name: Upload NutriFresh_POS.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: NutriFresh_POS_Windows_EXE
+          path: NutriFresh_POS.exe
+          retention-days: 30
+
+  build-office-exe:
+    name: Build NutriFresh Office (.exe)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust build cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/office-tauri/src-tauri
+
+      - name: Prepare web bundle for Office
+        run: python scripts/prepare_web_bundles.py
+
+      - name: Install Tauri CLI v2
+        run: npm install -g @tauri-apps/cli@2
+
+      - name: Build NutriFresh Office (.exe)
+        working-directory: desktop/office-tauri
+        run: tauri build --no-bundle
+
+      - name: Package NutriFresh_Office.exe
+        shell: pwsh
+        run: |
+          Copy-Item "desktop/office-tauri/src-tauri/target/release/nutrifresh_office.exe" "NutriFresh_Office.exe" -Force
+
+      - name: Upload NutriFresh_Office.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: NutriFresh_Office_Windows_EXE
+          path: NutriFresh_Office.exe
+          retention-days: 30

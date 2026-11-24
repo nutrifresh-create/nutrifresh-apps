@@ -1,0 +1,29 @@
+{
+"id": "/",
+"scope": "/",
+"name": "NutriFresh - Fresh & Premium Fruits",
+"short_name": "NutriFresh",
+"description": "Katalog Buah Segar, Aneka Jus Alami, dan Sistem Kasir Toko NutriFresh",
+"start_url": "/",
+"display": "standalone",
+"orientation": "portrait",
+"background_color": "#ffffff",
+"theme_color": "#7cb342",
+"lang": "id",
+"dir": "ltr",
+"categories": ["shopping", "food", "business"],
+"icons": [
+{
+"src": "/icon.png",
+"sizes": "192x192",
+"type": "image/png",
+"purpose": "any"
+},
+{
+"src": "/icon.png",
+"sizes": "512x512",
+"type": "image/png",
+"purpose": "any"
+}
+]
+}
