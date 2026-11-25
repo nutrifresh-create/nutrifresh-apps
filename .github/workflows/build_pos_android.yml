@@ -1,8 +1,6 @@
 name: Build NutriFresh POS Tablet (.apk)
 
 on:
-  push:
-    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
@@ -35,7 +33,7 @@ jobs:
         working-directory: mobile/pos-android
         run: npx cap add android && npx cap sync android
 
-      - name: Configure icons, Bluetooth SPP, Camera & OAuth Deep Link
+      - name: Configure icons, Bluetooth, Camera, Notifications, OAuth Deep Link & Smart Back
         run: python3 mobile/pos-android/scripts/configure_android.py
 
       - name: Build Release-ready APK (debug-signed for direct sideload install)

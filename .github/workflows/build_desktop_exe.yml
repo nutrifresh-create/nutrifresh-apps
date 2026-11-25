@@ -1,0 +1,45 @@
+name: Build NutriFresh Desktop (.exe POS & Office)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows-desktop:
+    name: Build NutriFresh Desktop (.exe POS & Office)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Prepare web bundles for POS & Office Desktop
+        run: python scripts/prepare_web_bundles.py
+
+      - name: Build NutriFresh POS (.exe)
+        working-directory: desktop/pos-tauri/src-tauri
+        run: cargo build --release
+
+      - name: Build NutriFresh Office (.exe)
+        working-directory: desktop/office-tauri/src-tauri
+        run: cargo build --release
+
+      - name: Collect portable .exe binaries
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release-exe | Out-Null
+          Copy-Item "desktop/pos-tauri/src-tauri/target/release/nutrifresh-pos.exe" "release-exe/NutriFresh_POS.exe"
+          Copy-Item "desktop/office-tauri/src-tauri/target/release/nutrifresh-office.exe" "release-exe/NutriFresh_Office.exe"
+
+      - name: Upload Windows Desktop (.exe)
+        uses: actions/upload-artifact@v4
+        with:
+          name: NutriFresh_Windows_Desktop_EXE
+          path: release-exe/*.exe
+          retention-days: 30
