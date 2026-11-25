@@ -751,7 +751,7 @@
             <div id="sideGrpKeuangan" class="px-2.5 pt-1 pb-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
                 <i class="fa-solid fa-coins text-[10px]"></i> <span>Keuangan</span>
             </div>
-            <button type="button" id="sideBtn-ringkasan" onclick="officeApp.switchTab('ringkasan')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-extrabold bg-nutri-green text-white shadow-sm transition text-left">
+            <button type="button" id="sideBtn-ringkasan" onclick="officeApp.switchTab('ringkasan')" class="office-side-btn is-active w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-extrabold text-white transition text-left">
                 <i class="fa-solid fa-wallet w-4 text-center"></i> <span>Kas &amp; Beban</span>
             </button>
             <button type="button" id="sideBtn-kewajiban" onclick="officeApp.switchTab('kewajiban')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
@@ -1515,7 +1515,7 @@
     <!-- FLOATING BOTTOM DOCK KHUSUS HP (ALA POS & KATALOG — v140) -->
     <nav id="officeMobileDock" class="md:hidden fixed bottom-2.5 inset-x-2.5 z-40">
         <div class="bg-[#111827]/95 backdrop-blur-md border border-slate-700/80 rounded-full p-1.5 shadow-2xl flex items-center gap-1 overflow-x-auto no-scrollbar">
-            <button type="button" id="dockBtn-ringkasan" onclick="officeApp.switchTab('ringkasan')" class="office-dock-btn flex-shrink-0 min-w-[66px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-extrabold text-white bg-nutri-green transition">
+            <button type="button" id="dockBtn-ringkasan" onclick="officeApp.switchTab('ringkasan')" class="office-dock-btn is-active flex-shrink-0 min-w-[66px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-extrabold text-white transition">
                 <i class="fa-solid fa-wallet text-sm mb-0.5"></i><span>Kas</span>
             </button>
             <button type="button" id="dockBtn-kewajiban" onclick="officeApp.switchTab('kewajiban')" class="office-dock-btn flex-shrink-0 min-w-[68px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-bold text-slate-300 transition">
@@ -1868,7 +1868,7 @@
                     const sideBtn = document.getElementById(`sideBtn-${t}`);
                     if (sideBtn) {
                         sideBtn.className = (t === tab)
-                            ? `office-side-btn is-active w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl text-xs font-extrabold bg-nutri-green text-white shadow-sm transition text-left${allowBtn ? '' : ' hidden'}`
+                            ? `office-side-btn is-active w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl text-xs font-extrabold text-white transition text-left${allowBtn ? '' : ' hidden'}`
                             : `office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left${allowBtn ? '' : ' hidden'}`;
                     }
 
@@ -1905,7 +1905,7 @@
                 const canHrAny = isOwner || hrKeys.some(k => allowedTabs.includes(k));
                 const canExcel = isOwner || allowedTabs.includes('export_excel');
 
-                if (accessCard) accessCard.classList.toggle('hidden', !isOwner);
+                if (accessCard) accessCard.classList.toggle('hidden', !(isOwner && this.state.verifiedRole === 'owner'));
                 if (finGrid) finGrid.classList.toggle('hidden', !canFinanceAny);
                 if (excelBtn) excelBtn.classList.toggle('hidden', !canExcel);
                 const backupBtn = document.getElementById('btnOfficeBackupDb');
@@ -1981,7 +1981,7 @@
             },
 
             saveOfficeMenuAccess() {
-                if (document.getElementById('viewRoleSelect')?.value !== 'owner') {
+                if (this.state.verifiedRole !== 'owner' || document.getElementById('viewRoleSelect')?.value !== 'owner') {
                     return alert('Pengaturan hak akses menu Office hanya dapat disimpan oleh Owner.');
                 }
                 const nextMap = {
@@ -2093,7 +2093,9 @@
                     if (el) el.value = this.state.lateDeductionRate;
                 }
                 if (cfg.officeMenuAccess && Object.keys(cfg.officeMenuAccess).length > 0) {
-                    this.state.officeMenuAccess = cfg.officeMenuAccess;
+                    const cleaned = { ...cfg.officeMenuAccess };
+                    delete cleaned.karyawan;
+                    this.state.officeMenuAccess = cleaned;
                 }
                 if (Array.isArray(cfg.customRoles) && cfg.customRoles.length > 0) {
                     this.state.customRoles = cfg.customRoles;
@@ -2159,225 +2161,6 @@
                 if (low.includes('bendahara') || low.includes('keuangan') || low.includes('finance')) return 'bendahara';
                 if (low.includes('hr') || low.includes('sdm') || low.includes('personalia')) return 'hr';
                 return 'karyawan';
-            },
-
-            async syncRoleFromFirebaseAuth(u, dbInstance, appIdVal, sessionHint = null) {
-                const emailLow = ((u && u.email) || (sessionHint && sessionHint.email) || '').trim().toLowerCase();
-                let displayName = (u && u.displayName) || (sessionHint && sessionHint.name) || (emailLow ? emailLow.split('@')[0] : 'Pengguna');
-                let serverRole = 'karyawan';
-
-                try {
-                    const prof = await getMyStaffProfileRpc();
-                    if (prof && prof.is_owner) {
-                        serverRole = 'owner';
-                        displayName = (u && u.displayName) || prof.name || displayName;
-                    } else if (prof && prof.is_staff) {
-                        serverRole = prof.role_key || this.resolveRoleFromString(prof.role, false);
-                        displayName = prof.name || displayName;
-                    }
-                } catch (e) { console.warn("[Office] Non-fatal error:", e?.message || e); }
-
-                this.state.verifiedRole = serverRole;
-                this.setAccountIdentity(displayName, emailLow, serverRole);
-                window.__officeSplashReady = true;
-                if (window.__hideOfficeSplashSmooth) window.__hideOfficeSplashSmooth(true);
-            },
-
-            populateEmployeeDropdowns() {
-                const loggedName = this.getLoggedInEmployeeName();
-                const hid = document.getElementById('hrEmpSelect');
-                const disp = document.getElementById('hrEmpDisplay');
-                if (hid) hid.value = loggedName;
-                if (disp) disp.value = loggedName;
-            },
-
-            getLoggedInEmployeeName() {
-                const byEmail = (this.state.currentUserEmail || '').trim().toLowerCase();
-                if (byEmail) {
-                    const matched = this.state.empList.find(e => (e.email || '').trim().toLowerCase() === byEmail);
-                    if (matched && matched.name) return matched.name;
-                }
-                if (this.state.currentUserName && this.state.currentUserName.trim()) {
-                    return this.state.currentUserName.trim();
-                }
-                if (byEmail) return byEmail.split('@')[0];
-                return 'Karyawan Aktif';
-            },
-
-            isTabAllowedForRole(tab, roleKey = null) {
-                const role = (roleKey || document.getElementById('viewRoleSelect')?.value || 'karyawan').toLowerCase();
-                if (role === 'owner') return true;
-                const defaultMap = {
-                    bendahara: ['ringkasan', 'kewajiban', 'aset', 'export_excel'],
-                    hr: ['hrd', 'payroll', 'karyawan', 'export_excel'],
-                    karyawan: ['hrd']
-                };
-                const allowed = (this.state.officeMenuAccess && Array.isArray(this.state.officeMenuAccess[role]))
-                    ? this.state.officeMenuAccess[role]
-                    : (defaultMap[role] || ['hrd']);
-                return allowed.includes(tab);
-            },
-
-            switchTab(tab, isUserClick = true) {
-                if (isUserClick) this._userPickedTab = true;
-                if (!this.isTabAllowedForRole(tab)) {
-                    const fallback = ['hrd', 'ringkasan', 'kewajiban', 'aset', 'payroll', 'karyawan'].find(t => this.isTabAllowedForRole(t)) || 'hrd';
-                    tab = fallback;
-                }
-                this.state.activeTab = tab;
-                ['ringkasan', 'kewajiban', 'aset', 'hrd', 'payroll', 'karyawan'].forEach(t => {
-                    const panel = document.getElementById(`panel-${t}`);
-                    if (panel) panel.classList.toggle('hidden', t !== tab);
-                    const btn = document.getElementById(`tabBtn-${t}`);
-                    if (!btn) return;
-                    const allowBtn = this.isTabAllowedForRole(t);
-                    btn.className = (t === tab)
-                        ? `office-nav-btn px-3 py-1.5 rounded-full text-xs font-extrabold bg-nutri-green text-white shadow-sm whitespace-nowrap transition flex items-center gap-1.5${allowBtn ? '' : ' hidden'}`
-                        : `office-nav-btn px-3 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 whitespace-nowrap transition flex items-center gap-1.5${allowBtn ? '' : ' hidden'}`;
-                });
-                this.applyRoleView();
-            },
-
-            applyRoleView() {
-                const role = (document.getElementById('viewRoleSelect')?.value || 'owner').toLowerCase();
-                const accessCard = document.getElementById('officeMenuAccessConfigCard');
-                const finGrid = document.getElementById('financeInputGrid');
-                const excelBtn = document.getElementById('btnOfficeExportExcel');
-                const navSep = document.getElementById('navDividerSep');
-
-                const defaultMap = {
-                    owner: ['ringkasan', 'kewajiban', 'aset', 'hrd', 'payroll', 'karyawan', 'export_excel'],
-                    bendahara: ['ringkasan', 'kewajiban', 'aset', 'export_excel'],
-                    hr: ['hrd', 'payroll', 'karyawan', 'export_excel'],
-                    karyawan: ['hrd']
-                };
-                const allowedTabs = (this.state.officeMenuAccess && Array.isArray(this.state.officeMenuAccess[role]))
-                    ? this.state.officeMenuAccess[role]
-                    : (defaultMap[role] || ['hrd']);
-
-                const isOwner = (role === 'owner');
-                const canRingkasan = isOwner || allowedTabs.includes('ringkasan');
-                const canKewajiban = isOwner || allowedTabs.includes('kewajiban');
-                const canAset = isOwner || allowedTabs.includes('aset');
-                const canFinanceAny = canRingkasan || canKewajiban || canAset;
-
-                const canHrd = isOwner || allowedTabs.includes('hrd');
-                const canPayroll = isOwner || allowedTabs.includes('payroll');
-                const canKaryawan = isOwner || allowedTabs.includes('karyawan');
-                const canHrAny = canHrd || canPayroll || canKaryawan;
-                const canExcel = isOwner || allowedTabs.includes('export_excel');
-
-                if (accessCard) accessCard.classList.toggle('hidden', !isOwner);
-                if (finGrid) finGrid.classList.toggle('hidden', !canFinanceAny);
-                if (excelBtn) excelBtn.classList.toggle('hidden', !canExcel);
-                const backupBtn = document.getElementById('btnOfficeBackupDb');
-                if (backupBtn) backupBtn.classList.toggle('hidden', !isOwner);
-                this.refreshBackupReminderUI(isOwner);
-                if (navSep) navSep.classList.toggle('hidden', !(canFinanceAny && canHrAny));
-
-                const showTabBtn = (id, allow) => {
-                    const el = document.getElementById(id);
-                    if (!el) return;
-                    if (allow) el.classList.remove('hidden');
-                    else el.classList.add('hidden');
-                };
-
-                showTabBtn('grpBadgeKeuangan', canFinanceAny);
-                showTabBtn('tabBtn-ringkasan', canRingkasan);
-                showTabBtn('tabBtn-kewajiban', canKewajiban);
-                showTabBtn('tabBtn-aset', canAset);
-
-                showTabBtn('grpBadgeHr', canHrAny);
-                showTabBtn('tabBtn-hrd', canHrd);
-                showTabBtn('tabBtn-payroll', canPayroll);
-                showTabBtn('tabBtn-karyawan', canKaryawan);
-
-                const tabAllowedMap = {
-                    ringkasan: canRingkasan,
-                    kewajiban: canKewajiban,
-                    aset: canAset,
-                    hrd: canHrd,
-                    payroll: canPayroll,
-                    karyawan: canKaryawan
-                };
-                if (!tabAllowedMap[this.state.activeTab]) {
-                    const firstAvailable = ['ringkasan', 'kewajiban', 'aset', 'hrd', 'payroll', 'karyawan'].find(k => tabAllowedMap[k]);
-                    if (firstAvailable) this.switchTab(firstAvailable, false);
-                }
-            },
-
-            renderOfficeMenuAccessMatrix() {
-                const grid = document.getElementById('officeMenuAccessMatrixGrid');
-                if (!grid) return;
-                const roles = [
-                    { key: 'owner', label: 'Owner (Pemilik)', locked: true },
-                    { key: 'bendahara', label: 'Bendahara', locked: false },
-                    { key: 'hr', label: 'HR / SDM', locked: false },
-                    { key: 'karyawan', label: 'Karyawan', locked: false }
-                ];
-                const menus = [
-                    { key: 'ringkasan', label: 'Kas & Beban' },
-                    { key: 'kewajiban', label: 'Hutang & Piutang' },
-                    { key: 'aset', label: 'Aset & Susut' },
-                    { key: 'hrd', label: 'Cuti & Lembur' },
-                    { key: 'payroll', label: 'Payroll' },
-                    { key: 'karyawan', label: 'Karyawan & Hak Akses' },
-                    { key: 'export_excel', label: 'Tombol Unduh Laporan' }
-                ];
-                const defaults = {
-                    owner: ['ringkasan', 'kewajiban', 'aset', 'hrd', 'payroll', 'karyawan', 'export_excel'],
-                    bendahara: ['ringkasan', 'kewajiban', 'aset', 'export_excel'],
-                    hr: ['hrd', 'payroll', 'karyawan', 'export_excel'],
-                    karyawan: ['hrd']
-                };
-
-                grid.innerHTML = roles.map(r => {
-                    const currentArr = (this.state.officeMenuAccess && Array.isArray(this.state.officeMenuAccess[r.key]))
-                        ? this.state.officeMenuAccess[r.key]
-                        : defaults[r.key];
-                    return `
-                        <div class="bg-gray-50 border border-gray-200 rounded-2xl p-3 space-y-2">
-                            <div class="flex items-center justify-between border-b pb-1.5">
-                                <span class="font-extrabold text-gray-900 text-xs">${this.escapeHtml(r.label)}</span>
-                                ${r.locked ? '<span class="text-[9px] font-black bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">Penuh</span>' : ''}
-                            </div>
-                            <div class="space-y-1.5 text-[11px]">
-                                ${menus.map(m => {
-                                    const checked = r.locked ? true : currentArr.includes(m.key);
-                                    return `
-                                        <label class="flex items-center gap-2 ${r.locked ? 'opacity-75' : 'cursor-pointer'}">
-                                            <input type="checkbox" data-role="${r.key}" data-menu="${m.key}" ${checked ? 'checked' : ''} ${r.locked ? 'disabled' : ''} class="office-menu-perm-cb rounded">
-                                            <span>${this.escapeHtml(m.label)}</span>
-                                        </label>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            },
-
-            saveOfficeMenuAccess() {
-                if (document.getElementById('viewRoleSelect')?.value !== 'owner') {
-                    return alert('Pengaturan hak akses menu Office hanya dapat disimpan oleh Owner.');
-                }
-                const nextMap = {
-                    owner: ['ringkasan', 'kewajiban', 'aset', 'hrd', 'payroll', 'karyawan', 'export_excel'],
-                    bendahara: [],
-                    hr: [],
-                    karyawan: []
-                };
-                document.querySelectorAll('.office-menu-perm-cb').forEach(cb => {
-                    const rKey = cb.getAttribute('data-role');
-                    const mKey = cb.getAttribute('data-menu');
-                    if (rKey && mKey && rKey !== 'owner' && cb.checked) {
-                        nextMap[rKey].push(mKey);
-                    }
-                });
-                this.state.officeMenuAccess = nextMap;
-                this.saveState();
-                this.applyRoleView();
-                alert('Hak akses menu Office berhasil disimpan!');
             },
 
             async reloadEmployeesNow() {
@@ -4104,7 +3887,7 @@
     </div>
 
     <script>
-        window.__NF_APP_VERSION = 'v136';
+        window.__NF_APP_VERSION = 'v141';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 
@@ -4227,6 +4010,13 @@
 
     <script>
         window.__NF_SLIDING_TRACKS = [
+            {
+                container: '#officeSidebar',
+                itemSelector: '.office-side-btn',
+                radius: '16px',
+                autoScroll: false,
+                isActive: function(el) { return el.classList.contains('is-active'); }
+            },
             {
                 container: '#officeMobileDock > div',
                 itemSelector: '.office-dock-btn',

@@ -1161,6 +1161,8 @@ html[data-theme="dark"] body.nf-staff-page .nf-staff-dock {
 /* ============================================================================
    5. NUTRIFRESH OFFICE v140 — PC LEFT SIDEBAR & MOBILE FLOATING DOCK (3 TEMA)
    ============================================================================ */
+html body.nf-office-page .office-side-btn.nf-slide-active,
+html body.nf-office-page .office-side-btn.is-active,
 html body.nf-office-page .office-dock-btn.nf-slide-active {
     background: transparent !important;
     border-color: transparent !important;
