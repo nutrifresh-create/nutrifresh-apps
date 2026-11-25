@@ -1,5 +1,5 @@
-const SW_VERSION = 'v139';
-const CACHE_NAME = 'nutrifresh-v139';
+const SW_VERSION = 'v140';
+const CACHE_NAME = 'nutrifresh-v140';
 const CORE_ASSETS = [
   '/',
   '/pos.html',

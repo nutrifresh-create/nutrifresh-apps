@@ -215,8 +215,8 @@
             background: rgba(255, 255, 255, 0.18) !important;
             color: #ffffff !important;
         }
-        html body .office-nav-btn.nf-slide-active,
-        html body .office-nav-btn.bg-nutri-green {
+        html body .office-dock-btn.nf-slide-active,
+        html body .office-dock-btn.is-active {
             background: transparent !important;
             border-color: transparent !important;
             color: #ffffff !important;
@@ -682,7 +682,7 @@
             <div>
                 <h2 class="text-lg font-black text-white">Akses Terbatas — NutriFresh Office</h2>
                 <p id="officeGateStatusText" class="text-xs text-slate-400 mt-1 leading-relaxed">
-                    Halaman ini khusus untuk Owner dan karyawan terdaftar. Silakan masuk dengan akun Google terdaftar atau melalui portal toko.
+                    Halaman ini khusus untuk <strong>Tim Inti (Owner, Bendahara, dan HR / SDM)</strong>. Untuk absensi, pengajuan cuti/lembur/kasbon, jadwal shift &amp; slip gaji, silakan buka aplikasi <strong>NutriFresh Staff</strong>.
                 </p>
             </div>
             <div class="space-y-2.5 pt-1 text-left text-xs">
@@ -711,105 +711,119 @@
     </div>
 
     <!-- HEADER OFFICE -->
-    <header class="bg-[#111827]/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30 shadow-lg">
-        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-2">
+    <header id="officeTopHeader" class="bg-[#111827]/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30 shadow-lg">
+        <div class="max-w-[1560px] mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-2">
             <div class="flex items-center gap-2.5 min-w-0">
-                <div class="w-9 h-9 rounded-xl bg-slate-900 border border-lime-500/35 p-1 flex items-center justify-center flex-shrink-0">
+                <div class="w-9 h-9 rounded-full bg-slate-900 border border-lime-500/35 p-1 flex items-center justify-center flex-shrink-0">
                     <img src="logo.png" alt="NutriFresh" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='icon.png';">
                 </div>
                 <div class="min-w-0">
                     <div class="text-sm sm:text-base font-black text-white leading-tight truncate">NutriFresh Office</div>
-                    <div id="detectedAccountChip" class="text-[10px] text-lime-300 font-semibold truncate">Mendeteksi akun...</div>
+                    <div id="detectedAccountChip" class="text-[10px] text-lime-300 font-semibold truncate">Mendeteksi akun Tim Inti...</div>
                 </div>
             </div>
 
             <div class="flex items-center gap-1.5 flex-shrink-0">
-                <button type="button" onclick="officeApp.goToStore()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] border border-slate-700 transition flex items-center whitespace-nowrap">
+                <button type="button" onclick="officeApp.goToStore()" class="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] border border-slate-700 transition flex items-center whitespace-nowrap">
                     <i class="fa-solid fa-store mr-1 text-lime-400"></i> <span>Toko</span>
                 </button>
-                <button type="button" id="btnOfficeThemeToggle" onclick="window.toggleNutriTheme()" title="Ganti Tema Natural / Dark / Glass" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] border border-slate-700 transition flex items-center whitespace-nowrap">
+                <button type="button" id="btnOfficeThemeToggle" onclick="window.toggleNutriTheme()" title="Ganti Tema Natural / Dark / Glass" class="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] border border-slate-700 transition flex items-center whitespace-nowrap">
                     <i class="fa-solid fa-leaf text-lime-300 sm:mr-1"></i><span class="hidden sm:inline">Natural</span>
                 </button>
-                <button type="button" id="btnOfficeBackupDb" onclick="officeApp.triggerFullBackupDownload()" title="Unduh cadangan penuh seluruh database (.JSON)" class="hidden px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[11px] transition flex items-center whitespace-nowrap shadow-sm">
+                <button type="button" id="btnOfficeBackupDb" onclick="officeApp.triggerFullBackupDownload()" title="Unduh cadangan penuh seluruh database (.JSON)" class="hidden px-2.5 py-1.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[11px] transition flex items-center whitespace-nowrap shadow-sm">
                     <i class="fa-solid fa-database sm:mr-1"></i> <span class="hidden sm:inline">Backup DB</span>
                 </button>
-                <button type="button" id="btnOfficeExportExcel" onclick="officeApp.exportExcelReport()" class="px-2.5 py-1.5 rounded-xl bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] transition flex items-center whitespace-nowrap shadow-sm">
-                    <i class="fa-solid fa-file-excel mr-1"></i> <span>Unduh Laporan</span>
+                <button type="button" id="btnOfficeExportExcel" onclick="officeApp.exportExcelReport()" class="px-2.5 py-1.5 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] transition flex items-center whitespace-nowrap shadow-sm">
+                    <i class="fa-solid fa-file-excel sm:mr-1"></i> <span class="hidden sm:inline">Unduh Laporan</span>
                 </button>
-                <button type="button" onclick="window.__officeCloud && window.__officeCloud.logoutOffice()" title="Keluar dari akun" class="px-2.5 py-1.5 rounded-xl bg-red-950/70 hover:bg-red-900 text-red-200 font-bold text-[11px] border border-red-800/60 transition flex items-center whitespace-nowrap">
+                <button type="button" onclick="window.__officeCloud && window.__officeCloud.logoutOffice()" title="Keluar dari akun" class="px-2.5 py-1.5 rounded-full bg-red-950/70 hover:bg-red-900 text-red-200 font-bold text-[11px] border border-red-800/60 transition flex items-center whitespace-nowrap">
                     <i class="fa-solid fa-right-from-bracket sm:mr-1"></i> <span class="hidden sm:inline">Keluar</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- TAB NAVIGASI -->
-        <div class="bg-[#0f172a] border-t border-slate-800/90">
-            <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-2">
-                <span id="grpBadgeKeuangan" class="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-950/80 border border-emerald-700/50 px-2.5 py-1 rounded-full whitespace-nowrap flex items-center gap-1">
-                    <i class="fa-solid fa-coins text-[9px]"></i> Keuangan
-                </span>
-                <button type="button" id="tabBtn-ringkasan" onclick="officeApp.switchTab('ringkasan')" class="office-nav-btn px-3 py-1.5 rounded-full text-xs font-extrabold bg-nutri-green text-white shadow-sm whitespace-nowrap transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-wallet text-[11px]"></i> <span>Kas & Beban</span>
-                </button>
-                <button type="button" id="tabBtn-kewajiban" onclick="officeApp.switchTab('kewajiban')" class="office-nav-btn px-3 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 whitespace-nowrap transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-file-invoice text-[11px]"></i> <span>Hutang & Piutang</span>
-                </button>
-                <button type="button" id="tabBtn-aset" onclick="officeApp.switchTab('aset')" class="office-nav-btn px-3 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 whitespace-nowrap transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-boxes-packing text-[11px]"></i> <span>Aset & Susut</span>
-                </button>
-
-                <span id="navDividerSep" class="h-4 w-px bg-slate-700 mx-0.5 flex-shrink-0"></span>
-
-                <span id="grpBadgeHr" class="text-[10px] font-black uppercase tracking-wider text-amber-300 bg-amber-950/70 border border-amber-500/40 px-2.5 py-1 rounded-full whitespace-nowrap flex items-center gap-1">
-                    <i class="fa-solid fa-users text-[9px]"></i> HR & SDM
-                </span>
-                <button type="button" id="tabBtn-hrd" onclick="officeApp.switchTab('hrd')" class="office-nav-btn px-3 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 whitespace-nowrap transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-calendar-check text-[11px]"></i> <span>HR+ & Absensi</span>
-                </button>
-                <button type="button" id="tabBtn-payroll" onclick="officeApp.switchTab('payroll')" class="office-nav-btn px-3 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 whitespace-nowrap transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-money-check-dollar text-[11px]"></i> <span>Payroll</span>
-                </button>
-                <button type="button" id="tabBtn-karyawan" onclick="officeApp.switchTab('karyawan')" class="office-nav-btn px-3 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 whitespace-nowrap transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-id-card text-[11px]"></i> <span>Karyawan & Hak Akses</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <main id="officeMainContainer" class="flex-1 max-w-7xl w-full min-w-0 mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5 overflow-x-hidden">
-        <!-- BARIS PERIODE, IDENTITAS AKUN & PERAN -->
-        <div class="bg-[#111827] rounded-2xl border border-slate-800 px-4 py-3 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div class="flex flex-wrap items-center gap-3">
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-extrabold text-slate-200">Periode:</span>
-                    <input type="month" id="activeMonthInput" onchange="officeApp.onMonthOrBranchChange()" class="px-3 py-1.5 border border-slate-700 rounded-xl text-xs font-extrabold bg-slate-900 text-white focus:border-nutri-green outline-none">
+    <!-- SHELL UTAMA ALA POS: SIDEBAR KIRI (PC) + FLOATING BOTTOM DOCK (HP) -->
+    <div id="officeAppShell" class="flex-1 max-w-[1560px] w-full mx-auto flex flex-col md:flex-row gap-4 px-3 sm:px-5 pt-3 pb-24 md:pb-8 min-w-0">
+
+        <!-- SIDEBAR KIRI KHUSUS PC / DESKTOP -->
+        <aside id="officeSidebar" class="hidden md:flex md:w-60 flex-shrink-0 flex-col gap-2 md:sticky md:top-[68px] md:max-h-[calc(100vh-84px)] overflow-y-auto no-scrollbar rounded-3xl p-3 bg-[#111827] border border-slate-800 shadow-lg self-start">
+            <div id="sideGrpKeuangan" class="px-2.5 pt-1 pb-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-coins text-[10px]"></i> <span>Keuangan</span>
+            </div>
+            <button type="button" id="sideBtn-ringkasan" onclick="officeApp.switchTab('ringkasan')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-extrabold bg-nutri-green text-white shadow-sm transition text-left">
+                <i class="fa-solid fa-wallet w-4 text-center"></i> <span>Kas &amp; Beban</span>
+            </button>
+            <button type="button" id="sideBtn-kewajiban" onclick="officeApp.switchTab('kewajiban')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
+                <i class="fa-solid fa-file-invoice w-4 text-center"></i> <span>Hutang &amp; Piutang</span>
+            </button>
+            <button type="button" id="sideBtn-aset" onclick="officeApp.switchTab('aset')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
+                <i class="fa-solid fa-boxes-packing w-4 text-center"></i> <span>Aset &amp; Susut</span>
+            </button>
+
+            <div id="sideDividerSep" class="my-1.5 border-t border-slate-800"></div>
+
+            <div id="sideGrpHr" class="px-2.5 pt-0.5 pb-0.5 text-[10px] font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-users text-[10px]"></i> <span>HR &amp; SDM</span>
+            </div>
+            <button type="button" id="sideBtn-hrd" onclick="officeApp.switchTab('hrd')" class="office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
+                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-file-signature w-4 text-center"></i> <span class="truncate">Persetujuan HR</span></span>
+                <span id="sidePendingHrBadge" class="hidden bg-amber-500 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span>
+            </button>
+            <button type="button" id="sideBtn-absensi_foto" onclick="officeApp.switchTab('absensi_foto')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
+                <i class="fa-solid fa-camera w-4 text-center"></i> <span>Absensi &amp; Foto</span>
+            </button>
+            <button type="button" id="sideBtn-jadwal_shift" onclick="officeApp.switchTab('jadwal_shift')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
+                <i class="fa-solid fa-calendar-days w-4 text-center"></i> <span>Jadwal Shift</span>
+            </button>
+            <button type="button" id="sideBtn-cuti_pinjaman" onclick="officeApp.switchTab('cuti_pinjaman')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
+                <i class="fa-solid fa-hand-holding-dollar w-4 text-center"></i> <span>Cuti &amp; Pinjaman</span>
+            </button>
+            <button type="button" id="sideBtn-pengumuman" onclick="officeApp.switchTab('pengumuman')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
+                <i class="fa-solid fa-bullhorn w-4 text-center"></i> <span>Pengumuman Tim</span>
+            </button>
+            <button type="button" id="sideBtn-payroll" onclick="officeApp.switchTab('payroll')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
+                <i class="fa-solid fa-money-check-dollar w-4 text-center"></i> <span>Payroll</span>
+            </button>
+            <button type="button" id="sideBtn-karyawan" onclick="officeApp.switchTab('karyawan')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
+                <i class="fa-solid fa-id-card w-4 text-center"></i> <span>Karyawan &amp; Akses</span>
+            </button>
+        </aside>
+
+        <!-- KONTEN UTAMA -->
+        <main id="officeMainContainer" class="flex-1 min-w-0 space-y-4">
+            <!-- BARIS PERIODE, IDENTITAS AKUN & PERAN -->
+            <div class="bg-[#111827] rounded-2xl border border-slate-800 px-4 py-3 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-extrabold text-slate-200">Periode:</span>
+                        <input type="month" id="activeMonthInput" onchange="officeApp.onMonthOrBranchChange()" class="px-3 py-1.5 border border-slate-700 rounded-full text-xs font-extrabold bg-slate-900 text-white focus:border-nutri-green outline-none">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-extrabold text-slate-200">Cabang:</span>
+                        <select id="officeBranchFilterSelect" onchange="officeApp.onMonthOrBranchChange()" class="px-3 py-1.5 border border-slate-700 rounded-full text-xs font-extrabold bg-slate-900 text-lime-300 focus:border-nutri-green outline-none">
+                            <option value="ALL">Semua Cabang</option>
+                            <option value="cabang-1">cabang-1 — Cabang 1</option>
+                        </select>
+                    </div>
+                    <div class="text-xs text-slate-300">
+                        Akun: <strong id="activeUserIdentityText" class="text-white">-</strong>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-extrabold text-slate-200">Cabang:</span>
-                    <select id="officeBranchFilterSelect" onchange="officeApp.onMonthOrBranchChange()" class="px-3 py-1.5 border border-slate-700 rounded-xl text-xs font-extrabold bg-slate-900 text-lime-300 focus:border-nutri-green outline-none">
-                        <option value="ALL">Semua Cabang</option>
-                        <option value="cabang-1">cabang-1 — Cabang 1</option>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <span id="roleScopeSubtitle" class="text-[11px] text-slate-400">Hak akses aktif</span>
+                    <span id="autoDetectedRolePill" class="px-2.5 py-1 rounded-full bg-slate-800 text-lime-300 border border-slate-700 font-extrabold text-[11px]">Peran: Memuat...</span>
+                    <select id="ownerRolePreviewSelect" onchange="officeApp.changeActiveRoleByOwner(this.value)" title="Uji / ganti peran aktif" class="hidden px-2.5 py-1 rounded-full bg-slate-900 border border-amber-500/40 text-amber-200 font-extrabold text-[11px] outline-none">
+                        <option value="owner">Mode: Owner</option>
+                        <option value="bendahara">Mode: Bendahara</option>
+                        <option value="hr">Mode: HR / SDM</option>
                     </select>
-                </div>
-                <div class="text-xs text-slate-300">
-                    Akun: <strong id="activeUserIdentityText" class="text-white">-</strong>
+                    <input type="hidden" id="viewRoleSelect" value="owner">
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2">
-                <span id="roleScopeSubtitle" class="text-[11px] text-slate-400">Hak akses aktif</span>
-                <span id="autoDetectedRolePill" class="px-2.5 py-1 rounded-full bg-slate-800 text-lime-300 border border-slate-700 font-extrabold text-[11px]">Peran: Memuat...</span>
-                <select id="ownerRolePreviewSelect" onchange="officeApp.changeActiveRoleByOwner(this.value)" title="Uji / ganti peran aktif" class="hidden px-2.5 py-1 rounded-xl bg-slate-900 border border-amber-500/40 text-amber-200 font-extrabold text-[11px] outline-none">
-                    <option value="owner">Mode: Owner</option>
-                    <option value="bendahara">Mode: Bendahara</option>
-                    <option value="hr">Mode: HR / SDM</option>
-                    <option value="karyawan">Mode: Karyawan</option>
-                </select>
-                <input type="hidden" id="viewRoleSelect" value="karyawan">
-            </div>
-        </div>
-
-        <!-- PENGINGAT BACKUP RUTIN 7 HARI (KHUSUS OWNER) -->
+            <!-- PENGINGAT BACKUP RUTIN 7 HARI (KHUSUS OWNER) -->
         <div id="officeBackupReminderBanner" class="hidden bg-blue-950/80 border border-blue-700/70 rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
             <div class="flex items-center gap-2.5">
                 <div class="w-8 h-8 rounded-xl bg-blue-600/30 border border-blue-500/40 text-blue-300 flex items-center justify-center flex-shrink-0">
@@ -1117,125 +1131,169 @@
         </section>
 
         <!-- 4. HR+ OFFICE: PENGAJUAN, PANTAU ABSENSI + FOTO, PENGUMUMAN, JADWAL, CUTI & PINJAMAN -->
-        <section id="panel-hrd" class="office-panel hidden space-y-5 text-xs">
-            <!-- Sub-tab HR+ -->
-            <div class="bg-white rounded-2xl border border-gray-200/80 p-2.5 shadow-sm flex flex-wrap items-center gap-1.5">
-                <button type="button" id="hrSubBtn-pengajuan" onclick="officeApp.switchHrSubTab('pengajuan')" class="office-hr-subtab is-active px-3.5 py-2 rounded-full text-xs font-extrabold transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-file-signature"></i> <span>1. Pengajuan Cuti/Lembur/Kasbon</span>
-                </button>
-                <button type="button" id="hrSubBtn-absensi" onclick="officeApp.switchHrSubTab('absensi')" class="office-hr-subtab px-3.5 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-camera"></i> <span>2. Pantau Absensi &amp; Foto</span>
-                </button>
-                <button type="button" id="hrSubBtn-pengumuman" onclick="officeApp.switchHrSubTab('pengumuman')" class="office-hr-subtab px-3.5 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-bullhorn"></i> <span>3. Pengumuman Tim</span>
-                </button>
-                <button type="button" id="hrSubBtn-jadwal" onclick="officeApp.switchHrSubTab('jadwal')" class="office-hr-subtab px-3.5 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-calendar-days"></i> <span>4. Jadwal Shift, Cuti &amp; Pinjaman</span>
-                </button>
-            </div>
-
-            <!-- SUB-TAB 1: PENGAJUAN (ASLI) -->
-            <div id="hrSubPane-pengajuan" class="space-y-5">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                <div class="lg:col-span-4 bg-white rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-3">
-                    <h2 class="text-sm font-black text-gray-900 border-b pb-2">Form Pengajuan HRD</h2>
+        <!-- 4A. PERSETUJUAN HR (TANPA FORM PENGAJUAN — SUDAH ADA DI NUTRIFRESH STAFF) -->
+        <section id="panel-hrd" class="office-panel hidden space-y-4 text-xs">
+            <div class="bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm">
+                <div class="px-4 py-3.5 border-b bg-gray-50 flex flex-wrap items-center justify-between gap-2.5">
                     <div>
-                        <label class="block font-bold text-gray-700 mb-1">Nama Karyawan *</label>
-                        <input type="text" id="hrEmpDisplay" readonly class="w-full px-3 py-2 border rounded-xl bg-slate-900 text-white font-extrabold outline-none cursor-not-allowed opacity-90" value="">
-                        <input type="hidden" id="hrEmpSelect" value="">
+                        <h2 class="text-sm font-black text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-file-signature text-nutri-green"></i>
+                            <span>Daftar Pengajuan &amp; Persetujuan Karyawan</span>
+                        </h2>
+                        <p class="text-[11px] text-gray-500 mt-0.5">Pengajuan Cuti, Izin, Sakit, Lembur &amp; Kasbon dikirim karyawan lewat aplikasi <strong>NutriFresh Staff</strong>. Lembur &amp; kasbon disetujui otomatis masuk ke Payroll.</p>
                     </div>
-                    <div class="grid grid-cols-2 gap-2.5">
-                        <div>
-                            <label class="block font-bold text-gray-700 mb-1">Jenis Pengajuan *</label>
-                            <select id="hrTypeSelect" onchange="officeApp.toggleHrFields()" class="w-full px-3 py-2 border rounded-xl bg-white font-bold outline-none">
-                                <option value="Cuti">🌴 Cuti</option>
-                                <option value="Izin">📝 Izin</option>
-                                <option value="Sakit">🩺 Sakit</option>
-                                <option value="Lembur">⏰ Lembur (Jam)</option>
-                                <option value="Kasbon">💵 Kasbon (Rp)</option>
-                            </select>
-                        </div>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <button type="button" onclick="officeApp.setHrReqStatusFilter('ALL')" id="hrReqFilter-ALL" class="px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-nutri-green text-white shadow-sm">Semua</button>
+                        <button type="button" onclick="officeApp.setHrReqStatusFilter('Menunggu')" id="hrReqFilter-Menunggu" class="px-3 py-1.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700">⏳ Menunggu</button>
+                        <button type="button" onclick="officeApp.setHrReqStatusFilter('Disetujui')" id="hrReqFilter-Disetujui" class="px-3 py-1.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700">✅ Disetujui</button>
+                        <button type="button" onclick="officeApp.setHrReqStatusFilter('Ditolak')" id="hrReqFilter-Ditolak" class="px-3 py-1.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700">❌ Ditolak</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 uppercase text-[11px]">
+                                <th class="p-3 font-bold">Karyawan</th>
+                                <th class="p-3 font-bold">Jenis &amp; Tgl</th>
+                                <th class="p-3 font-bold">Nilai / Durasi</th>
+                                <th class="p-3 font-bold">Keterangan</th>
+                                <th class="p-3 font-bold">Status</th>
+                                <th class="p-3 font-bold text-center">Persetujuan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hrRequestsTableBody" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4B. PANTAU ABSENSI & FOTO BUKTI -->
+        <section id="panel-absensi_foto" class="office-panel hidden space-y-4 text-xs">
+            <div class="bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm">
+                <div class="px-4 py-3.5 border-b bg-gray-50 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h2 class="text-sm font-black text-gray-900 flex items-center gap-1.5"><i class="fa-solid fa-camera text-nutri-green"></i> <span>Log Absensi GPS &amp; Foto Bukti (Periode Aktif)</span></h2>
+                        <span id="offAttCountLabel" class="text-[11px] text-gray-500">0 catatan absensi</span>
+                    </div>
+                    <input type="text" id="offAttSearchInput" oninput="officeApp.renderOfficeAttendanceTable()" placeholder="Cari nama karyawan..." class="px-3.5 py-1.5 border rounded-full text-xs outline-none w-52">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 uppercase text-[11px]">
+                                <th class="p-3 font-bold">Tanggal &amp; Shift</th>
+                                <th class="p-3 font-bold">Karyawan</th>
+                                <th class="p-3 font-bold">Masuk / Pulang</th>
+                                <th class="p-3 font-bold">Jarak &amp; Status</th>
+                                <th class="p-3 font-bold text-center">Foto Bukti</th>
+                            </tr>
+                        </thead>
+                        <tbody id="offAttTableBody" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4C. JADWAL SHIFT KARYAWAN -->
+        <section id="panel-jadwal_shift" class="office-panel hidden space-y-4 text-xs">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <div class="lg:col-span-4 bg-white rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-3">
+                    <h2 class="text-sm font-black text-gray-900 border-b pb-2"><i class="fa-solid fa-calendar-plus text-teal-600 mr-1.5"></i> Atur Jadwal Shift</h2>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">Karyawan *</label>
+                        <select id="schedEmpSelect" class="w-full px-3 py-2 border rounded-xl font-bold outline-none"></select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">Tanggal *</label>
-                            <input type="date" id="hrDateInput" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none">
+                            <input type="date" id="schedDateInput" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
                         </div>
-                    </div>
-                    <div id="hrDaysWrap">
-                        <label class="block font-bold text-gray-700 mb-1">Jumlah Hari</label>
-                        <input type="number" id="hrDaysInput" min="1" value="1" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
-                    </div>
-                    <div id="hrHoursWrap" class="hidden">
-                        <label class="block font-bold text-amber-900 mb-1">Jumlah Jam Lembur</label>
-                        <input type="number" id="hrHoursInput" min="0.5" step="0.5" value="2" class="w-full px-3 py-2 border border-amber-300 rounded-xl font-bold bg-amber-50/50 outline-none">
-                    </div>
-                    <div id="hrCashWrap" class="hidden">
-                        <label class="block font-bold text-red-900 mb-1">Nominal Kasbon (Rp)</label>
-                        <input type="number" id="hrCashInput" min="0" step="10000" value="100000" class="w-full px-3 py-2 border border-red-300 rounded-xl font-bold bg-red-50/50 outline-none">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">Shift *</label>
+                            <select id="schedShiftSelect" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
+                                <option value="Shift 1">☀️ Shift 1 (Pagi)</option>
+                                <option value="Shift 2">🌤️ Shift 2 (Sore)</option>
+                                <option value="Full Day">⭐ Full Day</option>
+                                <option value="Libur">🌴 Libur</option>
+                            </select>
+                        </div>
                     </div>
                     <div>
-                        <label class="block font-bold text-gray-700 mb-1">Keterangan / Alasan *</label>
-                        <textarea id="hrNoteInput" rows="2" placeholder="Alasan pengajuan..." class="w-full px-3 py-2 border rounded-xl bg-gray-50 outline-none resize-none"></textarea>
+                        <label class="block font-bold text-gray-700 mb-1">Catatan (Opsional)</label>
+                        <input type="text" id="schedNoteInput" placeholder="Misal: Bantu bongkar buah pagi" class="w-full px-3 py-2 border rounded-xl outline-none">
                     </div>
-                    <button type="button" onclick="officeApp.addHrRequest()" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-xl transition">
-                        Kirim Pengajuan HRD
-                    </button>
+                    <button type="button" onclick="officeApp.saveSchedule()" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-full transition">Simpan Jadwal Shift</button>
                 </div>
-
                 <div class="lg:col-span-8 bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm">
                     <div class="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
-                        <h3 class="text-xs sm:text-sm font-black text-gray-900">Daftar Pengajuan & Persetujuan</h3>
-                        <span class="text-[11px] text-gray-500">Lembur & kasbon disetujui masuk ke Payroll</span>
+                        <h3 class="text-xs sm:text-sm font-black text-gray-900">Daftar Jadwal Shift Karyawan</h3>
+                        <span class="text-[11px] text-gray-500">Otomatis tampil di NutriFresh Staff</span>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-100 text-gray-600 uppercase text-[11px]">
-                                    <th class="p-3 font-bold">Karyawan</th>
-                                    <th class="p-3 font-bold">Jenis & Tgl</th>
-                                    <th class="p-3 font-bold">Nilai / Durasi</th>
-                                    <th class="p-3 font-bold">Keterangan</th>
-                                    <th class="p-3 font-bold">Status</th>
-                                    <th class="p-3 font-bold text-center">Persetujuan</th>
-                                </tr>
-                            </thead>
-                            <tbody id="hrRequestsTableBody" class="divide-y divide-gray-100"></tbody>
+                            <thead><tr class="bg-gray-100 text-gray-600 uppercase text-[11px]"><th class="p-3 font-bold">Tanggal</th><th class="p-3 font-bold">Karyawan</th><th class="p-3 font-bold">Shift</th><th class="p-3 font-bold">Catatan</th><th class="p-3 font-bold text-center">Aksi</th></tr></thead>
+                            <tbody id="offSchedulesTableBody" class="divide-y divide-gray-100"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-            <!-- SUB-TAB 2: PANTAU ABSENSI & FOTO BUKTI -->
-            <div id="hrSubPane-absensi" class="hidden space-y-4">
-                <div class="bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm">
-                    <div class="px-4 py-3 border-b bg-gray-50 flex flex-wrap items-center justify-between gap-2">
+        <!-- 4D. JATAH CUTI & BUKU PINJAMAN / CICILAN -->
+        <section id="panel-cuti_pinjaman" class="office-panel hidden space-y-4 text-xs">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <div class="lg:col-span-5 bg-white rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-3">
+                    <h2 class="text-sm font-black text-gray-900 border-b pb-2"><i class="fa-solid fa-hand-holding-dollar text-amber-500 mr-1.5"></i> Catat Pinjaman / Cicilan Karyawan</h2>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">Karyawan *</label>
+                        <select id="loanEmpSelect" class="w-full px-3 py-2 border rounded-xl font-bold outline-none"></select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <h3 class="text-xs sm:text-sm font-black text-gray-900"><i class="fa-solid fa-location-dot text-nutri-green mr-1.5"></i> Log Absensi GPS &amp; Foto Bukti (Periode Aktif)</h3>
-                            <span id="offAttCountLabel" class="text-[11px] text-gray-500">0 catatan absensi</span>
+                            <label class="block font-bold text-gray-700 mb-1">Total Pinjaman (Rp) *</label>
+                            <input type="number" id="loanTotalInput" min="10000" step="50000" placeholder="500000" class="w-full px-3 py-2 border rounded-xl font-black outline-none">
                         </div>
-                        <input type="text" id="offAttSearchInput" oninput="officeApp.renderOfficeAttendanceTable()" placeholder="Cari nama karyawan..." class="px-3 py-1.5 border rounded-full text-xs outline-none w-48">
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">Cicilan / Bln (Rp)</label>
+                            <input type="number" id="loanInstallmentInput" min="0" step="50000" placeholder="100000" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">Keterangan</label>
+                        <input type="text" id="loanNoteInput" placeholder="Pinjaman darurat / cicilan 5x" class="w-full px-3 py-2 border rounded-xl outline-none">
+                    </div>
+                    <button type="button" onclick="officeApp.addLoanRecord()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-extrabold py-2.5 rounded-full transition">Catat Pinjaman Karyawan</button>
+
+                    <div class="pt-3 border-t space-y-2.5">
+                        <h3 class="font-extrabold text-gray-900 text-xs"><i class="fa-solid fa-umbrella-beach text-teal-600 mr-1"></i> Atur Jatah Cuti Tahunan</h3>
+                        <div class="grid grid-cols-3 gap-2">
+                            <select id="quotaEmpSelect" class="col-span-2 px-2.5 py-2 border rounded-xl font-bold outline-none"></select>
+                            <input type="number" id="quotaDaysInput" min="0" max="60" value="12" class="px-2.5 py-2 border rounded-xl font-black text-center outline-none">
+                        </div>
+                        <button type="button" onclick="officeApp.saveLeaveQuota()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-extrabold py-2.5 rounded-full transition">Simpan Jatah Cuti</button>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7 bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm">
+                    <div class="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
+                        <h3 class="text-xs sm:text-sm font-black text-gray-900">Buku Pinjaman &amp; Cicilan Karyawan</h3>
+                        <span class="text-[11px] text-gray-500">Klik "+ Cicilan" saat ada pembayaran</span>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-100 text-gray-600 uppercase text-[11px]">
-                                    <th class="p-3 font-bold">Tanggal &amp; Shift</th>
-                                    <th class="p-3 font-bold">Karyawan</th>
-                                    <th class="p-3 font-bold">Masuk / Pulang</th>
-                                    <th class="p-3 font-bold">Jarak &amp; Status</th>
-                                    <th class="p-3 font-bold text-center">Foto Bukti</th>
-                                </tr>
-                            </thead>
-                            <tbody id="offAttTableBody" class="divide-y divide-gray-100"></tbody>
+                            <thead><tr class="bg-gray-100 text-gray-600 uppercase text-[11px]"><th class="p-3 font-bold">Karyawan &amp; Ket.</th><th class="p-3 font-bold text-right">Total</th><th class="p-3 font-bold text-right">Terbayar</th><th class="p-3 font-bold text-right">Sisa</th><th class="p-3 font-bold text-center">Aksi</th></tr></thead>
+                            <tbody id="offLoansTableBody" class="divide-y divide-gray-100"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- SUB-TAB 3: PENGUMUMAN TIM (TAMPIL DI NUTRIFRESH STAFF) -->
-            <div id="hrSubPane-pengumuman" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <!-- 4E. PENGUMUMAN TIM -->
+        <section id="panel-pengumuman" class="office-panel hidden space-y-4 text-xs">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 <div class="lg:col-span-4 bg-white rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-3">
-                    <h3 class="text-sm font-black text-gray-900 border-b pb-2"><i class="fa-solid fa-bullhorn text-amber-500 mr-1.5"></i> Buat Pengumuman Tim</h3>
+                    <h2 class="text-sm font-black text-gray-900 border-b pb-2"><i class="fa-solid fa-bullhorn text-amber-500 mr-1.5"></i> Buat Pengumuman Tim</h2>
                     <div>
                         <label class="block font-bold text-gray-700 mb-1">Judul Pengumuman *</label>
                         <input type="text" id="annTitleInput" placeholder="Misal: Jadwal Stok Opname Minggu Ini" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
@@ -1251,7 +1309,7 @@
                         <label class="block font-bold text-gray-700 mb-1">Isi Pengumuman *</label>
                         <textarea id="annBodyInput" rows="3" placeholder="Tulis pesan untuk seluruh tim..." class="w-full px-3 py-2 border rounded-xl outline-none resize-none"></textarea>
                     </div>
-                    <button type="button" onclick="officeApp.addAnnouncement()" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-xl transition">Tayangkan ke NutriFresh Staff</button>
+                    <button type="button" onclick="officeApp.addAnnouncement()" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-full transition">Tayangkan ke NutriFresh Staff</button>
                 </div>
                 <div class="lg:col-span-8 bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm">
                     <div class="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
@@ -1260,103 +1318,8 @@
                     <div id="offAnnouncementsList" class="divide-y divide-gray-100 p-2"></div>
                 </div>
             </div>
-
-            <!-- SUB-TAB 4: JADWAL SHIFT, JATAH CUTI & BUKU PINJAMAN / CICILAN -->
-            <div id="hrSubPane-jadwal" class="hidden space-y-5">
-                <!-- A. Jadwal Shift -->
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                    <div class="lg:col-span-4 bg-white rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-3">
-                        <h3 class="text-sm font-black text-gray-900 border-b pb-2"><i class="fa-solid fa-calendar-plus text-teal-600 mr-1.5"></i> Atur Jadwal Shift</h3>
-                        <div>
-                            <label class="block font-bold text-gray-700 mb-1">Karyawan *</label>
-                            <select id="schedEmpSelect" class="w-full px-3 py-2 border rounded-xl font-bold outline-none"></select>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block font-bold text-gray-700 mb-1">Tanggal *</label>
-                                <input type="date" id="schedDateInput" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
-                            </div>
-                            <div>
-                                <label class="block font-bold text-gray-700 mb-1">Shift *</label>
-                                <select id="schedShiftSelect" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
-                                    <option value="Shift 1">☀️ Shift 1 (Pagi)</option>
-                                    <option value="Shift 2">🌤️ Shift 2 (Sore)</option>
-                                    <option value="Full Day">⭐ Full Day</option>
-                                    <option value="Libur">🌴 Libur</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-gray-700 mb-1">Catatan (Opsional)</label>
-                            <input type="text" id="schedNoteInput" placeholder="Misal: Bantu bongkar buah pagi" class="w-full px-3 py-2 border rounded-xl outline-none">
-                        </div>
-                        <button type="button" onclick="officeApp.saveSchedule()" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-xl transition">Simpan Jadwal Shift</button>
-                    </div>
-                    <div class="lg:col-span-8 bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm">
-                        <div class="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
-                            <h3 class="text-xs sm:text-sm font-black text-gray-900">Jadwal Shift Karyawan</h3>
-                            <span class="text-[11px] text-gray-500">Otomatis tampil di NutriFresh Staff</span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead><tr class="bg-gray-100 text-gray-600 uppercase text-[11px]"><th class="p-3 font-bold">Tanggal</th><th class="p-3 font-bold">Karyawan</th><th class="p-3 font-bold">Shift</th><th class="p-3 font-bold">Catatan</th><th class="p-3 font-bold text-center">Aksi</th></tr></thead>
-                                <tbody id="offSchedulesTableBody" class="divide-y divide-gray-100"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- B. Buku Pinjaman / Cicilan & Jatah Cuti -->
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                    <div class="lg:col-span-5 bg-white rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-3">
-                        <h3 class="text-sm font-black text-gray-900 border-b pb-2"><i class="fa-solid fa-hand-holding-dollar text-amber-500 mr-1.5"></i> Catat Pinjaman / Cicilan Karyawan</h3>
-                        <div>
-                            <label class="block font-bold text-gray-700 mb-1">Karyawan *</label>
-                            <select id="loanEmpSelect" class="w-full px-3 py-2 border rounded-xl font-bold outline-none"></select>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block font-bold text-gray-700 mb-1">Total Pinjaman (Rp) *</label>
-                                <input type="number" id="loanTotalInput" min="10000" step="50000" placeholder="500000" class="w-full px-3 py-2 border rounded-xl font-black outline-none">
-                            </div>
-                            <div>
-                                <label class="block font-bold text-gray-700 mb-1">Cicilan / Bln (Rp)</label>
-                                <input type="number" id="loanInstallmentInput" min="0" step="50000" placeholder="100000" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-gray-700 mb-1">Keterangan</label>
-                            <input type="text" id="loanNoteInput" placeholder="Pinjaman darurat / cicilan 5x" class="w-full px-3 py-2 border rounded-xl outline-none">
-                        </div>
-                        <button type="button" onclick="officeApp.addLoanRecord()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-extrabold py-2.5 rounded-xl transition">Catat Pinjaman Karyawan</button>
-
-                        <div class="pt-3 border-t space-y-2.5">
-                            <h4 class="font-extrabold text-gray-900 text-xs"><i class="fa-solid fa-umbrella-beach text-teal-600 mr-1"></i> Atur Jatah Cuti Tahunan</h4>
-                            <div class="grid grid-cols-3 gap-2">
-                                <select id="quotaEmpSelect" class="col-span-2 px-2.5 py-2 border rounded-xl font-bold outline-none"></select>
-                                <input type="number" id="quotaDaysInput" min="0" max="60" value="12" class="px-2.5 py-2 border rounded-xl font-black text-center outline-none">
-                            </div>
-                            <button type="button" onclick="officeApp.saveLeaveQuota()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-extrabold py-2 rounded-xl transition">Simpan Jatah Cuti</button>
-                        </div>
-                    </div>
-
-                    <div class="lg:col-span-7 bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm">
-                        <div class="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
-                            <h3 class="text-xs sm:text-sm font-black text-gray-900">Buku Pinjaman &amp; Cicilan Karyawan</h3>
-                            <span class="text-[11px] text-gray-500">Klik "+ Cicilan" saat ada pembayaran</span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead><tr class="bg-gray-100 text-gray-600 uppercase text-[11px]"><th class="p-3 font-bold">Karyawan &amp; Ket.</th><th class="p-3 font-bold text-right">Total</th><th class="p-3 font-bold text-right">Terbayar</th><th class="p-3 font-bold text-right">Sisa</th><th class="p-3 font-bold text-center">Aksi</th></tr></thead>
-                                <tbody id="offLoansTableBody" class="divide-y divide-gray-100"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </section>
 
-        <!-- 5. PAYROLL -->
         <section id="panel-payroll" class="office-panel hidden space-y-4 text-xs">
             <div class="bg-white rounded-3xl border border-gray-200/80 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -1547,6 +1510,44 @@
             </div>
         </section>
     </main>
+    </div>
+
+    <!-- FLOATING BOTTOM DOCK KHUSUS HP (ALA POS & KATALOG — v140) -->
+    <nav id="officeMobileDock" class="md:hidden fixed bottom-2.5 inset-x-2.5 z-40">
+        <div class="bg-[#111827]/95 backdrop-blur-md border border-slate-700/80 rounded-full p-1.5 shadow-2xl flex items-center gap-1 overflow-x-auto no-scrollbar">
+            <button type="button" id="dockBtn-ringkasan" onclick="officeApp.switchTab('ringkasan')" class="office-dock-btn flex-shrink-0 min-w-[66px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-extrabold text-white bg-nutri-green transition">
+                <i class="fa-solid fa-wallet text-sm mb-0.5"></i><span>Kas</span>
+            </button>
+            <button type="button" id="dockBtn-kewajiban" onclick="officeApp.switchTab('kewajiban')" class="office-dock-btn flex-shrink-0 min-w-[68px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-bold text-slate-300 transition">
+                <i class="fa-solid fa-file-invoice text-sm mb-0.5"></i><span>Hutang</span>
+            </button>
+            <button type="button" id="dockBtn-aset" onclick="officeApp.switchTab('aset')" class="office-dock-btn flex-shrink-0 min-w-[64px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-bold text-slate-300 transition">
+                <i class="fa-solid fa-boxes-packing text-sm mb-0.5"></i><span>Aset</span>
+            </button>
+            <button type="button" id="dockBtn-hrd" onclick="officeApp.switchTab('hrd')" class="office-dock-btn relative flex-shrink-0 min-w-[72px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-bold text-slate-300 transition">
+                <i class="fa-solid fa-file-signature text-sm mb-0.5"></i><span>Pengajuan</span>
+                <span id="dockPendingHrBadge" class="hidden absolute top-0.5 right-2 bg-amber-400 text-slate-950 text-[8.5px] font-black min-w-[14px] h-3.5 px-1 rounded-full flex items-center justify-center">0</span>
+            </button>
+            <button type="button" id="dockBtn-absensi_foto" onclick="officeApp.switchTab('absensi_foto')" class="office-dock-btn flex-shrink-0 min-w-[68px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-bold text-slate-300 transition">
+                <i class="fa-solid fa-camera text-sm mb-0.5"></i><span>Absensi</span>
+            </button>
+            <button type="button" id="dockBtn-jadwal_shift" onclick="officeApp.switchTab('jadwal_shift')" class="office-dock-btn flex-shrink-0 min-w-[66px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-bold text-slate-300 transition">
+                <i class="fa-solid fa-calendar-days text-sm mb-0.5"></i><span>Jadwal</span>
+            </button>
+            <button type="button" id="dockBtn-cuti_pinjaman" onclick="officeApp.switchTab('cuti_pinjaman')" class="office-dock-btn flex-shrink-0 min-w-[74px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-bold text-slate-300 transition">
+                <i class="fa-solid fa-hand-holding-dollar text-sm mb-0.5"></i><span>Pinjaman</span>
+            </button>
+            <button type="button" id="dockBtn-pengumuman" onclick="officeApp.switchTab('pengumuman')" class="office-dock-btn flex-shrink-0 min-w-[68px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-bold text-slate-300 transition">
+                <i class="fa-solid fa-bullhorn text-sm mb-0.5"></i><span>Info Tim</span>
+            </button>
+            <button type="button" id="dockBtn-payroll" onclick="officeApp.switchTab('payroll')" class="office-dock-btn flex-shrink-0 min-w-[66px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-bold text-slate-300 transition">
+                <i class="fa-solid fa-money-check-dollar text-sm mb-0.5"></i><span>Payroll</span>
+            </button>
+            <button type="button" id="dockBtn-karyawan" onclick="officeApp.switchTab('karyawan')" class="office-dock-btn flex-shrink-0 min-w-[66px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-bold text-slate-300 transition">
+                <i class="fa-solid fa-id-card text-sm mb-0.5"></i><span>Tim</span>
+            </button>
+        </div>
+    </nav>
 
     <script type="module">
         import {
@@ -1584,11 +1585,11 @@
                 debts: [],
                 assets: [],
                 hrRequests: [],
+                hrReqStatusFilter: 'ALL',
                 officeMenuAccess: {
-                    owner: ['ringkasan', 'kewajiban', 'aset', 'hrd', 'payroll', 'karyawan', 'export_excel'],
+                    owner: ['ringkasan', 'kewajiban', 'aset', 'hrd', 'absensi_foto', 'jadwal_shift', 'cuti_pinjaman', 'pengumuman', 'payroll', 'karyawan', 'export_excel'],
                     bendahara: ['ringkasan', 'kewajiban', 'aset', 'export_excel'],
-                    hr: ['hrd', 'payroll', 'karyawan', 'export_excel'],
-                    karyawan: ['hrd']
+                    hr: ['hrd', 'absensi_foto', 'jadwal_shift', 'cuti_pinjaman', 'pengumuman', 'payroll', 'karyawan', 'export_excel']
                 },
                 customRoles: [
                     { name: 'Kasir & Operasional', tabs: ['absensi', 'kasir', 'stok', 'laporan', 'pengaturan'] },
@@ -1686,7 +1687,7 @@
                 const now = new Date();
                 const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                 const today = `${ym}-${String(now.getDate()).padStart(2, '0')}`;
-                ['activeMonthInput', 'trfDate', 'expDate', 'resDate', 'debtDueInput', 'assetDateInput', 'hrDateInput', 'offEmpJoinDate', 'schedDateInput'].forEach(id => {
+                ['activeMonthInput', 'trfDate', 'expDate', 'resDate', 'debtDueInput', 'assetDateInput', 'offEmpJoinDate', 'schedDateInput'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.value = (id === 'activeMonthInput') ? ym : today;
                 });
@@ -1736,10 +1737,11 @@
 
 
             setAccountIdentity(name, email, roleKey) {
+                const cleanRole = ['owner', 'bendahara', 'hr'].includes(roleKey) ? roleKey : 'hr';
                 this.state.currentUserName = name || '';
                 this.state.currentUserEmail = email || '';
-                if (!this.state.verifiedRole || this.state.verifiedRole === 'karyawan' || roleKey === 'owner') {
-                    this.state.verifiedRole = roleKey || 'karyawan';
+                if (!this.state.verifiedRole || !['owner', 'bendahara', 'hr'].includes(this.state.verifiedRole) || cleanRole === 'owner') {
+                    this.state.verifiedRole = cleanRole;
                 }
                 const roleSelect = document.getElementById('viewRoleSelect');
                 const previewSel = document.getElementById('ownerRolePreviewSelect');
@@ -1748,34 +1750,256 @@
                 const pillEl = document.getElementById('autoDetectedRolePill');
                 const scopeEl = document.getElementById('roleScopeSubtitle');
 
-                const labelMap = { owner: 'Owner', bendahara: 'Bendahara', hr: 'HR / SDM', karyawan: 'Karyawan' };
+                const labelMap = { owner: 'Owner', bendahara: 'Bendahara', hr: 'HR / SDM' };
                 const scopeMap = {
-                    owner: 'Akses penuh Keuangan, HRD, Payroll, Karyawan & Hak Akses',
+                    owner: 'Akses penuh Keuangan, HRD, Absensi, Payroll & Hak Akses',
                     bendahara: 'Akses menu Keuangan sesuai pengaturan hak akses',
-                    hr: 'Akses menu SDM & Karyawan sesuai pengaturan hak akses',
-                    karyawan: 'Akses menu sesuai pengaturan hak akses Karyawan'
+                    hr: 'Akses menu SDM, Absensi, Jadwal & Karyawan sesuai hak akses'
                 };
-                const roleLabel = labelMap[roleKey] || 'Karyawan';
-                const who = email || name || 'Pengguna Terdaftar';
+                const roleLabel = labelMap[cleanRole] || 'Tim Inti';
+                const who = email || name || 'Tim Inti Terdaftar';
 
-                if (roleSelect) roleSelect.value = roleKey;
+                if (roleSelect) roleSelect.value = cleanRole;
                 if (previewSel) {
                     previewSel.classList.toggle('hidden', this.state.verifiedRole !== 'owner');
-                    previewSel.value = roleKey;
+                    previewSel.value = cleanRole;
                 }
                 if (accChip) accChip.textContent = `${who} (${roleLabel})`;
-                if (idText) idText.textContent = `${name ? name + ' • ' : ''}${email || 'Sesi Lokal'} (${roleLabel})`;
+                if (idText) idText.textContent = `${name ? name + ' • ' : ''}${who} (${roleLabel})`;
                 if (pillEl) pillEl.textContent = `Peran: ${roleLabel}`;
-                if (scopeEl) scopeEl.textContent = scopeMap[roleKey] || '';
+                if (scopeEl) scopeEl.textContent = scopeMap[cleanRole] || 'Hak akses aktif';
 
-                this.populateEmployeeDropdowns();
                 if (!this._userPickedTab) {
-                    const preferredTab = (roleKey === 'owner' || roleKey === 'bendahara') ? 'ringkasan' : 'hrd';
-                    this.switchTab(preferredTab, false);
+                    const defaultTabByRole = { owner: 'ringkasan', bendahara: 'ringkasan', hr: 'hrd' };
+                    this.switchTab(defaultTabByRole[cleanRole] || 'ringkasan', false);
                 } else {
                     this.applyRoleView();
                 }
-                this.renderAll();
+            },
+
+            async syncRoleFromFirebaseAuth(u, dbInstance, appIdVal, sessionHint = null) {
+                const emailLow = ((u && u.email) || (sessionHint && sessionHint.email) || '').trim().toLowerCase();
+                let displayName = (u && u.displayName) || (sessionHint && sessionHint.name) || (emailLow ? emailLow.split('@')[0] : 'Tim Inti');
+                let serverRole = 'karyawan';
+
+                try {
+                    const prof = await getMyStaffProfileRpc();
+                    if (prof && prof.is_owner) {
+                        serverRole = 'owner';
+                        displayName = (u && u.displayName) || prof.name || displayName;
+                    } else if (prof && prof.is_staff) {
+                        serverRole = prof.role_key || this.resolveRoleFromString(prof.role, false);
+                        displayName = prof.name || displayName;
+                    }
+                } catch (e) { console.warn("[Office] Non-fatal error:", e?.message || e); }
+
+                if (!['owner', 'bendahara', 'hr'].includes(serverRole)) {
+                    this.state.verifiedRole = 'karyawan';
+                    if (window.__officeCloud && window.__officeCloud.auth) {
+                        try { localStorage.removeItem("nutri_staff_session_hint"); } catch (_) {}
+                        try { await signOut(window.__officeCloud.auth); } catch (_) {}
+                    }
+                    this.showGate('Akses Ditolak: NutriFresh Office khusus untuk Tim Inti (Owner, Bendahara, HR / SDM). Untuk absensi & pengajuan cuti/lembur/kasbon, silakan gunakan aplikasi NutriFresh Staff.');
+                    window.__officeSplashReady = true;
+                    if (window.__hideOfficeSplashSmooth) window.__hideOfficeSplashSmooth(true);
+                    return;
+                }
+
+                this.state.verifiedRole = serverRole;
+                this.setAccountIdentity(displayName, emailLow, serverRole);
+                window.__officeSplashReady = true;
+                if (window.__hideOfficeSplashSmooth) window.__hideOfficeSplashSmooth(true);
+            },
+
+            populateEmployeeDropdowns() {
+                this.populateHrPlusEmployeeSelects();
+            },
+
+            getLoggedInEmployeeName() {
+                const byEmail = (this.state.currentUserEmail || '').trim().toLowerCase();
+                if (byEmail) {
+                    const matched = this.state.empList.find(e => (e.email || '').trim().toLowerCase() === byEmail);
+                    if (matched && matched.name) return matched.name;
+                }
+                if (this.state.currentUserName && this.state.currentUserName.trim()) {
+                    return this.state.currentUserName.trim();
+                }
+                if (byEmail) return byEmail.split('@')[0];
+                return 'Tim Inti';
+            },
+
+            getEffectiveAllowedTabs(roleKey = null) {
+                const role = (roleKey || document.getElementById('viewRoleSelect')?.value || 'owner').toLowerCase();
+                const allTabs = ['ringkasan', 'kewajiban', 'aset', 'hrd', 'absensi_foto', 'jadwal_shift', 'cuti_pinjaman', 'pengumuman', 'payroll', 'karyawan', 'export_excel'];
+                if (role === 'owner') return allTabs;
+                const defaultMap = {
+                    bendahara: ['ringkasan', 'kewajiban', 'aset', 'export_excel'],
+                    hr: ['hrd', 'absensi_foto', 'jadwal_shift', 'cuti_pinjaman', 'pengumuman', 'payroll', 'karyawan', 'export_excel']
+                };
+                const saved = (this.state.officeMenuAccess && Array.isArray(this.state.officeMenuAccess[role]))
+                    ? [...this.state.officeMenuAccess[role]]
+                    : null;
+                if (!saved) return defaultMap[role] || [];
+                // Backward-compat: jika role sebelumnya punya 'hrd' dari v136 sebelum pemisahan sub-menu HR+, otomatis wariskan 4 sub-menu HR baru
+                const hasSplitKeys = ['absensi_foto', 'jadwal_shift', 'cuti_pinjaman', 'pengumuman'].some(k => saved.includes(k));
+                if (saved.includes('hrd') && !hasSplitKeys) {
+                    saved.push('absensi_foto', 'jadwal_shift', 'cuti_pinjaman', 'pengumuman');
+                }
+                return saved;
+            },
+
+            isTabAllowedForRole(tab, roleKey = null) {
+                return this.getEffectiveAllowedTabs(roleKey).includes(tab);
+            },
+
+            switchTab(tab, isUserClick = true) {
+                if (isUserClick) this._userPickedTab = true;
+                const allPanels = ['ringkasan', 'kewajiban', 'aset', 'hrd', 'absensi_foto', 'jadwal_shift', 'cuti_pinjaman', 'pengumuman', 'payroll', 'karyawan'];
+                if (!this.isTabAllowedForRole(tab)) {
+                    tab = allPanels.find(t => this.isTabAllowedForRole(t)) || 'ringkasan';
+                }
+                this.state.activeTab = tab;
+                allPanels.forEach(t => {
+                    const panel = document.getElementById(`panel-${t}`);
+                    if (panel) panel.classList.toggle('hidden', t !== tab);
+                    const allowBtn = this.isTabAllowedForRole(t);
+
+                    // 1. Desktop Sidebar button
+                    const sideBtn = document.getElementById(`sideBtn-${t}`);
+                    if (sideBtn) {
+                        sideBtn.className = (t === tab)
+                            ? `office-side-btn is-active w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl text-xs font-extrabold bg-nutri-green text-white shadow-sm transition text-left${allowBtn ? '' : ' hidden'}`
+                            : `office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left${allowBtn ? '' : ' hidden'}`;
+                    }
+
+                    // 2. Mobile Floating Dock button
+                    const dockBtn = document.getElementById(`dockBtn-${t}`);
+                    if (dockBtn) {
+                        dockBtn.className = (t === tab)
+                            ? `office-dock-btn is-active relative flex-shrink-0 min-w-[68px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-extrabold text-white bg-nutri-green transition${allowBtn ? '' : ' hidden'}`
+                            : `office-dock-btn relative flex-shrink-0 min-w-[68px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-bold text-slate-300 transition${allowBtn ? '' : ' hidden'}`;
+                    }
+                });
+
+                if (tab === 'absensi_foto') this.renderOfficeAttendanceTable();
+                if (tab === 'jadwal_shift') { this.populateHrPlusEmployeeSelects(); this.renderSchedulesTable(); }
+                if (tab === 'cuti_pinjaman') { this.populateHrPlusEmployeeSelects(); this.renderLoansTable(); }
+                if (tab === 'pengumuman') this.renderAnnouncementsList();
+
+                this.applyRoleView();
+            },
+
+            applyRoleView() {
+                const role = (document.getElementById('viewRoleSelect')?.value || 'owner').toLowerCase();
+                const accessCard = document.getElementById('officeMenuAccessConfigCard');
+                const finGrid = document.getElementById('financeInputGrid');
+                const excelBtn = document.getElementById('btnOfficeExportExcel');
+                const sideSep = document.getElementById('sideDividerSep');
+
+                const allowedTabs = this.getEffectiveAllowedTabs(role);
+                const isOwner = (role === 'owner');
+                const finKeys = ['ringkasan', 'kewajiban', 'aset'];
+                const hrKeys = ['hrd', 'absensi_foto', 'jadwal_shift', 'cuti_pinjaman', 'pengumuman', 'payroll', 'karyawan'];
+
+                const canFinanceAny = isOwner || finKeys.some(k => allowedTabs.includes(k));
+                const canHrAny = isOwner || hrKeys.some(k => allowedTabs.includes(k));
+                const canExcel = isOwner || allowedTabs.includes('export_excel');
+
+                if (accessCard) accessCard.classList.toggle('hidden', !isOwner);
+                if (finGrid) finGrid.classList.toggle('hidden', !canFinanceAny);
+                if (excelBtn) excelBtn.classList.toggle('hidden', !canExcel);
+                const backupBtn = document.getElementById('btnOfficeBackupDb');
+                if (backupBtn) backupBtn.classList.toggle('hidden', !isOwner);
+                this.refreshBackupReminderUI(isOwner);
+                if (sideSep) sideSep.classList.toggle('hidden', !(canFinanceAny && canHrAny));
+
+                const toggleEl = (id, show) => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.toggle('hidden', !show);
+                };
+
+                toggleEl('sideGrpKeuangan', canFinanceAny);
+                toggleEl('sideGrpHr', canHrAny);
+
+                [...finKeys, ...hrKeys].forEach(k => {
+                    const allow = isOwner || allowedTabs.includes(k);
+                    toggleEl(`sideBtn-${k}`, allow);
+                    toggleEl(`dockBtn-${k}`, allow);
+                });
+
+                if (!isOwner && !allowedTabs.includes(this.state.activeTab)) {
+                    const firstAvailable = [...finKeys, ...hrKeys].find(k => allowedTabs.includes(k));
+                    if (firstAvailable) this.switchTab(firstAvailable, false);
+                }
+            },
+
+            renderOfficeMenuAccessMatrix() {
+                const grid = document.getElementById('officeMenuAccessMatrixGrid');
+                if (!grid) return;
+                const roles = [
+                    { key: 'owner', label: 'Owner (Pemilik)', locked: true },
+                    { key: 'bendahara', label: 'Bendahara', locked: false },
+                    { key: 'hr', label: 'HR / SDM', locked: false }
+                ];
+                const menus = [
+                    { key: 'ringkasan', label: 'Kas & Beban' },
+                    { key: 'kewajiban', label: 'Hutang & Piutang' },
+                    { key: 'aset', label: 'Aset & Susut' },
+                    { key: 'hrd', label: 'Persetujuan HR' },
+                    { key: 'absensi_foto', label: 'Absensi & Foto' },
+                    { key: 'jadwal_shift', label: 'Jadwal Shift' },
+                    { key: 'cuti_pinjaman', label: 'Cuti & Pinjaman' },
+                    { key: 'pengumuman', label: 'Pengumuman Tim' },
+                    { key: 'payroll', label: 'Payroll' },
+                    { key: 'karyawan', label: 'Karyawan & Hak Akses' },
+                    { key: 'export_excel', label: 'Tombol Unduh Laporan' }
+                ];
+
+                grid.className = 'grid grid-cols-1 md:grid-cols-3 gap-3';
+                grid.innerHTML = roles.map(r => {
+                    const currentArr = this.getEffectiveAllowedTabs(r.key);
+                    return `
+                        <div class="bg-gray-50 border border-gray-200 rounded-2xl p-3 space-y-2">
+                            <div class="flex items-center justify-between border-b pb-1.5">
+                                <span class="font-extrabold text-gray-900 text-xs">${this.escapeHtml(r.label)}</span>
+                                ${r.locked ? '<span class="text-[9px] font-black bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">Penuh</span>' : ''}
+                            </div>
+                            <div class="space-y-1.5 text-[11px]">
+                                ${menus.map(m => {
+                                    const checked = r.locked ? true : currentArr.includes(m.key);
+                                    return `
+                                        <label class="flex items-center gap-2 ${r.locked ? 'opacity-75' : 'cursor-pointer'}">
+                                            <input type="checkbox" data-role="${r.key}" data-menu="${m.key}" ${checked ? 'checked' : ''} ${r.locked ? 'disabled' : ''} class="office-menu-perm-cb rounded">
+                                            <span>${this.escapeHtml(m.label)}</span>
+                                        </label>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            saveOfficeMenuAccess() {
+                if (document.getElementById('viewRoleSelect')?.value !== 'owner') {
+                    return alert('Pengaturan hak akses menu Office hanya dapat disimpan oleh Owner.');
+                }
+                const nextMap = {
+                    owner: ['ringkasan', 'kewajiban', 'aset', 'hrd', 'absensi_foto', 'jadwal_shift', 'cuti_pinjaman', 'pengumuman', 'payroll', 'karyawan', 'export_excel'],
+                    bendahara: [],
+                    hr: []
+                };
+                document.querySelectorAll('.office-menu-perm-cb').forEach(cb => {
+                    const r = cb.getAttribute('data-role');
+                    const m = cb.getAttribute('data-menu');
+                    if (r && m && r !== 'owner' && cb.checked && Array.isArray(nextMap[r])) {
+                        nextMap[r].push(m);
+                    }
+                });
+                this.state.officeMenuAccess = nextMap;
+                this.saveState();
+                this.applyRoleView();
+                alert('Hak akses menu Office untuk Bendahara & HR / SDM berhasil disimpan!');
             },
 
             changeActiveRoleByOwner(newRoleKey) {
@@ -2645,42 +2869,16 @@
                 if (window.__officeCloud) await window.__officeCloud.deleteRow('office_assets', id);
             },
 
-            toggleHrFields() {
-                const t = document.getElementById('hrTypeSelect').value;
-                document.getElementById('hrDaysWrap').classList.toggle('hidden', t === 'Lembur' || t === 'Kasbon');
-                document.getElementById('hrHoursWrap').classList.toggle('hidden', t !== 'Lembur');
-                document.getElementById('hrCashWrap').classList.toggle('hidden', t !== 'Kasbon');
-            },
-
-            async addHrRequest() {
-                return this.runWithActionLock('off_add_hr', async () => {
-                const empName = document.getElementById('hrEmpSelect').value;
-                const type = document.getElementById('hrTypeSelect').value;
-                const date = document.getElementById('hrDateInput').value;
-                const note = document.getElementById('hrNoteInput').value.trim();
-                if (!date || !note) return alert('Lengkapi tanggal dan keterangan.');
-                let durationLabel = '1 Hari', hours = 0, cashAmount = 0;
-                if (type === 'Lembur') {
-                    hours = Number(document.getElementById('hrHoursInput').value) || 0;
-                    if (hours <= 0) return alert('Isi jumlah jam lembur.');
-                    durationLabel = `${hours} Jam`;
-                } else if (type === 'Kasbon') {
-                    cashAmount = Number(document.getElementById('hrCashInput').value) || 0;
-                    if (cashAmount <= 0) return alert('Isi nominal kasbon.');
-                    durationLabel = this.formatRp(cashAmount);
-                } else {
-                    durationLabel = `${Math.max(1, Number(document.getElementById('hrDaysInput').value) || 1)} Hari`;
-                }
-                const entry = {
-                    id: 'HR-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(),
-                    empName, type, date, durationLabel, hours, cashAmount, note, status: 'Menunggu'
-                };
-                this.state.hrRequests.unshift(entry);
-                document.getElementById('hrNoteInput').value = '';
-                this.saveLocalCache();
-                this.renderAll();
-                if (window.__officeCloud) await window.__officeCloud.upsertRow('office_hr_requests', entry);
+            setHrReqStatusFilter(st) {
+                this.state.hrReqStatusFilter = st || 'ALL';
+                ['ALL', 'Menunggu', 'Disetujui', 'Ditolak'].forEach(k => {
+                    const b = document.getElementById(`hrReqFilter-${k}`);
+                    if (!b) return;
+                    b.className = (k === this.state.hrReqStatusFilter)
+                        ? 'px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-nutri-green text-white shadow-sm'
+                        : 'px-3 py-1.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700';
                 });
+                this.renderAll();
             },
 
             async setHrStatus(id, status) {
@@ -2843,13 +3041,27 @@
                         return `<tr class="hover:bg-gray-50 ${isVoid ? 'opacity-50 line-through' : ''}"><td class="p-3"><span class="text-[10px] font-black px-2 py-0.5 rounded ${isRec ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-900'}">${isRec ? 'PIUTANG' : 'HUTANG'}</span> <span class="font-extrabold text-gray-900 ml-1">${this.escapeHtml(d.party)}</span>${d.sourceType === 'pos_purchase' ? ' <span class="px-1.5 py-0.5 rounded bg-emerald-900/60 text-emerald-300 text-[9px] font-black">🔗 POS</span>' : ''}<span class="block text-[11px] text-gray-500">${this.escapeHtml(d.note)}</span>${isVoid && d.voidReason ? `<span class="block text-[10px] text-red-400 font-bold">VOID: ${this.escapeHtml(d.voidReason)}</span>` : ''}</td><td class="p-3 font-mono text-gray-600 whitespace-nowrap">${this.escapeHtml(d.dueDate)}</td><td class="p-3 text-right font-black whitespace-nowrap ${isRec ? 'text-blue-700' : 'text-red-600'}">${this.formatRp(d.amount)}</td><td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-black ${statusCls}">${isVoid ? 'VOID' : this.escapeHtml(d.status)}</span></td><td class="p-3 text-center whitespace-nowrap">${isVoid ? '<span class="text-red-400 text-[10px] font-black">VOID</span>' : (isPaid ? '<span class="text-gray-400 text-[11px]">Selesai</span>' : `<button type="button" onclick="officeApp.settleDebtReceivable('${this.escapeHtml(d.id)}')" class="px-2.5 py-1 rounded-lg bg-nutri-green hover:bg-nutri-dark text-white font-bold text-[11px]">Tandai Lunas</button>`)}</td></tr>`;
                     }).join('');
 
-                document.getElementById('hrRequestsTableBody').innerHTML = this.state.hrRequests.length === 0
-                    ? '<tr><td colspan="6" class="p-6 text-center text-gray-400">Belum ada pengajuan HRD.</td></tr>'
-                    : this.state.hrRequests.map(r => {
+                const pendingHrCnt = (this.state.hrRequests || []).filter(r => r.status === 'Menunggu').length;
+                ['sidePendingHrBadge', 'dockPendingHrBadge'].forEach(bid => {
+                    const bEl = document.getElementById(bid);
+                    if (!bEl) return;
+                    bEl.textContent = String(pendingHrCnt);
+                    bEl.classList.toggle('hidden', pendingHrCnt <= 0);
+                });
+                const curHrFilter = this.state.hrReqStatusFilter || 'ALL';
+                const filteredHrList = (this.state.hrRequests || []).filter(r => curHrFilter === 'ALL' || r.status === curHrFilter);
+                const canApproveHr = ['owner', 'hr'].includes((document.getElementById('viewRoleSelect')?.value || '').toLowerCase());
+                document.getElementById('hrRequestsTableBody').innerHTML = filteredHrList.length === 0
+                    ? `<tr><td colspan="6" class="p-6 text-center text-gray-400">${curHrFilter === 'ALL' ? 'Belum ada pengajuan dari NutriFresh Staff.' : 'Tidak ada pengajuan berstatus ' + this.escapeHtml(curHrFilter) + '.'}</td></tr>`
+                    : filteredHrList.map(r => {
                         const cls = r.status === 'Disetujui' ? 'bg-green-100 text-nutri-dark' : (r.status === 'Ditolak' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800');
-                        return `<tr class="hover:bg-gray-50"><td class="p-3 font-extrabold text-gray-900">${this.escapeHtml(r.empName)}</td><td class="p-3"><span class="font-bold">${this.escapeHtml(r.type)}</span><span class="block text-[11px] text-gray-500 font-mono">${this.escapeHtml(r.date)}</span></td><td class="p-3 font-bold text-gray-800">${this.escapeHtml(r.durationLabel)}</td><td class="p-3 text-gray-600">${this.escapeHtml(r.note)}</td><td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-black ${cls}">${this.escapeHtml(r.status)}</span></td><td class="p-3 text-center space-x-1 whitespace-nowrap">${document.getElementById('viewRoleSelect')?.value === 'owner' ? `<button type="button" onclick="officeApp.setHrStatus('${this.escapeHtml(r.id)}', 'Disetujui')" class="px-2.5 py-1 rounded-lg bg-nutri-green text-white font-bold text-[11px]">Setujui</button><button type="button" onclick="officeApp.setHrStatus('${this.escapeHtml(r.id)}', 'Ditolak')" class="px-2.5 py-1 rounded-lg bg-red-50 text-red-600 font-bold text-[11px]">Tolak</button>` : '<span class="text-[10px] text-slate-400 font-semibold">Menunggu Owner</span>'}</td></tr>`;
+                        return `<tr class="hover:bg-gray-50"><td class="p-3 font-extrabold text-gray-900">${this.escapeHtml(r.empName)}</td><td class="p-3"><span class="font-bold">${this.escapeHtml(r.type)}</span><span class="block text-[11px] text-gray-500 font-mono">${this.escapeHtml(r.date)}</span></td><td class="p-3 font-bold text-gray-800">${this.escapeHtml(r.durationLabel)}</td><td class="p-3 text-gray-600">${this.escapeHtml(r.note)}</td><td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-black ${cls}">${this.escapeHtml(r.status)}</span></td><td class="p-3 text-center space-x-1 whitespace-nowrap">${canApproveHr ? `<button type="button" onclick="officeApp.setHrStatus('${this.escapeHtml(r.id)}', 'Disetujui')" class="px-2.5 py-1 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-bold text-[11px]">Setujui</button><button type="button" onclick="officeApp.setHrStatus('${this.escapeHtml(r.id)}', 'Ditolak')" class="px-2.5 py-1 rounded-full bg-red-50 hover:bg-red-100 text-red-600 font-bold text-[11px]">Tolak</button>` : '<span class="text-[10px] text-slate-400 font-semibold">Khusus Owner/HR</span>'}</td></tr>`;
                     }).join('');
 
+                if (this.state.activeTab === 'absensi_foto') this.renderOfficeAttendanceTable();
+                if (this.state.activeTab === 'jadwal_shift') { this.populateHrPlusEmployeeSelects(); this.renderSchedulesTable(); }
+                if (this.state.activeTab === 'cuti_pinjaman') { this.populateHrPlusEmployeeSelects(); this.renderLoansTable(); }
+                if (this.state.activeTab === 'pengumuman') this.renderAnnouncementsList();
                 this.renderOfficeMenuAccessMatrix();
                 this.renderOfficeRolesList();
                 this.syncRoleSelectFromOffice();
@@ -3708,11 +3920,18 @@
                         if (prof.status === "Non-Aktif" || !prof.is_staff) {
                             return { allowed: false, reason: `Akun "${cleanEmail}" berstatus NON-AKTIF. Hubungi Owner.` };
                         }
+                        const rk = prof.role_key || officeApp.resolveRoleFromString(prof.role, false);
+                        if (!["owner", "bendahara", "hr"].includes(rk)) {
+                            return {
+                                allowed: false,
+                                reason: `Akses Ditolak (${prof.name || cleanEmail}): NutriFresh Office khusus untuk Tim Inti (Owner, Bendahara, HR / SDM). Untuk absensi, pengajuan cuti/lembur/kasbon, jadwal shift & slip gaji, silakan buka aplikasi NutriFresh Staff.`
+                            };
+                        }
                         return {
                             allowed: true,
-                            roleKey: prof.role_key || "karyawan",
+                            roleKey: rk,
                             name: prof.name || cleanEmail.split("@")[0],
-                            isOwner: prof.role_key === "owner"
+                            isOwner: rk === "owner"
                         };
                     }
                     if (prof && !prof.owner_configured && cleanEmail) {
@@ -4009,11 +4228,11 @@
     <script>
         window.__NF_SLIDING_TRACKS = [
             {
-                container: 'header > div:last-child > div',
-                itemSelector: '.office-nav-btn',
+                container: '#officeMobileDock > div',
+                itemSelector: '.office-dock-btn',
                 radius: '9999px',
                 autoScroll: true,
-                isActive: function(el) { return el.classList.contains('bg-nutri-green'); }
+                isActive: function(el) { return el.classList.contains('is-active'); }
             }
         ];
     </script>

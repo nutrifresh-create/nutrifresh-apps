@@ -762,14 +762,11 @@
             return "HANDLED";
         }
 
-        // 5. OFFICE (office.html): kembali ke sub-tab/tab awal
+        // 5. OFFICE (office.html): kembali ke tab awal (Kas & Beban / Persetujuan HR)
         if (window.officeApp && window.officeApp.state) {
-            if (window.officeApp.state.activeTab === "hrd" && window.officeApp.state.hrSubTab && window.officeApp.state.hrSubTab !== "pengajuan") {
-                window.officeApp.switchHrSubTab("pengajuan");
-                return "HANDLED";
-            }
-            if (window.officeApp.state.activeTab && window.officeApp.state.activeTab !== "ringkasan" && window.officeApp.isTabAllowedForRole("ringkasan")) {
-                window.officeApp.switchTab("ringkasan", true);
+            const homeTab = window.officeApp.isTabAllowedForRole("ringkasan") ? "ringkasan" : "hrd";
+            if (window.officeApp.state.activeTab && window.officeApp.state.activeTab !== homeTab && window.officeApp.isTabAllowedForRole(homeTab)) {
+                window.officeApp.switchTab(homeTab, true);
                 return "HANDLED";
             }
         }
