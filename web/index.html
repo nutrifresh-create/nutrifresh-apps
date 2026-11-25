@@ -5036,8 +5036,7 @@
                 if (!card) return;
                 const w = window.open('', '_blank', 'width=420,height=640');
                 if (!w) return window.print();
-                w.document.write(`<!DOCTYPE html><html><head><title>Resi NutriFresh</title><style>body{font-family:Inter,Arial,sans-serif;padding:18px;color:#111;max-width:380px;margin:0 auto;}</style></head><body>${card.innerHTML}<script>window.onload=function(){window.print();};<\/script>    <script src="./native-bridge.js"></script>
-</body></html>`);
+                w.document.write(`<!DOCTYPE html><html><head><title>Resi NutriFresh</title><style>body{font-family:Inter,Arial,sans-serif;padding:18px;color:#111;max-width:380px;margin:0 auto;}</style></head><body>${card.innerHTML}<script>window.onload=function(){window.print();};<\/script></body></html>`);
                 w.document.close();
             },
 
@@ -6162,7 +6161,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v136';
+        window.__NF_APP_VERSION = 'v137';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 
@@ -6914,5 +6913,6 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
         })();
     </script>
 
+    <script src="./native-bridge.js"></script>
 </body>
 </html>
