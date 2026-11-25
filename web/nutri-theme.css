@@ -1,6 +1,6 @@
 /* ============================================================================
-   NUTRIFRESH UNIFIED 3-THEME ENGINE (v134)
-   Modes: Natural (Default, Solid Terang) | Glass (Ringan 60fps) | Dark (Gelap)
+   NUTRIFRESH UNIFIED 3-THEME ENGINE (v135)
+   Modes: Natural (Default, Solid Terang) | Glass (Ringan 60fps) | Dark (100% Gelap)
    Shared across: index.html, pos.html, office.html, download.html, staff.html
    ============================================================================ */
 
@@ -97,7 +97,7 @@ html[data-theme="glass"] body:not(.nf-office-page) .nf-guide-blue {
     border-color: rgba(191, 219, 254, 0.9) !important;
 }
 
-/* Pertahankan blur kaca halus HANYA di elemen melayang (Header, Dock, Modal, Lens) */
+/* Pertahankan blur kaca halus HANYA di elemen melayang (Header, Dock, Modal) */
 html[data-theme="glass"] body:not(.nf-office-page) #customerHeader > div:last-child,
 html[data-theme="glass"] body:not(.nf-office-page) #customerHeader > div:first-child button,
 html[data-theme="glass"] body:not(.nf-office-page) #customerHeader > div:first-child > div > div > span.rounded-full,
@@ -134,7 +134,7 @@ html[data-theme="glass"] body.nf-office-page #payslipModal > div {
 }
 
 /* ============================================================================
-   2. TEMA DARK (GELAP SOLID, NYAMAN SHIFT MALAM & HEMAT BATERAI AMOLED)
+   2. TEMA DARK (100% GELAP SOLID — ZERO WHITE LEAKS DI KATALOG, POS, DOWNLOAD)
    ============================================================================ */
 html[data-theme="dark"] {
     color-scheme: dark;
@@ -146,7 +146,7 @@ html[data-theme="dark"] body {
     color: #e2e8f0 !important;
 }
 
-/* --- 2A. Headers, Docks, Sidebars & Splash --- */
+/* --- 2A. Headers, Docks, Sidebars, Footer & Floating Chrome --- */
 html[data-theme="dark"] body #customerHeader > div:first-child button,
 html[data-theme="dark"] body #customerHeader > div:first-child > div > div > span.rounded-full,
 html[data-theme="dark"] body #customerHeader > div:first-child button.nf-on-dark,
@@ -167,6 +167,49 @@ html[data-theme="dark"] body.nf-office-page > header > div:last-child > div {
     border: 1px solid #1f2937 !important;
     box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42) !important;
     color: #e2e8f0 !important;
+}
+
+/* Desktop nav pill container inside Katalog header */
+html[data-theme="dark"] body #customerHeader .hidden.md\:flex {
+    background: #182234 !important;
+    border: 1px solid #263244 !important;
+    box-shadow: none !important;
+}
+
+/* Katalog Footer & Address Box (override high-specificity index.html rules!) */
+html[data-theme="dark"] body #customerView footer {
+    background: #0f172a !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-top: 1px solid #1f2937 !important;
+    color: #cbd5e1 !important;
+}
+html[data-theme="dark"] body #customerView footer .bg-gray-50 {
+    background: #162032 !important;
+    border: 1px solid #243044 !important;
+}
+html[data-theme="dark"] body #customerView footer img[src*="logo.png"] {
+    background: rgba(255, 255, 255, 0.94) !important;
+    padding: 6px 14px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Katalog Top Banners: Sapaan Member, PWA Install, Ticker (override index.html ID rules!) */
+html[data-theme="dark"] body #pwaInstallBanner > div,
+html[data-theme="dark"] body #memberGreetingBanner > div,
+html[data-theme="dark"] body #catalogTickerBar {
+    background: #162032 !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 1px solid #2a3950 !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32) !important;
+    color: #f1f5f9 !important;
+}
+html[data-theme="dark"] body #memberGreetingBanner > div {
+    background: #1f1b10 !important;
+    border-color: #6b4412 !important;
 }
 
 @media (max-width: 767px) {
@@ -192,7 +235,7 @@ html[data-theme="dark"] body #customerHeader > div:last-child > div:first-child 
 html[data-theme="dark"] body #customerHeader > div:first-child button,
 html[data-theme="dark"] body #customerHeader > div:first-child button span,
 html[data-theme="dark"] body #customerHeader > div:first-child #headerDeliveryInfo,
-html[data-theme="dark"] body #customerHeader > div:first-child #headerOpenHours {
+html[data-theme="dark"] body #customerHeader > div:first-child #headerHoursBadge {
     color: #e2e8f0 !important;
     text-shadow: none !important;
 }
@@ -203,9 +246,13 @@ html[data-theme="dark"] body #customerHeader > div:first-child button > span:fir
 html[data-theme="dark"] body #customerView nav button,
 html[data-theme="dark"] body #customerView nav button span,
 html[data-theme="dark"] body #adminView > div:first-child nav .admin-tab,
-html[data-theme="dark"] body #adminView > div:first-child nav .admin-tab span {
+html[data-theme="dark"] body #adminView > div:first-child nav .admin-tab span,
+html[data-theme="dark"] body #stickyCategoryChipsBar > div .cust-chip-pill:not(.nf-slide-active) {
     color: #94a3b8 !important;
     text-shadow: none !important;
+}
+html[data-theme="dark"] body #stickyCategoryChipsBar > div #chipCat-Obral:not(.nf-slide-active) {
+    color: #fca5a5 !important;
 }
 html[data-theme="dark"] body #customerView nav button.nf-slide-active,
 html[data-theme="dark"] body #customerView nav button.nf-slide-active span,
@@ -217,7 +264,11 @@ html[data-theme="dark"] body #adminView > div:first-child nav .admin-tab.text-nu
 }
 
 /* --- 2B. Sliding Tracks & Active Lenses on Dark --- */
-html[data-theme="dark"] body .nf-slide-track {
+html[data-theme="dark"] body .nf-slide-track,
+html[data-theme="dark"] body #memberAuthMainPane .grid.grid-cols-2,
+html[data-theme="dark"] body #memberPortalContainer .grid.grid-cols-4,
+html[data-theme="dark"] body #custModalPresetWeightButtons,
+html[data-theme="dark"] body #posMemberLookupWrapper .bg-slate-200\/75 {
     background: #182234 !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
@@ -268,6 +319,13 @@ html[data-theme="dark"] body .nf-slide-lens[data-tint="dark"] {
     border-color: #475569 !important;
     box-shadow: none !important;
 }
+html[data-theme="dark"] body #settingsSubMenuBar button:not(.nf-slide-active),
+html[data-theme="dark"] body #posMemberLookupWrapper .grid.grid-cols-4 button:not(.nf-slide-active) {
+    color: #94a3b8 !important;
+}
+html[data-theme="dark"] body #posMemberLookupWrapper .grid.grid-cols-4 button.nf-slide-active.text-gray-900 {
+    color: #ffffff !important;
+}
 
 /* --- 2C. Main Cards, Surfaces, Modals, Tables & Download Page on Dark --- */
 html[data-theme="dark"] body #adminView,
@@ -286,25 +344,100 @@ html[data-theme="dark"] body #posLeftProductsPane > div:first-child,
 html[data-theme="dark"] body #posProductGrid > div,
 html[data-theme="dark"] body #memberPortalContainer .bg-white,
 html[data-theme="dark"] body #memberAuthContainer .bg-white,
+html[data-theme="dark"] body #customerCartModal #customerCartItems > div,
 html[data-theme="dark"] body .nf-glass-card,
 html[data-theme="dark"] body.nf-office-page #officeMainContainer > div:first-child,
 html[data-theme="dark"] body.nf-office-page .office-panel .bg-white,
 html[data-theme="dark"] body #officeAuthGateModal > div,
 html[data-theme="dark"] body #payslipModal > div,
-html[data-theme="dark"] body div[id$="Modal"] > div {
+html[data-theme="dark"] body #memberModal > div,
+html[data-theme="dark"] body #customerItemModal > div,
+html[data-theme="dark"] body #customerCartModal > div,
+html[data-theme="dark"] body #parcelPreOrderModal > div,
+html[data-theme="dark"] body #publicReceiptModal > div,
+html[data-theme="dark"] body #webEntryChoiceModal > div,
+html[data-theme="dark"] body #iosInstallGuideModal > div,
+html[data-theme="dark"] body #customModal > div,
+html[data-theme="dark"] body div[id$="Modal"] > div,
+html[data-theme="dark"] body div[id$="Modal"] > div.bg-white {
     background: #111827 !important;
+    background-image: none !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
     border-color: #1f2937 !important;
     box-shadow: 0 10px 26px rgba(0, 0, 0, 0.36) !important;
 }
 
+/* Hover kartu produk (jangan kedip putih!) */
+html[data-theme="dark"] body .modern-prod-card:hover,
+html[data-theme="dark"] body #posProductGrid > div:hover {
+    background: #172235 !important;
+    border-color: #334155 !important;
+}
+
+/* Modal inner panes & close buttons */
+html[data-theme="dark"] body #memberModal .bg-slate-50\/70,
+html[data-theme="dark"] body #customerCartModal #customerCartItems,
+html[data-theme="dark"] body #customerCartModal > div > div.bg-white,
+html[data-theme="dark"] body #customerItemModal > div > div.bg-gray-50,
+html[data-theme="dark"] body div[id$="Modal"] > div > div.bg-gray-50,
+html[data-theme="dark"] body div[id$="Modal"] > div > div.bg-gray-50\/80 {
+    background: #162032 !important;
+    border-color: #243044 !important;
+}
+html[data-theme="dark"] body #customerItemModal button[aria-label="Tutup"],
+html[data-theme="dark"] body #iosInstallGuideModal button[onclick*="hidden"],
+html[data-theme="dark"] body #customerCartModal button[aria-label="Tutup"],
+html[data-theme="dark"] body div[id$="Modal"] > div > div.bg-gray-50 button:has(.fa-xmark),
+html[data-theme="dark"] body div[id$="Modal"] > div > div.bg-gray-50\/80 button:has(.fa-xmark) {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    color: #e2e8f0 !important;
+    box-shadow: none !important;
+}
+html[data-theme="dark"] body #webEntryChoiceModal > div > div:first-child {
+    background: rgba(255, 255, 255, 0.94) !important;
+    border-color: #334155 !important;
+}
+html[data-theme="dark"] body #webEntryChoiceModal button[onclick*="openEntryLoginChoice"] {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    color: #cbd5e1 !important;
+    box-shadow: none !important;
+}
+
+/* Chip alasan & preset cepat di POS (Absensi, Quick Cash, Diskon, Poin) */
+html[data-theme="dark"] body #content-absensi .flex.flex-wrap.gap-1\.5 button,
+html[data-theme="dark"] body #quickCashButtons button,
+html[data-theme="dark"] body #posDiscountModal .flex.flex-wrap.gap-1\.5 button,
+html[data-theme="dark"] body #redeemQuickButtonsGrid button,
+html[data-theme="dark"] body .nf-btn-ghost-pill {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    color: #e2e8f0 !important;
+    box-shadow: none !important;
+}
+html[data-theme="dark"] body .nf-btn-ghost-pill {
+    color: #a3e635 !important;
+}
+html[data-theme="dark"] body .nf-btn-ghost-pill:hover {
+    background: #273549 !important;
+}
+
+/* Utility Backgrounds on Dark */
 html[data-theme="dark"] body .bg-white,
 html[data-theme="dark"] body .bg-white\/80,
+html[data-theme="dark"] body .bg-white\/85,
 html[data-theme="dark"] body .bg-white\/90 {
     background-color: #111827 !important;
 }
-
+html[data-theme="dark"] body .bg-white\/95 {
+    background-color: rgba(15, 23, 42, 0.88) !important;
+    color: #e2e8f0 !important;
+    border: 1px solid rgba(51, 65, 85, 0.85) !important;
+}
+html[data-theme="dark"] body .bg-\[\#f8fafc\],
+html[data-theme="dark"] body .bg-\[\#f8fafc\]\/95,
 html[data-theme="dark"] body .bg-gray-50,
 html[data-theme="dark"] body .bg-gray-50\/70,
 html[data-theme="dark"] body .bg-gray-50\/80,
@@ -317,47 +450,56 @@ html[data-theme="dark"] body .nf-sub-glass {
     background-color: #162032 !important;
     border-color: #243044 !important;
 }
-
 html[data-theme="dark"] body .bg-gray-100,
+html[data-theme="dark"] body .bg-gray-100\/90,
 html[data-theme="dark"] body .bg-slate-100,
+html[data-theme="dark"] body .bg-slate-200,
 html[data-theme="dark"] body .bg-slate-200\/75,
-html[data-theme="dark"] body .bg-gray-200 {
+html[data-theme="dark"] body .bg-gray-200,
+html[data-theme="dark"] body .bg-gray-200\/80 {
     background-color: #1e293b !important;
     border-color: #334155 !important;
 }
 
-/* Modal headers */
-html[data-theme="dark"] body div[id$="Modal"] > div > div.bg-gray-50,
-html[data-theme="dark"] body div[id$="Modal"] > div > div.bg-gray-50\/80 {
-    background: #162032 !important;
-    border-bottom-color: #243044 !important;
-}
-
-/* Tinted status boxes & banners on Dark */
+/* Tinted status boxes, category pills, "+ Tambah / Berat" buttons & light gradients on Dark */
 html[data-theme="dark"] body #sidebarCashDrawerBox,
+html[data-theme="dark"] body #customerCartModal .bg-\[\#f4f9f1\],
+html[data-theme="dark"] body .bg-\[\#f4f9f1\],
 html[data-theme="dark"] body .bg-nutri-light,
 html[data-theme="dark"] body .bg-nutri-light\/60,
 html[data-theme="dark"] body .bg-nutri-light\/70,
 html[data-theme="dark"] body .bg-green-50,
 html[data-theme="dark"] body .bg-green-50\/70,
+html[data-theme="dark"] body .bg-green-50\/80,
+html[data-theme="dark"] body .bg-green-100,
 html[data-theme="dark"] body .bg-emerald-50,
 html[data-theme="dark"] body .bg-emerald-50\/70,
+html[data-theme="dark"] body .bg-emerald-50\/80,
 html[data-theme="dark"] body .bg-emerald-50\/90,
-html[data-theme="dark"] body .bg-green-100,
+html[data-theme="dark"] body .bg-emerald-100,
+html[data-theme="dark"] body .bg-teal-100,
+html[data-theme="dark"] body .from-emerald-50,
+html[data-theme="dark"] body .from-\[\#f4f9f1\],
 html[data-theme="dark"] body.nf-office-page .office-panel .bg-\[\#f4f9f1\] {
     background-color: #0e2418 !important;
-    border-color: #1d4d31 !important;
+    background-image: none !important;
+    border-color: #1f5434 !important;
 }
 
 html[data-theme="dark"] body .bg-amber-50,
+html[data-theme="dark"] body .bg-amber-50\/40,
 html[data-theme="dark"] body .bg-amber-50\/60,
 html[data-theme="dark"] body .bg-amber-50\/70,
 html[data-theme="dark"] body .bg-amber-50\/80,
 html[data-theme="dark"] body .bg-amber-50\/90,
 html[data-theme="dark"] body .bg-amber-100,
 html[data-theme="dark"] body .bg-amber-100\/80,
+html[data-theme="dark"] body .bg-amber-200,
+html[data-theme="dark"] body .from-amber-50,
+html[data-theme="dark"] body #posMemberLoyaltyBar,
 html[data-theme="dark"] body .nf-guide-amber {
     background-color: #261c0b !important;
+    background-image: none !important;
     border-color: #6b4412 !important;
 }
 
@@ -374,30 +516,80 @@ html[data-theme="dark"] body #officeBackupReminderBanner {
 
 html[data-theme="dark"] body .bg-indigo-50,
 html[data-theme="dark"] body .bg-indigo-50\/70,
+html[data-theme="dark"] body .bg-indigo-100,
 html[data-theme="dark"] body .bg-purple-50,
 html[data-theme="dark"] body .bg-purple-50\/50,
-html[data-theme="dark"] body .bg-purple-50\/70 {
+html[data-theme="dark"] body .bg-purple-50\/70,
+html[data-theme="dark"] body .bg-purple-100 {
     background-color: #1c1632 !important;
     border-color: #432b7a !important;
 }
 
 html[data-theme="dark"] body .bg-red-50,
+html[data-theme="dark"] body .bg-red-50\/40,
 html[data-theme="dark"] body .bg-red-50\/70,
+html[data-theme="dark"] body .bg-red-50\/80,
 html[data-theme="dark"] body .bg-red-100,
 html[data-theme="dark"] body .bg-rose-50,
-html[data-theme="dark"] body .bg-rose-50\/70 {
+html[data-theme="dark"] body .bg-rose-50\/70,
+html[data-theme="dark"] body .bg-rose-100 {
     background-color: #2b1218 !important;
     border-color: #6b1f2e !important;
+}
+
+/* Hover utility overrides (no white flash on hover!) */
+html[data-theme="dark"] body .hover\:bg-white:hover,
+html[data-theme="dark"] body .hover\:bg-gray-50:hover,
+html[data-theme="dark"] body .hover\:bg-gray-100:hover,
+html[data-theme="dark"] body .hover\:bg-gray-200:hover,
+html[data-theme="dark"] body .hover\:bg-slate-200:hover {
+    background-color: #243044 !important;
+}
+html[data-theme="dark"] body .hover\:bg-nutri-light:hover,
+html[data-theme="dark"] body .hover\:bg-green-50:hover,
+html[data-theme="dark"] body .hover\:bg-green-100:hover,
+html[data-theme="dark"] body .hover\:bg-emerald-100:hover {
+    background-color: #163824 !important;
+}
+html[data-theme="dark"] body .hover\:bg-amber-50:hover,
+html[data-theme="dark"] body .hover\:bg-amber-100:hover,
+html[data-theme="dark"] body .hover\:bg-amber-200:hover,
+html[data-theme="dark"] body .hover\:bg-amber-200\/80:hover {
+    background-color: #3a2a0f !important;
+}
+html[data-theme="dark"] body .hover\:bg-blue-50:hover,
+html[data-theme="dark"] body .hover\:bg-blue-100:hover {
+    background-color: #183056 !important;
+}
+html[data-theme="dark"] body .hover\:bg-red-50:hover,
+html[data-theme="dark"] body .hover\:bg-red-100:hover {
+    background-color: #421822 !important;
+}
+/* Tombol "+ Tambah / Berat" hijau saat di-hover tetap menyala hijau segar */
+html[data-theme="dark"] body .modern-prod-card .bg-\[\#f4f9f1\]:hover {
+    background-color: #65a30d !important;
+    border-color: #84cc16 !important;
+    color: #ffffff !important;
 }
 
 /* Borders & Dividers on Dark */
 html[data-theme="dark"] body .border-gray-100,
 html[data-theme="dark"] body .border-gray-200,
+html[data-theme="dark"] body .border-gray-200\/60,
 html[data-theme="dark"] body .border-gray-200\/70,
 html[data-theme="dark"] body .border-gray-200\/80,
 html[data-theme="dark"] body .border-gray-300,
 html[data-theme="dark"] body .border-slate-200,
 html[data-theme="dark"] body .border-slate-300,
+html[data-theme="dark"] body .border-green-100,
+html[data-theme="dark"] body .border-green-200,
+html[data-theme="dark"] body .border-green-200\/80,
+html[data-theme="dark"] body .border-emerald-200,
+html[data-theme="dark"] body .border-amber-200,
+html[data-theme="dark"] body .border-amber-300,
+html[data-theme="dark"] body .border-blue-200,
+html[data-theme="dark"] body .border-red-200,
+html[data-theme="dark"] body .border-rose-200,
 html[data-theme="dark"] body .border-b,
 html[data-theme="dark"] body .border-t,
 html[data-theme="dark"] body .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
@@ -432,7 +624,8 @@ html[data-theme="dark"] body .text-green-800,
 html[data-theme="dark"] body .text-green-700,
 html[data-theme="dark"] body .text-emerald-950,
 html[data-theme="dark"] body .text-emerald-900,
-html[data-theme="dark"] body .text-emerald-800 {
+html[data-theme="dark"] body .text-emerald-800,
+html[data-theme="dark"] body .text-teal-600 {
     color: #86efac !important;
 }
 html[data-theme="dark"] body .text-nutri-green {
@@ -457,7 +650,8 @@ html[data-theme="dark"] body .text-indigo-800,
 html[data-theme="dark"] body .text-indigo-700,
 html[data-theme="dark"] body .text-purple-950,
 html[data-theme="dark"] body .text-purple-900,
-html[data-theme="dark"] body .text-purple-800 {
+html[data-theme="dark"] body .text-purple-800,
+html[data-theme="dark"] body .text-purple-600 {
     color: #c4b5fd !important;
 }
 html[data-theme="dark"] body .text-red-800,
@@ -465,7 +659,8 @@ html[data-theme="dark"] body .text-red-700,
 html[data-theme="dark"] body .text-red-600,
 html[data-theme="dark"] body .text-rose-900,
 html[data-theme="dark"] body .text-rose-800,
-html[data-theme="dark"] body .text-rose-700 {
+html[data-theme="dark"] body .text-rose-700,
+html[data-theme="dark"] body .text-rose-600 {
     color: #fca5a5 !important;
 }
 /* Pertahankan teks putih tegas di dalam tombol/header berwarna solid */
@@ -488,16 +683,67 @@ html[data-theme="dark"] body .bg-slate-900 {
     color: #ffffff !important;
 }
 
-/* --- 2E. Form Inputs, Selects & Textareas on Dark --- */
+/* --- 2E. Form Inputs, Selects & Textareas on Dark (MATCH HIGH SPECIFICITY!) --- */
 html[data-theme="dark"] body input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
 html[data-theme="dark"] body select,
 html[data-theme="dark"] body textarea,
+html[data-theme="dark"] body #adminContentArea input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+html[data-theme="dark"] body #adminContentArea select,
+html[data-theme="dark"] body #adminContentArea textarea,
 html[data-theme="dark"] body #custSearchInput,
-html[data-theme="dark"] body #posSearch {
+html[data-theme="dark"] body #posSearch,
+html[data-theme="dark"] body #invSearchInput,
+html[data-theme="dark"] body #invStatusFilter,
+html[data-theme="dark"] body #invCategoryFilter,
+html[data-theme="dark"] body #crmMemberSearchInput,
+html[data-theme="dark"] body #supplierSearchInput,
+html[data-theme="dark"] body #batchLabelSearchInput,
+html[data-theme="dark"] body #reportBuyerModeFilter,
+html[data-theme="dark"] body #memberModal input:not([type="checkbox"]),
+html[data-theme="dark"] body #memberModal textarea,
+html[data-theme="dark"] body #customerCartModal input,
+html[data-theme="dark"] body #customerCartModal select,
+html[data-theme="dark"] body #customerCartModal textarea,
+html[data-theme="dark"] body #customerItemModal input:not([type="checkbox"]),
+html[data-theme="dark"] body #customerItemModal select,
+html[data-theme="dark"] body #parcelPreOrderModal input:not([type="checkbox"]),
+html[data-theme="dark"] body #parcelPreOrderModal select,
+html[data-theme="dark"] body #parcelPreOrderModal textarea,
+html[data-theme="dark"] body #posItemInputModal #posModalNoteInput,
+html[data-theme="dark"] body #posItemInputModal #posModalNominalInput,
+html[data-theme="dark"] body div[id$="Modal"] input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+html[data-theme="dark"] body div[id$="Modal"] select,
+html[data-theme="dark"] body div[id$="Modal"] textarea {
+    background: #0f172a !important;
     background-color: #0f172a !important;
     color: #f8fafc !important;
     border-color: #334155 !important;
+    box-shadow: none !important;
 }
+
+html[data-theme="dark"] body input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+html[data-theme="dark"] body select:focus,
+html[data-theme="dark"] body textarea:focus,
+html[data-theme="dark"] body #custSearchInput:focus,
+html[data-theme="dark"] body #adminContentArea input:focus,
+html[data-theme="dark"] body #adminContentArea select:focus,
+html[data-theme="dark"] body #adminContentArea textarea:focus,
+html[data-theme="dark"] body #memberModal input:focus,
+html[data-theme="dark"] body #memberModal textarea:focus,
+html[data-theme="dark"] body #customerCartModal input:focus,
+html[data-theme="dark"] body #customerCartModal select:focus,
+html[data-theme="dark"] body #customerCartModal textarea:focus,
+html[data-theme="dark"] body #customerItemModal input:focus,
+html[data-theme="dark"] body #customerItemModal select:focus,
+html[data-theme="dark"] body #parcelPreOrderModal input:focus,
+html[data-theme="dark"] body #parcelPreOrderModal select:focus,
+html[data-theme="dark"] body #parcelPreOrderModal textarea:focus {
+    background: #0b1324 !important;
+    background-color: #0b1324 !important;
+    color: #ffffff !important;
+    border-color: #84cc16 !important;
+}
+
 html[data-theme="dark"] body input::placeholder,
 html[data-theme="dark"] body textarea::placeholder {
     color: #64748b !important;
@@ -507,16 +753,41 @@ html[data-theme="dark"] body select option {
     color: #f8fafc;
 }
 
-/* --- 2F. Tables on Dark --- */
-html[data-theme="dark"] body table thead tr {
-    background-color: #162032 !important;
-    color: #94a3b8 !important;
+/* --- 2F. Tables on Dark (OVERRIDE HIGH-SPECIFICITY #adminContentArea table!) --- */
+html[data-theme="dark"] body table,
+html[data-theme="dark"] body #adminContentArea table {
+    background: #111827 !important;
+    background-color: #111827 !important;
+    color: #e2e8f0 !important;
 }
-html[data-theme="dark"] body table tbody tr:hover {
-    background-color: rgba(30, 41, 59, 0.65) !important;
+html[data-theme="dark"] body table thead tr,
+html[data-theme="dark"] body #adminContentArea thead tr {
+    background: #162032 !important;
+    background-color: #162032 !important;
+    color: #cbd5e1 !important;
+    border-color: #243044 !important;
+}
+html[data-theme="dark"] body table thead th,
+html[data-theme="dark"] body #adminContentArea thead th {
+    color: #cbd5e1 !important;
+    border-color: #243044 !important;
+}
+html[data-theme="dark"] body table tbody tr,
+html[data-theme="dark"] body #adminContentArea tbody tr {
+    background-color: #111827 !important;
+    border-color: #1f2937 !important;
+    color: #e2e8f0 !important;
+}
+html[data-theme="dark"] body table tbody tr:hover,
+html[data-theme="dark"] body #adminContentArea tbody tr:hover {
+    background-color: #182336 !important;
+}
+html[data-theme="dark"] body table tbody td,
+html[data-theme="dark"] body #adminContentArea tbody td {
+    border-color: #1f2937 !important;
 }
 
-/* --- 2G. Theme Cards, Pills & Splash on Dark --- */
+/* --- 2G. Theme Cards, Pills, Native Printer Modal & Splash on Dark --- */
 html[data-theme="dark"] .nf-theme-card {
     background: #162032 !important;
     border-color: #2a3950 !important;
