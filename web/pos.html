@@ -6,9 +6,12 @@
     <script>
         (function() {
             try {
-                var savedTheme = localStorage.getItem('nutri_ui_theme') === 'natural' ? 'natural' : 'glass';
+                var raw = localStorage.getItem('nutri_ui_theme');
+                var savedTheme = (raw === 'glass' || raw === 'dark' || raw === 'natural') ? raw : 'natural';
                 document.documentElement.setAttribute('data-theme', savedTheme);
-            } catch (e) {}
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'natural');
+            }
         })();
     </script>
     <title>NutriFresh POS — Portal Kasir, Stok & Absensi</title>
@@ -1119,25 +1122,10 @@
         }
 
     </style>
+    <link rel="stylesheet" href="nutri-theme.css">
 </head>
 <body class="text-gray-800 h-screen flex flex-col overflow-hidden">
-    <!-- SVG OPTICAL LIQUID GLASS REFRACTION FILTERS (iOS 26 REAL REFRACTION ENGINE v123 — ISOTROPIC BLUR + TIGHT SIDE BEVELS) -->
-    <svg class="no-print" aria-hidden="true" style="position:fixed;width:0;height:0;pointer-events:none;overflow:hidden;">
-        <defs>
-            <filter id="nf-glass-pill" x="0%" y="0%" width="100%" height="100%" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">
-                <feImage href="data:image/png;base64,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" x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="map"/>
-                <feDisplacementMap in="SourceGraphic" in2="map" scale="0.042" xChannelSelector="R" yChannelSelector="G"/>
-            </filter>
-            <filter id="nf-glass-pill-wide" x="0%" y="0%" width="100%" height="100%" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">
-                <feImage href="data:image/png;base64,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" x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="map"/>
-                <feDisplacementMap in="SourceGraphic" in2="map" scale="0.040" xChannelSelector="R" yChannelSelector="G"/>
-            </filter>
-            <filter id="nf-glass-lens" x="0%" y="0%" width="100%" height="100%" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">
-                <feImage href="data:image/png;base64,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" x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="map"/>
-                <feDisplacementMap in="SourceGraphic" in2="map" scale="0.044" xChannelSelector="R" yChannelSelector="G"/>
-            </filter>
-        </defs>
-    </svg>
+    
     <!-- LAPISAN AURA CAIR CERAH (BRIGHT AMBIENT LIQUID GLASS BACKDROP) -->
     <div class="nf-liquid-bg no-print" aria-hidden="true">
         <div class="nf-orb nf-orb-1"></div>
@@ -2344,25 +2332,35 @@
                                 <div class="pt-4 mt-2 border-t border-gray-200/80 space-y-2.5">
                                     <div>
                                         <h4 class="font-extrabold text-gray-800 flex items-center"><i class="fa-solid fa-palette text-nutri-green mr-1.5"></i> Tema Tampilan Aplikasi (Perangkat Ini)</h4>
-                                        <p class="text-[11px] text-gray-500 mt-0.5">Otomatis berlaku untuk Katalog, Kasir POS, dan Office (Office tetap Dark). Pilih <strong>Natural</strong> untuk performa paling ringan di perangkat kasir.</p>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">Otomatis berlaku untuk Katalog, Kasir POS, dan halaman lain. Pilih <strong>Natural</strong> (bawaan) atau <strong>Dark</strong> untuk shift malam, atau <strong>Glass</strong> yang kini sudah ringan.</p>
                                     </div>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                        <button type="button" data-theme-card="glass" onclick="window.setNutriTheme('glass')" class="nf-theme-card p-3 text-left flex items-center justify-between gap-3">
-                                            <div class="flex items-center gap-2.5">
-                                                <span class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400/80 via-sky-300/75 to-amber-300/80 border border-white shadow-sm flex items-center justify-center text-white text-sm flex-shrink-0"><i class="fa-solid fa-sparkles"></i></span>
-                                                <div>
-                                                    <span class="font-extrabold text-gray-900 text-xs block">Liquid Glass</span>
-                                                    <span class="text-[10px] text-gray-500 block">Kaca transparan modern iOS 26</span>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                        <button type="button" data-theme-card="natural" onclick="window.setNutriTheme('natural')" class="nf-theme-card p-3 text-left flex items-center justify-between gap-2.5">
+                                            <div class="flex items-center gap-2.5 min-w-0">
+                                                <span class="w-9 h-9 rounded-full bg-[#f4f9f1] border border-green-300 flex items-center justify-center text-nutri-dark text-sm flex-shrink-0"><i class="fa-solid fa-leaf"></i></span>
+                                                <div class="min-w-0">
+                                                    <span class="font-extrabold text-gray-900 text-xs block">Natural</span>
+                                                    <span class="text-[10px] text-gray-500 block leading-tight">Terang solid &amp; paling ringan</span>
                                                 </div>
                                             </div>
                                             <span class="nf-theme-check hidden text-nutri-green text-base flex-shrink-0"><i class="fa-solid fa-circle-check"></i></span>
                                         </button>
-                                        <button type="button" data-theme-card="natural" onclick="window.setNutriTheme('natural')" class="nf-theme-card p-3 text-left flex items-center justify-between gap-3">
-                                            <div class="flex items-center gap-2.5">
-                                                <span class="w-9 h-9 rounded-full bg-[#f4f9f1] border border-green-300 flex items-center justify-center text-nutri-dark text-sm flex-shrink-0"><i class="fa-solid fa-leaf"></i></span>
-                                                <div>
-                                                    <span class="font-extrabold text-gray-900 text-xs block">Natural (Ringan)</span>
-                                                    <span class="text-[10px] text-gray-500 block">Solid bersih, kontras tegas &amp; cepat</span>
+                                        <button type="button" data-theme-card="glass" onclick="window.setNutriTheme('glass')" class="nf-theme-card p-3 text-left flex items-center justify-between gap-2.5">
+                                            <div class="flex items-center gap-2.5 min-w-0">
+                                                <span class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400/80 via-sky-300/75 to-amber-300/80 border border-white shadow-sm flex items-center justify-center text-white text-sm flex-shrink-0"><i class="fa-solid fa-sparkles"></i></span>
+                                                <div class="min-w-0">
+                                                    <span class="font-extrabold text-gray-900 text-xs block">Glass</span>
+                                                    <span class="text-[10px] text-gray-500 block leading-tight">Kaca bening ringan 60fps</span>
+                                                </div>
+                                            </div>
+                                            <span class="nf-theme-check hidden text-nutri-green text-base flex-shrink-0"><i class="fa-solid fa-circle-check"></i></span>
+                                        </button>
+                                        <button type="button" data-theme-card="dark" onclick="window.setNutriTheme('dark')" class="nf-theme-card p-3 text-left flex items-center justify-between gap-2.5">
+                                            <div class="flex items-center gap-2.5 min-w-0">
+                                                <span class="w-9 h-9 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-amber-300 text-sm flex-shrink-0"><i class="fa-solid fa-moon"></i></span>
+                                                <div class="min-w-0">
+                                                    <span class="font-extrabold text-gray-900 text-xs block">Dark</span>
+                                                    <span class="text-[10px] text-gray-500 block leading-tight">Gelap nyaman shift malam</span>
                                                 </div>
                                             </div>
                                             <span class="nf-theme-check hidden text-nutri-green text-base flex-shrink-0"><i class="fa-solid fa-circle-check"></i></span>
@@ -11657,7 +11655,7 @@ window.openOfficeWithDarkLoader = function(ev) {
                 var ua = navigator.userAgent || '';
                 var isBlink = /Chrome|Chromium|Edg/i.test(ua) && !/Firefox|FxiOS/i.test(ua);
                 if (isBlink && window.CSS && CSS.supports && CSS.supports('backdrop-filter', 'blur(2px) saturate(145%) url(#nf-glass-pill)')) {
-                    document.documentElement.classList.add('nf-svg-refract');
+                    /* nf-svg-refract disabled in v134 for 60fps lightweight Glass */
                 }
             } catch (e) {}
         })();
@@ -12078,18 +12076,30 @@ window.openOfficeWithDarkLoader = function(ev) {
 
     <script>
         /* ==============================================================
-           NUTRIFRESH THEME ENGINE v126 (LIQUID GLASS vs NATURAL)
-           - Sinkron lintas halaman (Katalog, POS, Office, Download) via localStorage
+           NUTRIFRESH THEME ENGINE v134 (NATURAL [DEFAULT] | GLASS | DARK)
+           - Sinkron lintas halaman (Katalog, POS, Office, Download, Staff)
            ============================================================== */
         (function() {
+            function normalizeTheme(val) {
+                return (val === 'glass' || val === 'dark' || val === 'natural') ? val : 'natural';
+            }
+
             function getTheme() {
                 try {
-                    return localStorage.getItem('nutri_ui_theme') === 'natural' ? 'natural' : 'glass';
-                } catch (e) { return 'glass'; }
+                    return normalizeTheme(localStorage.getItem('nutri_ui_theme'));
+                } catch (e) { return 'natural'; }
+            }
+
+            function updateMetaThemeColor(mode) {
+                try {
+                    var meta = document.querySelector('meta[name="theme-color"]');
+                    if (!meta) return;
+                    var isOffice = document.body && document.body.classList.contains('nf-office-page');
+                    meta.setAttribute('content', (mode === 'dark' || isOffice) ? '#0b1120' : '#7cb342');
+                } catch (e) {}
             }
 
             function syncThemeControls(mode) {
-                var isNatural = (mode === 'natural');
                 document.querySelectorAll('[data-theme-card]').forEach(function(el) {
                     var target = el.getAttribute('data-theme-card');
                     var active = (target === mode);
@@ -12106,17 +12116,24 @@ window.openOfficeWithDarkLoader = function(ev) {
                 });
                 var offBtn = document.getElementById('btnOfficeThemeToggle');
                 if (offBtn) {
-                    offBtn.innerHTML = isNatural
-                        ? '<i class="fa-solid fa-sparkles text-sky-300 sm:mr-1"></i><span class="hidden sm:inline">Glass</span>'
-                        : '<i class="fa-solid fa-leaf text-lime-300 sm:mr-1"></i><span class="hidden sm:inline">Natural</span>';
-                    offBtn.title = isNatural ? 'Ganti ke Tema Liquid Glass' : 'Ganti ke Tema Dark Natural (Ringan)';
+                    if (mode === 'glass') {
+                        offBtn.innerHTML = '<i class="fa-solid fa-sparkles text-sky-300 sm:mr-1"></i><span class="hidden sm:inline">Glass</span>';
+                        offBtn.title = 'Tema: Glass (klik untuk ganti ke Natural / Dark)';
+                    } else if (mode === 'dark') {
+                        offBtn.innerHTML = '<i class="fa-solid fa-moon text-amber-300 sm:mr-1"></i><span class="hidden sm:inline">Dark</span>';
+                        offBtn.title = 'Tema: Dark (klik untuk ganti ke Glass / Natural)';
+                    } else {
+                        offBtn.innerHTML = '<i class="fa-solid fa-leaf text-lime-300 sm:mr-1"></i><span class="hidden sm:inline">Natural</span>';
+                        offBtn.title = 'Tema: Natural (klik untuk ganti ke Dark / Glass)';
+                    }
                 }
+                updateMetaThemeColor(mode);
             }
 
             window.getNutriTheme = getTheme;
 
             window.setNutriTheme = function(mode, silent) {
-                var clean = mode === 'natural' ? 'natural' : 'glass';
+                var clean = normalizeTheme(mode);
                 document.documentElement.setAttribute('data-theme', clean);
                 try { localStorage.setItem('nutri_ui_theme', clean); } catch (e) {}
                 syncThemeControls(clean);
@@ -12124,17 +12141,20 @@ window.openOfficeWithDarkLoader = function(ev) {
                     try { window.dispatchEvent(new Event('resize')); } catch (e) {}
                 }, 60);
                 if (!silent && window.app && typeof window.app.showCustomerToast === 'function') {
-                    window.app.showCustomerToast(clean === 'natural' ? 'Tema Natural (Bersih & Ringan) aktif' : 'Tema Liquid Glass aktif');
+                    var label = clean === 'dark' ? 'Tema Dark aktif' : (clean === 'glass' ? 'Tema Glass (Ringan) aktif' : 'Tema Natural aktif');
+                    window.app.showCustomerToast(label);
                 }
             };
 
             window.toggleNutriTheme = function() {
-                window.setNutriTheme(getTheme() === 'natural' ? 'glass' : 'natural', false);
+                var cur = getTheme();
+                var next = cur === 'natural' ? 'dark' : (cur === 'dark' ? 'glass' : 'natural');
+                window.setNutriTheme(next, false);
             };
 
             window.addEventListener('storage', function(ev) {
                 if (ev && ev.key === 'nutri_ui_theme') {
-                    var next = ev.newValue === 'natural' ? 'natural' : 'glass';
+                    var next = normalizeTheme(ev.newValue);
                     document.documentElement.setAttribute('data-theme', next);
                     syncThemeControls(next);
                 }

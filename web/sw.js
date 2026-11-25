@@ -1,11 +1,12 @@
-const SW_VERSION = 'v133';
-const CACHE_NAME = 'nutrifresh-v133';
+const SW_VERSION = 'v134';
+const CACHE_NAME = 'nutrifresh-v134';
 const CORE_ASSETS = [
   '/',
   '/pos.html',
   '/office.html',
   '/download.html',
   '/supabase-adapter.js',
+  '/nutri-theme.css',
   '/manifest.json',
   '/icon.png',
   '/logo.png',
@@ -116,7 +117,7 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   const isNav = event.request.mode === 'navigate';
-  const isCodeFile = isNav || url.pathname.endsWith('.html') || url.pathname.endsWith('.js');
+  const isCodeFile = isNav || url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css');
   const cacheKey = isNav ? getCanonicalCacheKey(url.pathname) : event.request;
 
   // NETWORK-FIRST untuk halaman HTML & JS (dengan timeout 3.5 detik -> fallback cache offline)

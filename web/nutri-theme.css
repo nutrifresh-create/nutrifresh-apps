@@ -1,0 +1,561 @@
+/* ============================================================================
+   NUTRIFRESH UNIFIED 3-THEME ENGINE (v134)
+   Modes: Natural (Default, Solid Terang) | Glass (Ringan 60fps) | Dark (Gelap)
+   Shared across: index.html, pos.html, office.html, download.html, staff.html
+   ============================================================================ */
+
+/* ----------------------------------------------------------------------------
+   0. BASE SHARED CONTROLS (Theme Cards & Pills)
+   ---------------------------------------------------------------------------- */
+.nf-theme-card {
+    border-radius: 18px !important;
+    border: 1.5px solid #e2e8f0 !important;
+    background: #ffffff !important;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.15s ease !important;
+    cursor: pointer;
+}
+.nf-theme-card:hover {
+    border-color: #9ccc65 !important;
+}
+.nf-theme-card.nf-theme-card-active {
+    border: 2px solid #7cb342 !important;
+    background: #f4f9f1 !important;
+    box-shadow: 0 6px 16px -8px rgba(85, 139, 47, 0.34) !important;
+}
+.nf-theme-pill {
+    border-radius: 9999px !important;
+    background: transparent !important;
+    color: #475569 !important;
+    border: 1px solid transparent !important;
+    transition: background-color 0.18s ease, color 0.18s ease !important;
+    cursor: pointer;
+}
+.nf-theme-pill.nf-theme-pill-active {
+    background: #7cb342 !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 10px -4px rgba(85, 139, 47, 0.45) !important;
+}
+
+/* Matikan animasi bola aura raksasa 78px di SEMUA tema (0% beban GPU idle!) */
+html .nf-liquid-bg,
+html .nf-orb {
+    display: none !important;
+    animation: none !important;
+}
+
+/* ============================================================================
+   1. TEMA GLASS (RINGAN 60FPS — TANPA SVG DISTORSI, TANPA ORB, BLUR HANYA CHROME)
+   ============================================================================ */
+html[data-theme="glass"] body:not(.nf-office-page) {
+    background-color: #eef5f0 !important;
+    background-image:
+        radial-gradient(620px circle at 6% 4%, rgba(134, 239, 172, 0.34), transparent 58%),
+        radial-gradient(540px circle at 96% 12%, rgba(125, 211, 252, 0.28), transparent 56%),
+        radial-gradient(520px circle at 84% 92%, rgba(253, 230, 138, 0.28), transparent 58%),
+        radial-gradient(480px circle at 14% 88%, rgba(167, 243, 208, 0.26), transparent 56%) !important;
+    background-attachment: fixed !important;
+}
+
+html[data-theme="glass"] body.nf-office-page {
+    background-color: #0b1120 !important;
+    background-image:
+        radial-gradient(640px circle at 8% 6%, rgba(34, 197, 94, 0.22), transparent 58%),
+        radial-gradient(560px circle at 94% 16%, rgba(56, 189, 248, 0.18), transparent 56%),
+        radial-gradient(520px circle at 80% 94%, rgba(245, 158, 11, 0.14), transparent 58%) !important;
+    background-attachment: fixed !important;
+}
+
+/* Cabut backdrop-filter berat dari kartu & panel yang ikut di-scroll (mulus 60fps!) */
+html[data-theme="glass"] body:not(.nf-office-page) .modern-prod-card,
+html[data-theme="glass"] body:not(.nf-office-page) .cust-cat-pill,
+html[data-theme="glass"] body:not(.nf-office-page) #parcelPreOrderCtaCard,
+html[data-theme="glass"] body:not(.nf-office-page) #adminLogin,
+html[data-theme="glass"] body:not(.nf-office-page) #adminView > div:first-child,
+html[data-theme="glass"] body:not(.nf-office-page) #adminContentArea .bg-white,
+html[data-theme="glass"] body:not(.nf-office-page) #posRightCartPane,
+html[data-theme="glass"] body:not(.nf-office-page) #posLeftProductsPane > div:first-child,
+html[data-theme="glass"] body:not(.nf-office-page) #posProductGrid > div,
+html[data-theme="glass"] body:not(.nf-office-page) #memberPortalContainer .bg-white,
+html[data-theme="glass"] body:not(.nf-office-page) #memberAuthContainer .bg-white,
+html[data-theme="glass"] body:not(.nf-office-page) .nf-glass-card,
+html[data-theme="glass"] body:not(.nf-office-page) .nf-sub-glass,
+html[data-theme="glass"] body:not(.nf-office-page) .nf-guide-amber,
+html[data-theme="glass"] body:not(.nf-office-page) .nf-guide-blue {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.84) !important;
+    border: 1px solid rgba(255, 255, 255, 0.94) !important;
+    box-shadow: inset 0 1px 0 #ffffff, 0 8px 22px -12px rgba(15, 23, 42, 0.12) !important;
+}
+
+html[data-theme="glass"] body:not(.nf-office-page) .nf-guide-amber {
+    background: rgba(255, 251, 235, 0.88) !important;
+    border-color: rgba(253, 230, 138, 0.9) !important;
+}
+html[data-theme="glass"] body:not(.nf-office-page) .nf-guide-blue {
+    background: rgba(239, 246, 255, 0.88) !important;
+    border-color: rgba(191, 219, 254, 0.9) !important;
+}
+
+/* Pertahankan blur kaca halus HANYA di elemen melayang (Header, Dock, Modal, Lens) */
+html[data-theme="glass"] body:not(.nf-office-page) #customerHeader > div:last-child,
+html[data-theme="glass"] body:not(.nf-office-page) #customerHeader > div:first-child button,
+html[data-theme="glass"] body:not(.nf-office-page) #customerHeader > div:first-child > div > div > span.rounded-full,
+html[data-theme="glass"] body:not(.nf-office-page) #customerView nav,
+html[data-theme="glass"] body:not(.nf-office-page) #adminTopHeader > div,
+html[data-theme="glass"] body:not(.nf-office-page) #stickyCategoryChipsBar > div,
+html[data-theme="glass"] body:not(.nf-office-page) div[id$="Modal"] > div {
+    -webkit-backdrop-filter: blur(12px) saturate(155%) !important;
+    backdrop-filter: blur(12px) saturate(155%) !important;
+}
+
+@media (max-width: 767px) {
+    html[data-theme="glass"] body:not(.nf-office-page) #adminView > div:first-child nav {
+        -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
+        backdrop-filter: blur(14px) saturate(160%) !important;
+    }
+}
+
+/* Office Glass Ringan: tanpa blur pada kartu isi, blur halus hanya header & modal */
+html[data-theme="glass"] body.nf-office-page #officeMainContainer > div:first-child,
+html[data-theme="glass"] body.nf-office-page .office-panel .bg-white {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: rgba(17, 24, 39, 0.86) !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 24px -10px rgba(0, 0, 0, 0.45) !important;
+}
+html[data-theme="glass"] body.nf-office-page > header > div:first-child,
+html[data-theme="glass"] body.nf-office-page > header > div:last-child > div,
+html[data-theme="glass"] body.nf-office-page #officeAuthGateModal > div,
+html[data-theme="glass"] body.nf-office-page #payslipModal > div {
+    -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
+    backdrop-filter: blur(12px) saturate(150%) !important;
+}
+
+/* ============================================================================
+   2. TEMA DARK (GELAP SOLID, NYAMAN SHIFT MALAM & HEMAT BATERAI AMOLED)
+   ============================================================================ */
+html[data-theme="dark"] {
+    color-scheme: dark;
+}
+
+html[data-theme="dark"] body {
+    background-color: #0b1120 !important;
+    background-image: none !important;
+    color: #e2e8f0 !important;
+}
+
+/* --- 2A. Headers, Docks, Sidebars & Splash --- */
+html[data-theme="dark"] body #customerHeader > div:first-child button,
+html[data-theme="dark"] body #customerHeader > div:first-child > div > div > span.rounded-full,
+html[data-theme="dark"] body #customerHeader > div:first-child button.nf-on-dark,
+html[data-theme="dark"] body #customerHeader > div:first-child > div > div > span.rounded-full.nf-on-dark,
+html[data-theme="dark"] body #customerHeader > div:last-child,
+html[data-theme="dark"] body #customerHeader > div:last-child.nf-on-dark,
+html[data-theme="dark"] body #adminTopHeader > div,
+html[data-theme="dark"] body #adminTopHeader > div.nf-on-dark,
+html[data-theme="dark"] body #customerView nav,
+html[data-theme="dark"] body #customerView nav.nf-dock-on-dark,
+html[data-theme="dark"] body #adminView > div:first-child,
+html[data-theme="dark"] body #stickyCategoryChipsBar > div,
+html[data-theme="dark"] body.nf-office-page > header > div:first-child,
+html[data-theme="dark"] body.nf-office-page > header > div:last-child > div {
+    background: #111827 !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 1px solid #1f2937 !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42) !important;
+    color: #e2e8f0 !important;
+}
+
+@media (max-width: 767px) {
+    html[data-theme="dark"] body #adminView > div:first-child nav,
+    html[data-theme="dark"] body #adminView > div:first-child nav.nf-dock-on-dark {
+        background: #111827 !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        border: 1px solid #263244 !important;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.58) !important;
+    }
+}
+
+/* Logo kapsul tetap terang bersih supaya logo hijau-cokelat NutriFresh selalu jelas terbaca */
+html[data-theme="dark"] body #adminTopHeader > div > div:first-child,
+html[data-theme="dark"] body #customerHeader > div:last-child > div:first-child > div {
+    background: rgba(255, 255, 255, 0.94) !important;
+    border: 1px solid rgba(255, 255, 255, 0.98) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Header & Dock icons/text on Dark */
+html[data-theme="dark"] body #customerHeader > div:first-child button,
+html[data-theme="dark"] body #customerHeader > div:first-child button span,
+html[data-theme="dark"] body #customerHeader > div:first-child #headerDeliveryInfo,
+html[data-theme="dark"] body #customerHeader > div:first-child #headerOpenHours {
+    color: #e2e8f0 !important;
+    text-shadow: none !important;
+}
+html[data-theme="dark"] body #customerHeader > div:first-child button > span:first-child {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+}
+html[data-theme="dark"] body #customerView nav button,
+html[data-theme="dark"] body #customerView nav button span,
+html[data-theme="dark"] body #adminView > div:first-child nav .admin-tab,
+html[data-theme="dark"] body #adminView > div:first-child nav .admin-tab span {
+    color: #94a3b8 !important;
+    text-shadow: none !important;
+}
+html[data-theme="dark"] body #customerView nav button.nf-slide-active,
+html[data-theme="dark"] body #customerView nav button.nf-slide-active span,
+html[data-theme="dark"] body #adminView > div:first-child nav .admin-tab.nf-slide-active,
+html[data-theme="dark"] body #adminView > div:first-child nav .admin-tab.nf-slide-active span,
+html[data-theme="dark"] body #adminView > div:first-child nav .admin-tab.text-nutri-green,
+html[data-theme="dark"] body #adminView > div:first-child nav .admin-tab.text-nutri-green span {
+    color: #a3e635 !important;
+}
+
+/* --- 2B. Sliding Tracks & Active Lenses on Dark --- */
+html[data-theme="dark"] body .nf-slide-track {
+    background: #182234 !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 1px solid #263244 !important;
+    box-shadow: none !important;
+}
+html[data-theme="dark"] body .nf-slide-lens {
+    background: #1e293b !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+html[data-theme="dark"] body #customerView nav .nf-slide-lens,
+html[data-theme="dark"] body #adminView > div:first-child nav .nf-slide-lens {
+    background: #142a18 !important;
+    border: 1px solid #365314 !important;
+}
+html[data-theme="dark"] body .nf-slide-lens[data-tint="green"],
+html[data-theme="dark"] body .nf-slide-lens[data-tint="tile-green"] {
+    background: #65a30d !important;
+    border-color: #84cc16 !important;
+    box-shadow: none !important;
+}
+html[data-theme="dark"] body .nf-slide-lens[data-tint="red"],
+html[data-theme="dark"] body .nf-slide-lens[data-tint="tile-red"] {
+    background: #dc2626 !important;
+    border-color: #ef4444 !important;
+    box-shadow: none !important;
+}
+html[data-theme="dark"] body .nf-slide-lens[data-tint="amber"] {
+    background: #d97706 !important;
+    border-color: #f59e0b !important;
+    box-shadow: none !important;
+}
+html[data-theme="dark"] body .nf-slide-lens[data-tint="blue"] {
+    background: #2563eb !important;
+    border-color: #3b82f6 !important;
+    box-shadow: none !important;
+}
+html[data-theme="dark"] body .nf-slide-lens[data-tint="purple"] {
+    background: #7c3aed !important;
+    border-color: #8b5cf6 !important;
+    box-shadow: none !important;
+}
+html[data-theme="dark"] body .nf-slide-lens[data-tint="dark"] {
+    background: #334155 !important;
+    border-color: #475569 !important;
+    box-shadow: none !important;
+}
+
+/* --- 2C. Main Cards, Surfaces, Modals, Tables & Download Page on Dark --- */
+html[data-theme="dark"] body #adminView,
+html[data-theme="dark"] body #adminContentArea,
+html[data-theme="dark"] body #customerView {
+    background-color: #0b1120 !important;
+}
+
+html[data-theme="dark"] body .modern-prod-card,
+html[data-theme="dark"] body .cust-cat-pill,
+html[data-theme="dark"] body #parcelPreOrderCtaCard,
+html[data-theme="dark"] body #adminLogin,
+html[data-theme="dark"] body #adminContentArea .bg-white,
+html[data-theme="dark"] body #posRightCartPane,
+html[data-theme="dark"] body #posLeftProductsPane > div:first-child,
+html[data-theme="dark"] body #posProductGrid > div,
+html[data-theme="dark"] body #memberPortalContainer .bg-white,
+html[data-theme="dark"] body #memberAuthContainer .bg-white,
+html[data-theme="dark"] body .nf-glass-card,
+html[data-theme="dark"] body.nf-office-page #officeMainContainer > div:first-child,
+html[data-theme="dark"] body.nf-office-page .office-panel .bg-white,
+html[data-theme="dark"] body #officeAuthGateModal > div,
+html[data-theme="dark"] body #payslipModal > div,
+html[data-theme="dark"] body div[id$="Modal"] > div {
+    background: #111827 !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-color: #1f2937 !important;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.36) !important;
+}
+
+html[data-theme="dark"] body .bg-white,
+html[data-theme="dark"] body .bg-white\/80,
+html[data-theme="dark"] body .bg-white\/90 {
+    background-color: #111827 !important;
+}
+
+html[data-theme="dark"] body .bg-gray-50,
+html[data-theme="dark"] body .bg-gray-50\/70,
+html[data-theme="dark"] body .bg-gray-50\/80,
+html[data-theme="dark"] body .bg-gray-50\/90,
+html[data-theme="dark"] body .bg-gray-50\/40,
+html[data-theme="dark"] body .bg-slate-50,
+html[data-theme="dark"] body .bg-slate-50\/70,
+html[data-theme="dark"] body .bg-slate-50\/80,
+html[data-theme="dark"] body .nf-sub-glass {
+    background-color: #162032 !important;
+    border-color: #243044 !important;
+}
+
+html[data-theme="dark"] body .bg-gray-100,
+html[data-theme="dark"] body .bg-slate-100,
+html[data-theme="dark"] body .bg-slate-200\/75,
+html[data-theme="dark"] body .bg-gray-200 {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+}
+
+/* Modal headers */
+html[data-theme="dark"] body div[id$="Modal"] > div > div.bg-gray-50,
+html[data-theme="dark"] body div[id$="Modal"] > div > div.bg-gray-50\/80 {
+    background: #162032 !important;
+    border-bottom-color: #243044 !important;
+}
+
+/* Tinted status boxes & banners on Dark */
+html[data-theme="dark"] body #sidebarCashDrawerBox,
+html[data-theme="dark"] body .bg-nutri-light,
+html[data-theme="dark"] body .bg-nutri-light\/60,
+html[data-theme="dark"] body .bg-nutri-light\/70,
+html[data-theme="dark"] body .bg-green-50,
+html[data-theme="dark"] body .bg-green-50\/70,
+html[data-theme="dark"] body .bg-emerald-50,
+html[data-theme="dark"] body .bg-emerald-50\/70,
+html[data-theme="dark"] body .bg-emerald-50\/90,
+html[data-theme="dark"] body .bg-green-100,
+html[data-theme="dark"] body.nf-office-page .office-panel .bg-\[\#f4f9f1\] {
+    background-color: #0e2418 !important;
+    border-color: #1d4d31 !important;
+}
+
+html[data-theme="dark"] body .bg-amber-50,
+html[data-theme="dark"] body .bg-amber-50\/60,
+html[data-theme="dark"] body .bg-amber-50\/70,
+html[data-theme="dark"] body .bg-amber-50\/80,
+html[data-theme="dark"] body .bg-amber-50\/90,
+html[data-theme="dark"] body .bg-amber-100,
+html[data-theme="dark"] body .bg-amber-100\/80,
+html[data-theme="dark"] body .nf-guide-amber {
+    background-color: #261c0b !important;
+    border-color: #6b4412 !important;
+}
+
+html[data-theme="dark"] body .bg-blue-50,
+html[data-theme="dark"] body .bg-blue-50\/50,
+html[data-theme="dark"] body .bg-blue-50\/70,
+html[data-theme="dark"] body .bg-blue-50\/80,
+html[data-theme="dark"] body .bg-blue-100,
+html[data-theme="dark"] body .nf-guide-blue,
+html[data-theme="dark"] body #officeBackupReminderBanner {
+    background-color: #10203a !important;
+    border-color: #1e3a6e !important;
+}
+
+html[data-theme="dark"] body .bg-indigo-50,
+html[data-theme="dark"] body .bg-indigo-50\/70,
+html[data-theme="dark"] body .bg-purple-50,
+html[data-theme="dark"] body .bg-purple-50\/50,
+html[data-theme="dark"] body .bg-purple-50\/70 {
+    background-color: #1c1632 !important;
+    border-color: #432b7a !important;
+}
+
+html[data-theme="dark"] body .bg-red-50,
+html[data-theme="dark"] body .bg-red-50\/70,
+html[data-theme="dark"] body .bg-red-100,
+html[data-theme="dark"] body .bg-rose-50,
+html[data-theme="dark"] body .bg-rose-50\/70 {
+    background-color: #2b1218 !important;
+    border-color: #6b1f2e !important;
+}
+
+/* Borders & Dividers on Dark */
+html[data-theme="dark"] body .border-gray-100,
+html[data-theme="dark"] body .border-gray-200,
+html[data-theme="dark"] body .border-gray-200\/70,
+html[data-theme="dark"] body .border-gray-200\/80,
+html[data-theme="dark"] body .border-gray-300,
+html[data-theme="dark"] body .border-slate-200,
+html[data-theme="dark"] body .border-slate-300,
+html[data-theme="dark"] body .border-b,
+html[data-theme="dark"] body .border-t,
+html[data-theme="dark"] body .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+html[data-theme="dark"] body .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #243044 !important;
+}
+
+/* --- 2D. Typography & Contrast on Dark --- */
+html[data-theme="dark"] body .text-gray-900,
+html[data-theme="dark"] body .text-gray-800,
+html[data-theme="dark"] body .text-slate-900,
+html[data-theme="dark"] body .text-slate-800 {
+    color: #f1f5f9 !important;
+}
+html[data-theme="dark"] body .text-gray-700,
+html[data-theme="dark"] body .text-gray-600,
+html[data-theme="dark"] body .text-slate-700,
+html[data-theme="dark"] body .text-slate-600 {
+    color: #cbd5e1 !important;
+}
+html[data-theme="dark"] body .text-gray-500,
+html[data-theme="dark"] body .text-gray-400,
+html[data-theme="dark"] body .text-slate-500 {
+    color: #94a3b8 !important;
+}
+html[data-theme="dark"] body .text-nutri-brown {
+    color: #fbbf24 !important;
+}
+html[data-theme="dark"] body .text-nutri-dark,
+html[data-theme="dark"] body .text-green-900,
+html[data-theme="dark"] body .text-green-800,
+html[data-theme="dark"] body .text-green-700,
+html[data-theme="dark"] body .text-emerald-950,
+html[data-theme="dark"] body .text-emerald-900,
+html[data-theme="dark"] body .text-emerald-800 {
+    color: #86efac !important;
+}
+html[data-theme="dark"] body .text-nutri-green {
+    color: #a3e635 !important;
+}
+html[data-theme="dark"] body .text-amber-950,
+html[data-theme="dark"] body .text-amber-900,
+html[data-theme="dark"] body .text-amber-800,
+html[data-theme="dark"] body .text-amber-700 {
+    color: #fcd34d !important;
+}
+html[data-theme="dark"] body .text-blue-950,
+html[data-theme="dark"] body .text-blue-900,
+html[data-theme="dark"] body .text-blue-800,
+html[data-theme="dark"] body .text-blue-700,
+html[data-theme="dark"] body .text-blue-600 {
+    color: #93c5fd !important;
+}
+html[data-theme="dark"] body .text-indigo-950,
+html[data-theme="dark"] body .text-indigo-900,
+html[data-theme="dark"] body .text-indigo-800,
+html[data-theme="dark"] body .text-indigo-700,
+html[data-theme="dark"] body .text-purple-950,
+html[data-theme="dark"] body .text-purple-900,
+html[data-theme="dark"] body .text-purple-800 {
+    color: #c4b5fd !important;
+}
+html[data-theme="dark"] body .text-red-800,
+html[data-theme="dark"] body .text-red-700,
+html[data-theme="dark"] body .text-red-600,
+html[data-theme="dark"] body .text-rose-900,
+html[data-theme="dark"] body .text-rose-800,
+html[data-theme="dark"] body .text-rose-700 {
+    color: #fca5a5 !important;
+}
+/* Pertahankan teks putih tegas di dalam tombol/header berwarna solid */
+html[data-theme="dark"] body .text-white,
+html[data-theme="dark"] body .bg-nutri-green,
+html[data-theme="dark"] body .bg-nutri-green *,
+html[data-theme="dark"] body .bg-nutri-brown,
+html[data-theme="dark"] body .bg-nutri-brown *,
+html[data-theme="dark"] body .bg-green-600,
+html[data-theme="dark"] body .bg-emerald-600,
+html[data-theme="dark"] body .bg-blue-600,
+html[data-theme="dark"] body .bg-amber-500,
+html[data-theme="dark"] body .bg-amber-600,
+html[data-theme="dark"] body .bg-red-600,
+html[data-theme="dark"] body .bg-rose-600,
+html[data-theme="dark"] body .bg-purple-600,
+html[data-theme="dark"] body .bg-indigo-600,
+html[data-theme="dark"] body .bg-slate-800,
+html[data-theme="dark"] body .bg-slate-900 {
+    color: #ffffff !important;
+}
+
+/* --- 2E. Form Inputs, Selects & Textareas on Dark --- */
+html[data-theme="dark"] body input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+html[data-theme="dark"] body select,
+html[data-theme="dark"] body textarea,
+html[data-theme="dark"] body #custSearchInput,
+html[data-theme="dark"] body #posSearch {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+html[data-theme="dark"] body input::placeholder,
+html[data-theme="dark"] body textarea::placeholder {
+    color: #64748b !important;
+}
+html[data-theme="dark"] body select option {
+    background-color: #0f172a;
+    color: #f8fafc;
+}
+
+/* --- 2F. Tables on Dark --- */
+html[data-theme="dark"] body table thead tr {
+    background-color: #162032 !important;
+    color: #94a3b8 !important;
+}
+html[data-theme="dark"] body table tbody tr:hover {
+    background-color: rgba(30, 41, 59, 0.65) !important;
+}
+
+/* --- 2G. Theme Cards, Pills & Splash on Dark --- */
+html[data-theme="dark"] .nf-theme-card {
+    background: #162032 !important;
+    border-color: #2a3950 !important;
+}
+html[data-theme="dark"] .nf-theme-card.nf-theme-card-active {
+    background: #102617 !important;
+    border: 2px solid #84cc16 !important;
+    box-shadow: 0 6px 18px -8px rgba(132, 204, 22, 0.38) !important;
+}
+html[data-theme="dark"] .nf-theme-pill {
+    color: #94a3b8 !important;
+}
+html[data-theme="dark"] .nf-theme-pill.nf-theme-pill-active {
+    background: #65a30d !important;
+    color: #ffffff !important;
+}
+html[data-theme="dark"] body #appSplashLoader,
+html[data-theme="dark"] body #officeSplashLoader {
+    background: #0b1120 !important;
+}
+html[data-theme="dark"] body #appSplashLoader > div,
+html[data-theme="dark"] body #officeSplashLoader > div {
+    background: #111827 !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 1px solid #1f2937 !important;
+}
+
+/* --- 2H. PRINT SAFETY: Struk & Label Thermal HARUS selalu hitam-di-atas-putih! --- */
+html[data-theme="dark"] #printArea,
+html[data-theme="dark"] #printArea * {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+@media print {
+    html[data-theme="dark"] body,
+    html[data-theme="dark"] body * {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+}

@@ -8,6 +8,7 @@ WEB_DIR = ROOT / "web"
 SHARED_ASSETS = [
     "supabase-adapter.js",
     "native-bridge.js",
+    "nutri-theme.css",
     "logo.png",
     "icon.png",
     "iconP.png",
