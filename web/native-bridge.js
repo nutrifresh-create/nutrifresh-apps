@@ -63,15 +63,37 @@
         };
     }
 
-    // Immediately hide Toko (pos.html) button in Native Office (.exe) so it never hits missing pos.html
+    // Immediately hide cross-app links in Native Office (.exe / .apk), Staff (.apk) & Customer (.apk)
     if (nativeAppRole === "office") {
         const offStyle = document.createElement("style");
         offStyle.textContent = `
-            html body > header > div:first-child > div:last-child button[onclick*="goToStore"] {
+            html body > header > div:first-child > div:last-child button[onclick*="goToStore"],
+            html body #officeAuthGateModal a[href="index.html"] {
                 display: none !important;
             }
         `;
         (document.head || document.documentElement).appendChild(offStyle);
+    } else if (nativeAppRole === "staff") {
+        const stfStyle = document.createElement("style");
+        stfStyle.textContent = `
+            html body #staffLoginCrossLinks,
+            html body #staffLoginScreen a[href="index.html"],
+            html body #staffLoginScreen a[href="pos.html"] {
+                display: none !important;
+            }
+        `;
+        (document.head || document.documentElement).appendChild(stfStyle);
+    } else if (nativeAppRole === "customer") {
+        const custStyle = document.createElement("style");
+        custStyle.textContent = `
+            html body #staffQuickAccessBanner,
+            html body #staffReentryPromptBar,
+            html body #footerPortalAccessWrap,
+            html body #btnAdminPanelReturn {
+                display: none !important;
+            }
+        `;
+        (document.head || document.documentElement).appendChild(custStyle);
     }
 
     function stripNativeHiddenNodes() {
@@ -82,7 +104,15 @@
             // Trigger resize so iOS26 sliding lens immediately snaps cleanly to Kasir tab
             try { window.dispatchEvent(new Event("resize")); } catch (_) {}
         } else if (nativeAppRole === "office") {
-            document.querySelectorAll('button[onclick*="goToStore"]').forEach((el) => {
+            document.querySelectorAll('button[onclick*="goToStore"], #officeAuthGateModal a[href="index.html"]').forEach((el) => {
+                el.remove();
+            });
+        } else if (nativeAppRole === "staff") {
+            document.querySelectorAll('#staffLoginCrossLinks').forEach((el) => {
+                el.remove();
+            });
+        } else if (nativeAppRole === "customer") {
+            document.querySelectorAll('#staffQuickAccessBanner, #staffReentryPromptBar, #footerPortalAccessWrap, #btnAdminPanelReturn').forEach((el) => {
                 el.remove();
             });
         }

@@ -47,3 +47,4 @@ if __name__ == "__main__":
     build_bundle("pos.html", "pos", "id.my.nutrifresh.pos", ROOT / "mobile" / "pos-android" / "www")
     build_bundle("staff.html", "staff", "id.my.nutrifresh.staff", ROOT / "mobile" / "staff-android" / "www")
     build_bundle("index.html", "customer", "id.my.nutrifresh.app", ROOT / "mobile" / "customer-android" / "www")
+    build_bundle("office.html", "office", "id.my.nutrifresh.office", ROOT / "mobile" / "office-android" / "www")

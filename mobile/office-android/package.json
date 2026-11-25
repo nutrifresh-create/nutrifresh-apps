@@ -1,0 +1,11 @@
+{
+  "name": "nutrifresh-office-android",
+  "version": "1.3.9",
+  "private": true,
+  "description": "NutriFresh Office Android (.apk) - Keuangan, Pembukuan, HRD, Pengumuman & Slip Gaji untuk Tim Inti",
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  }
+}

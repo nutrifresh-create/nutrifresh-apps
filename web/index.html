@@ -2211,15 +2211,7 @@
                     <i class="fa-solid fa-crown text-sm text-amber-600"></i>
                     <span>Masuk / Daftar Member Pelanggan</span>
                 </button>
-                <div class="pt-1 flex items-center justify-center gap-3 flex-wrap">
-                    <a href="staff.html" class="text-[11px] font-extrabold text-teal-700 hover:underline">
-                        <i class="fa-solid fa-user-clock mr-1"></i> Portal Staff (Absensi &amp; HR)
-                    </a>
-                    <span class="text-gray-300">•</span>
-                    <button type="button" onclick="app.openEntryLoginChoice()" class="text-[11px] font-bold text-gray-500 hover:text-nutri-dark underline">
-                        <i class="fa-solid fa-cash-register mr-1"></i> Kasir POS
-                    </button>
-                </div>
+
             </div>
         </div>
     </div>
@@ -3722,11 +3714,7 @@
             },
             refreshStaffReentryPrompt() {
                 const reenterBox = document.getElementById('staffReentryPromptBar');
-                if (!reenterBox) return;
-                if (!this.state.authChecked) { reenterBox.classList.add('hidden'); return; }
-                const hasAuthUser = !!(auth && auth.currentUser && !auth.currentUser.isAnonymous);
-                const isAnyLoggedIn = !!(this.state.isLoggedIn || this.state.staffAccount || this.state.customerMember || hasAuthUser);
-                reenterBox.classList.toggle('hidden', isAnyLoggedIn || this.isStandaloneApp());
+                if (reenterBox) reenterBox.classList.add('hidden');
             },
 
             // ==========================================
@@ -6606,10 +6594,11 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
             // ==========================================
             updateCustomerHeader() {
                 this.refreshStaffReentryPrompt();
+                const isCustNativeApk = window.__NF_NATIVE_APP__ === 'customer';
                 const fWrap = document.getElementById('footerPortalAccessWrap');
-                if (fWrap) fWrap.classList.toggle('hidden', !this.state.isLoggedIn);
+                if (fWrap) fWrap.classList.toggle('hidden', isCustNativeApk || !this.state.isLoggedIn);
                 const btnPortal = document.getElementById('btnAdminPanelReturn');
-                if (btnPortal) btnPortal.classList.toggle('hidden', !this.state.isLoggedIn);
+                if (btnPortal) btnPortal.classList.toggle('hidden', isCustNativeApk || !this.state.isLoggedIn);
                 const sb = document.getElementById('staffQuickAccessBanner'), mobLabel = document.getElementById('mobMemberLabel'), quickStockBtn = document.getElementById('btnStaffQuickStock');
                 if (this.state.isLoggedIn && this.state.staffAccount) {
                     if (sb) sb.classList.remove('hidden');
@@ -6698,7 +6687,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v138';
+        window.__NF_APP_VERSION = 'v139';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 
