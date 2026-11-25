@@ -1,0 +1,11 @@
+{
+  "name": "nutrifresh-staff-android",
+  "version": "1.3.6",
+  "private": true,
+  "description": "NutriFresh Staff Android (.apk) - Absensi GPS + Foto, Pengajuan HR, Jadwal & Slip Gaji",
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  }
+}

@@ -1,0 +1,53 @@
+name: Build NutriFresh Staff (.apk)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-staff-apk:
+    name: Build NutriFresh Staff (.apk)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Prepare web bundle for Staff Android
+        run: python3 scripts/prepare_web_bundles.py
+
+      - name: Install Capacitor dependencies
+        working-directory: mobile/staff-android
+        run: npm install
+
+      - name: Generate Android native project
+        working-directory: mobile/staff-android
+        run: npx cap add android && npx cap sync android
+
+      - name: Configure icons, GPS, Camera, OAuth Deep Link & Smart Back
+        run: python3 mobile/staff-android/scripts/configure_android.py
+
+      - name: Build Release-ready APK (debug-signed for direct sideload install)
+        working-directory: mobile/staff-android/android
+        run: chmod +x gradlew && ./gradlew assembleDebug
+
+      - name: Rename APK
+        run: cp mobile/staff-android/android/app/build/outputs/apk/debug/app-debug.apk NutriFresh_Staff.apk
+
+      - name: Upload NutriFresh_Staff.apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: NutriFresh_Staff_APK
+          path: NutriFresh_Staff.apk
+          retention-days: 30

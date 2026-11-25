@@ -1,5 +1,5 @@
 /* ============================================================================
-   NUTRIFRESH UNIFIED 3-THEME ENGINE (v135)
+   NUTRIFRESH UNIFIED 3-THEME ENGINE (v136)
    Modes: Natural (Default, Solid Terang) | Glass (Ringan 60fps) | Dark (100% Gelap)
    Shared across: index.html, pos.html, office.html, download.html, staff.html
    ============================================================================ */
@@ -829,4 +829,330 @@ html[data-theme="dark"] #printArea * {
         background: #ffffff !important;
         color: #000000 !important;
     }
+}
+/* ============================================================================
+   3. NUTRIFRESH OFFICE — 3 TEMA TERPISAH JELAS (v136)
+      Natural = TERANG SOLID | Dark = GELAP SOLID | Glass = KACA GELAP RINGAN
+   ============================================================================ */
+
+/* --- 3A. OFFICE NATURAL (TERANG SOLID BERSIH, SETARA POS & KATALOG!) --- */
+html[data-theme="natural"] {
+    color-scheme: light;
+}
+html[data-theme="natural"] body.nf-office-page {
+    background-color: #f1f5f9 !important;
+    background-image: none !important;
+    color: #0f172a !important;
+}
+html[data-theme="natural"] body.nf-office-page > header > div:first-child,
+html[data-theme="natural"] body.nf-office-page > header > div:last-child > div {
+    background: #ffffff !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 1px solid #dbe3ea !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.07) !important;
+    color: #0f172a !important;
+}
+html[data-theme="natural"] body.nf-office-page > header > div:first-child .text-white {
+    color: #0f172a !important;
+}
+html[data-theme="natural"] body.nf-office-page > header > div:first-child #detectedAccountChip {
+    color: #558b2f !important;
+}
+html[data-theme="natural"] body.nf-office-page > header > div:first-child > div:first-child > div:first-child {
+    background: #f4f9f1 !important;
+    border: 1px solid #cde5be !important;
+}
+html[data-theme="natural"] body.nf-office-page > header button.bg-slate-800 {
+    background: #f1f5f9 !important;
+    color: #334155 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+html[data-theme="natural"] body.nf-office-page > header button.bg-slate-800:hover {
+    background: #e2e8f0 !important;
+}
+html[data-theme="natural"] body.nf-office-page > header button.bg-red-950\/70 {
+    background: #fef2f2 !important;
+    color: #dc2626 !important;
+    border: 1px solid #fecaca !important;
+}
+html[data-theme="natural"] body.nf-office-page #grpBadgeKeuangan {
+    background: #ecfdf5 !important;
+    color: #047857 !important;
+    border-color: #a7f3d0 !important;
+}
+html[data-theme="natural"] body.nf-office-page #grpBadgeHr {
+    background: #fffbeb !important;
+    color: #b45309 !important;
+    border-color: #fde68a !important;
+}
+html[data-theme="natural"] body.nf-office-page #navDividerSep {
+    background: #cbd5e1 !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-nav-btn {
+    color: #475569 !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-nav-btn:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-nav-btn.nf-slide-active,
+html[data-theme="natural"] body.nf-office-page .office-nav-btn.bg-nutri-green {
+    color: #ffffff !important;
+}
+html[data-theme="natural"] body.nf-office-page #officeMainContainer > div:first-child,
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-white,
+html[data-theme="natural"] body.nf-office-page #officeAuthGateModal > div,
+html[data-theme="natural"] body.nf-office-page #payslipModal > div,
+html[data-theme="natural"] body.nf-office-page #officePhotoModal > div {
+    background: #ffffff !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05) !important;
+    color: #0f172a !important;
+}
+html[data-theme="natural"] body.nf-office-page #officeMainContainer > div:first-child .text-white,
+html[data-theme="natural"] body.nf-office-page #officeMainContainer > div:first-child .text-slate-200,
+html[data-theme="natural"] body.nf-office-page #officeMainContainer > div:first-child .text-slate-300,
+html[data-theme="natural"] body.nf-office-page #officeAuthGateModal h2,
+html[data-theme="natural"] body.nf-office-page #payslipModal h3 {
+    color: #0f172a !important;
+}
+html[data-theme="natural"] body.nf-office-page #officeMainContainer > div:first-child .text-slate-400,
+html[data-theme="natural"] body.nf-office-page #officeAuthGateModal p {
+    color: #64748b !important;
+}
+html[data-theme="natural"] body.nf-office-page #autoDetectedRolePill {
+    background: #f4f9f1 !important;
+    color: #3f6212 !important;
+    border-color: #bef264 !important;
+}
+html[data-theme="natural"] body.nf-office-page #ownerRolePreviewSelect {
+    background: #fffbeb !important;
+    color: #92400e !important;
+    border-color: #fcd34d !important;
+}
+html[data-theme="natural"] body.nf-office-page #officeBackupReminderBanner {
+    background: #eff6ff !important;
+    border: 1px solid #bfdbfe !important;
+}
+html[data-theme="natural"] body.nf-office-page #officeBackupReminderBanner .text-blue-100 { color: #1e3a8a !important; }
+html[data-theme="natural"] body.nf-office-page #officeBackupReminderBanner .text-blue-300 { color: #1d4ed8 !important; }
+
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-gray-50,
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-gray-50\/80 {
+    background: #f8fafc !important;
+    color: #334155 !important;
+    border-color: #e2e8f0 !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-gray-100 {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-panel table tbody {
+    background: #ffffff !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-panel table tbody tr {
+    border-color: #f1f5f9 !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-panel .hover\:bg-gray-50:hover {
+    background-color: #f8fafc !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-\[\#f4f9f1\],
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-nutri-light,
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-nutri-light\/80,
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-green-100 {
+    background: #f4f9f1 !important;
+    border-color: #bbf7d0 !important;
+    color: #166534 !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-amber-50,
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-amber-50\/80,
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-amber-100 {
+    background: #fffbeb !important;
+    border-color: #fde68a !important;
+    color: #92400e !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-purple-50\/70 {
+    background: #faf5ff !important;
+    border-color: #e9d5ff !important;
+    color: #6b21a8 !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-red-100,
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-red-50 {
+    background: #fef2f2 !important;
+    border-color: #fecaca !important;
+    color: #b91c1c !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-blue-100,
+html[data-theme="natural"] body.nf-office-page .office-panel .bg-blue-50 {
+    background: #eff6ff !important;
+    border-color: #bfdbfe !important;
+    color: #1d4ed8 !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-panel .text-gray-900,
+html[data-theme="natural"] body.nf-office-page .office-panel .text-gray-800 { color: #0f172a !important; }
+html[data-theme="natural"] body.nf-office-page .office-panel .text-gray-700,
+html[data-theme="natural"] body.nf-office-page .office-panel .text-gray-600 { color: #334155 !important; }
+html[data-theme="natural"] body.nf-office-page .office-panel .text-gray-500,
+html[data-theme="natural"] body.nf-office-page .office-panel .text-gray-400,
+html[data-theme="natural"] body.nf-office-page .office-panel .text-slate-400 { color: #64748b !important; }
+html[data-theme="natural"] body.nf-office-page .office-panel .text-nutri-dark { color: #3f6212 !important; }
+html[data-theme="natural"] body.nf-office-page .office-panel .text-nutri-brown { color: #936C38 !important; }
+html[data-theme="natural"] body.nf-office-page .office-panel .text-amber-900,
+html[data-theme="natural"] body.nf-office-page .office-panel .text-amber-800 { color: #92400e !important; }
+html[data-theme="natural"] body.nf-office-page .office-panel .text-purple-900,
+html[data-theme="natural"] body.nf-office-page .office-panel .text-purple-700 { color: #6b21a8 !important; }
+html[data-theme="natural"] body.nf-office-page .office-panel .text-red-900,
+html[data-theme="natural"] body.nf-office-page .office-panel .text-red-700,
+html[data-theme="natural"] body.nf-office-page .office-panel .text-red-600 { color: #dc2626 !important; }
+html[data-theme="natural"] body.nf-office-page .office-panel .text-blue-900,
+html[data-theme="natural"] body.nf-office-page .office-panel .text-blue-800,
+html[data-theme="natural"] body.nf-office-page .office-panel .text-blue-700,
+html[data-theme="natural"] body.nf-office-page .office-panel .text-blue-400 { color: #1d4ed8 !important; }
+html[data-theme="natural"] body.nf-office-page .office-panel .text-emerald-400 { color: #047857 !important; }
+
+html[data-theme="natural"] body.nf-office-page #cardMainCash { color: #1d4ed8 !important; }
+html[data-theme="natural"] body.nf-office-page #cardReserveCash { color: #3f6212 !important; }
+html[data-theme="natural"] body.nf-office-page #cardTotalOutflow { color: #dc2626 !important; }
+html[data-theme="natural"] body.nf-office-page #miniReceivableTotal { color: #15803d !important; }
+html[data-theme="natural"] body.nf-office-page #miniPayableTotal { color: #dc2626 !important; }
+html[data-theme="natural"] body.nf-office-page #miniAssetBookValue { color: #7e22ce !important; }
+
+html[data-theme="natural"] body.nf-office-page .office-panel input,
+html[data-theme="natural"] body.nf-office-page .office-panel select,
+html[data-theme="natural"] body.nf-office-page .office-panel textarea,
+html[data-theme="natural"] body.nf-office-page #officeMainContainer input,
+html[data-theme="natural"] body.nf-office-page #officeMainContainer select {
+    background-color: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #0f172a !important;
+}
+html[data-theme="natural"] body.nf-office-page select option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+}
+html[data-theme="natural"] body.nf-office-page #payslipModal .bg-\[\#0f172a\],
+html[data-theme="natural"] body.nf-office-page #payslipModal .bg-slate-900\/90 {
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+html[data-theme="natural"] body.nf-office-page #payslipModal .text-slate-200,
+html[data-theme="natural"] body.nf-office-page #payslipModal .text-white { color: #0f172a !important; }
+html[data-theme="natural"] body.nf-office-page #payslipModal .text-lime-300 { color: #3f6212 !important; }
+html[data-theme="natural"] body.nf-office-page #officeSplashLoader {
+    background: #f4f7f5 !important;
+}
+html[data-theme="natural"] body.nf-office-page #officeSplashLoader > div {
+    background: #ffffff !important;
+    border: 1px solid #dcfce7 !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-hr-subtab {
+    background: #f1f5f9 !important;
+    color: #334155 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+html[data-theme="natural"] body.nf-office-page .office-hr-subtab.is-active {
+    background: #7cb342 !important;
+    color: #ffffff !important;
+    border-color: #65a30d !important;
+}
+
+/* --- 3B. OFFICE GLASS (KACA GELAP ELEGAN RINGAN 60FPS) --- */
+html[data-theme="glass"] body.nf-office-page {
+    background-color: #070d19 !important;
+    background-image:
+        radial-gradient(680px circle at 6% 4%, rgba(34, 197, 94, 0.24), transparent 56%),
+        radial-gradient(620px circle at 95% 10%, rgba(56, 189, 248, 0.22), transparent 54%),
+        radial-gradient(580px circle at 82% 94%, rgba(168, 85, 247, 0.16), transparent 56%),
+        radial-gradient(520px circle at 10% 90%, rgba(245, 158, 11, 0.14), transparent 54%) !important;
+    background-attachment: fixed !important;
+    color: #f8fafc !important;
+}
+html[data-theme="glass"] body.nf-office-page > header > div:first-child,
+html[data-theme="glass"] body.nf-office-page > header > div:last-child > div {
+    background: rgba(15, 23, 42, 0.66) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
+    backdrop-filter: blur(14px) saturate(165%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 12px 28px -12px rgba(0, 0, 0, 0.55) !important;
+}
+html[data-theme="glass"] body.nf-office-page #officeMainContainer > div:first-child,
+html[data-theme="glass"] body.nf-office-page .office-panel .bg-white {
+    background: rgba(17, 25, 42, 0.78) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.13) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 10px 26px -12px rgba(0, 0, 0, 0.5) !important;
+}
+html[data-theme="glass"] body.nf-office-page .office-hr-subtab {
+    background: rgba(30, 41, 59, 0.72) !important;
+    color: #cbd5e1 !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+html[data-theme="glass"] body.nf-office-page .office-hr-subtab.is-active {
+    background: linear-gradient(135deg, #84cc16, #10b981) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* --- 3C. OFFICE DARK (GELAP SOLID TEGAS, ZERO BLUR) --- */
+html[data-theme="dark"] body.nf-office-page {
+    background-color: #0b1120 !important;
+    background-image: none !important;
+    color: #f1f5f9 !important;
+}
+html[data-theme="dark"] body.nf-office-page .office-hr-subtab {
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+    border: 1px solid #334155 !important;
+}
+html[data-theme="dark"] body.nf-office-page .office-hr-subtab.is-active {
+    background: #65a30d !important;
+    color: #ffffff !important;
+    border-color: #84cc16 !important;
+}
+
+/* ============================================================================
+   4. NUTRIFRESH STAFF (staff.html) — 3 TEMA RINGAN & RAPI
+   ============================================================================ */
+html[data-theme="natural"] body.nf-staff-page {
+    background-color: #f4f7f5 !important;
+    background-image: none !important;
+    color: #0f172a !important;
+}
+html[data-theme="natural"] body.nf-staff-page .nf-staff-card,
+html[data-theme="natural"] body.nf-staff-page .nf-staff-header,
+html[data-theme="natural"] body.nf-staff-page .nf-staff-dock {
+    background: #ffffff !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06) !important;
+}
+html[data-theme="glass"] body.nf-staff-page .nf-staff-card {
+    background: rgba(255, 255, 255, 0.84) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.94) !important;
+    box-shadow: inset 0 1px 0 #ffffff, 0 8px 22px -12px rgba(15, 23, 42, 0.14) !important;
+}
+html[data-theme="glass"] body.nf-staff-page .nf-staff-header,
+html[data-theme="glass"] body.nf-staff-page .nf-staff-dock {
+    background: rgba(255, 255, 255, 0.72) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
+    backdrop-filter: blur(14px) saturate(160%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.9) !important;
+    box-shadow: inset 0 1px 0 #ffffff, 0 10px 26px -10px rgba(15, 23, 42, 0.18) !important;
+}
+html[data-theme="dark"] body.nf-staff-page .nf-staff-card,
+html[data-theme="dark"] body.nf-staff-page .nf-staff-header,
+html[data-theme="dark"] body.nf-staff-page .nf-staff-dock {
+    background: #111827 !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 1px solid #1f2937 !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42) !important;
 }

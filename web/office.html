@@ -16,8 +16,8 @@
     </script>
     <title>NutriFresh Office — Portal HRD, Payroll & Keuangan Perusahaan</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" type="image/png" href="icon-office.png">
+    <link rel="apple-touch-icon" href="icon-office.png">
     <meta name="theme-color" content="#0b1120">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -623,7 +623,7 @@
     </style>
     <link rel="stylesheet" href="nutri-theme.css">
 </head>
-<body class="text-slate-100 min-h-screen flex flex-col bg-[#0b1120] overflow-x-hidden">
+<body class="nf-office-page text-slate-100 min-h-screen flex flex-col bg-[#0b1120] overflow-x-hidden">
     
     <!-- LAPISAN AURA CAIR CERAH (BRIGHT AMBIENT LIQUID GLASS BACKDROP) -->
     <div class="nf-liquid-bg no-print" aria-hidden="true">
@@ -764,7 +764,7 @@
                     <i class="fa-solid fa-users text-[9px]"></i> HR & SDM
                 </span>
                 <button type="button" id="tabBtn-hrd" onclick="officeApp.switchTab('hrd')" class="office-nav-btn px-3 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 whitespace-nowrap transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-calendar-check text-[11px]"></i> <span>Cuti & Lembur</span>
+                    <i class="fa-solid fa-calendar-check text-[11px]"></i> <span>HR+ & Absensi</span>
                 </button>
                 <button type="button" id="tabBtn-payroll" onclick="officeApp.switchTab('payroll')" class="office-nav-btn px-3 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 whitespace-nowrap transition flex items-center gap-1.5">
                     <i class="fa-solid fa-money-check-dollar text-[11px]"></i> <span>Payroll</span>
@@ -1116,8 +1116,26 @@
             </div>
         </section>
 
-        <!-- 4. HRD: CUTI, IZIN, LEMBUR & KASBON -->
+        <!-- 4. HR+ OFFICE: PENGAJUAN, PANTAU ABSENSI + FOTO, PENGUMUMAN, JADWAL, CUTI & PINJAMAN -->
         <section id="panel-hrd" class="office-panel hidden space-y-5 text-xs">
+            <!-- Sub-tab HR+ -->
+            <div class="bg-white rounded-2xl border border-gray-200/80 p-2.5 shadow-sm flex flex-wrap items-center gap-1.5">
+                <button type="button" id="hrSubBtn-pengajuan" onclick="officeApp.switchHrSubTab('pengajuan')" class="office-hr-subtab is-active px-3.5 py-2 rounded-full text-xs font-extrabold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-signature"></i> <span>1. Pengajuan Cuti/Lembur/Kasbon</span>
+                </button>
+                <button type="button" id="hrSubBtn-absensi" onclick="officeApp.switchHrSubTab('absensi')" class="office-hr-subtab px-3.5 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-camera"></i> <span>2. Pantau Absensi &amp; Foto</span>
+                </button>
+                <button type="button" id="hrSubBtn-pengumuman" onclick="officeApp.switchHrSubTab('pengumuman')" class="office-hr-subtab px-3.5 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-bullhorn"></i> <span>3. Pengumuman Tim</span>
+                </button>
+                <button type="button" id="hrSubBtn-jadwal" onclick="officeApp.switchHrSubTab('jadwal')" class="office-hr-subtab px-3.5 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-calendar-days"></i> <span>4. Jadwal Shift, Cuti &amp; Pinjaman</span>
+                </button>
+            </div>
+
+            <!-- SUB-TAB 1: PENGAJUAN (ASLI) -->
+            <div id="hrSubPane-pengajuan" class="space-y-5">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
                 <div class="lg:col-span-4 bg-white rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-3">
                     <h2 class="text-sm font-black text-gray-900 border-b pb-2">Form Pengajuan HRD</h2>
@@ -1182,6 +1200,157 @@
                             </thead>
                             <tbody id="hrRequestsTableBody" class="divide-y divide-gray-100"></tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+            <!-- SUB-TAB 2: PANTAU ABSENSI & FOTO BUKTI -->
+            <div id="hrSubPane-absensi" class="hidden space-y-4">
+                <div class="bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm">
+                    <div class="px-4 py-3 border-b bg-gray-50 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h3 class="text-xs sm:text-sm font-black text-gray-900"><i class="fa-solid fa-location-dot text-nutri-green mr-1.5"></i> Log Absensi GPS &amp; Foto Bukti (Periode Aktif)</h3>
+                            <span id="offAttCountLabel" class="text-[11px] text-gray-500">0 catatan absensi</span>
+                        </div>
+                        <input type="text" id="offAttSearchInput" oninput="officeApp.renderOfficeAttendanceTable()" placeholder="Cari nama karyawan..." class="px-3 py-1.5 border rounded-full text-xs outline-none w-48">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 uppercase text-[11px]">
+                                    <th class="p-3 font-bold">Tanggal &amp; Shift</th>
+                                    <th class="p-3 font-bold">Karyawan</th>
+                                    <th class="p-3 font-bold">Masuk / Pulang</th>
+                                    <th class="p-3 font-bold">Jarak &amp; Status</th>
+                                    <th class="p-3 font-bold text-center">Foto Bukti</th>
+                                </tr>
+                            </thead>
+                            <tbody id="offAttTableBody" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-TAB 3: PENGUMUMAN TIM (TAMPIL DI NUTRIFRESH STAFF) -->
+            <div id="hrSubPane-pengumuman" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <div class="lg:col-span-4 bg-white rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-3">
+                    <h3 class="text-sm font-black text-gray-900 border-b pb-2"><i class="fa-solid fa-bullhorn text-amber-500 mr-1.5"></i> Buat Pengumuman Tim</h3>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">Judul Pengumuman *</label>
+                        <input type="text" id="annTitleInput" placeholder="Misal: Jadwal Stok Opname Minggu Ini" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">Prioritas</label>
+                        <select id="annPriorityInput" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
+                            <option value="info">ℹ️ Info Umum</option>
+                            <option value="urgent">⚠️ Penting / Urgent</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">Isi Pengumuman *</label>
+                        <textarea id="annBodyInput" rows="3" placeholder="Tulis pesan untuk seluruh tim..." class="w-full px-3 py-2 border rounded-xl outline-none resize-none"></textarea>
+                    </div>
+                    <button type="button" onclick="officeApp.addAnnouncement()" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-xl transition">Tayangkan ke NutriFresh Staff</button>
+                </div>
+                <div class="lg:col-span-8 bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm">
+                    <div class="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
+                        <h3 class="text-xs sm:text-sm font-black text-gray-900">Daftar Pengumuman Aktif &amp; Arsip</h3>
+                    </div>
+                    <div id="offAnnouncementsList" class="divide-y divide-gray-100 p-2"></div>
+                </div>
+            </div>
+
+            <!-- SUB-TAB 4: JADWAL SHIFT, JATAH CUTI & BUKU PINJAMAN / CICILAN -->
+            <div id="hrSubPane-jadwal" class="hidden space-y-5">
+                <!-- A. Jadwal Shift -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    <div class="lg:col-span-4 bg-white rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-3">
+                        <h3 class="text-sm font-black text-gray-900 border-b pb-2"><i class="fa-solid fa-calendar-plus text-teal-600 mr-1.5"></i> Atur Jadwal Shift</h3>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">Karyawan *</label>
+                            <select id="schedEmpSelect" class="w-full px-3 py-2 border rounded-xl font-bold outline-none"></select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">Tanggal *</label>
+                                <input type="date" id="schedDateInput" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">Shift *</label>
+                                <select id="schedShiftSelect" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
+                                    <option value="Shift 1">☀️ Shift 1 (Pagi)</option>
+                                    <option value="Shift 2">🌤️ Shift 2 (Sore)</option>
+                                    <option value="Full Day">⭐ Full Day</option>
+                                    <option value="Libur">🌴 Libur</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">Catatan (Opsional)</label>
+                            <input type="text" id="schedNoteInput" placeholder="Misal: Bantu bongkar buah pagi" class="w-full px-3 py-2 border rounded-xl outline-none">
+                        </div>
+                        <button type="button" onclick="officeApp.saveSchedule()" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-xl transition">Simpan Jadwal Shift</button>
+                    </div>
+                    <div class="lg:col-span-8 bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm">
+                        <div class="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
+                            <h3 class="text-xs sm:text-sm font-black text-gray-900">Jadwal Shift Karyawan</h3>
+                            <span class="text-[11px] text-gray-500">Otomatis tampil di NutriFresh Staff</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead><tr class="bg-gray-100 text-gray-600 uppercase text-[11px]"><th class="p-3 font-bold">Tanggal</th><th class="p-3 font-bold">Karyawan</th><th class="p-3 font-bold">Shift</th><th class="p-3 font-bold">Catatan</th><th class="p-3 font-bold text-center">Aksi</th></tr></thead>
+                                <tbody id="offSchedulesTableBody" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- B. Buku Pinjaman / Cicilan & Jatah Cuti -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    <div class="lg:col-span-5 bg-white rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-3">
+                        <h3 class="text-sm font-black text-gray-900 border-b pb-2"><i class="fa-solid fa-hand-holding-dollar text-amber-500 mr-1.5"></i> Catat Pinjaman / Cicilan Karyawan</h3>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">Karyawan *</label>
+                            <select id="loanEmpSelect" class="w-full px-3 py-2 border rounded-xl font-bold outline-none"></select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">Total Pinjaman (Rp) *</label>
+                                <input type="number" id="loanTotalInput" min="10000" step="50000" placeholder="500000" class="w-full px-3 py-2 border rounded-xl font-black outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">Cicilan / Bln (Rp)</label>
+                                <input type="number" id="loanInstallmentInput" min="0" step="50000" placeholder="100000" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-1">Keterangan</label>
+                            <input type="text" id="loanNoteInput" placeholder="Pinjaman darurat / cicilan 5x" class="w-full px-3 py-2 border rounded-xl outline-none">
+                        </div>
+                        <button type="button" onclick="officeApp.addLoanRecord()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-extrabold py-2.5 rounded-xl transition">Catat Pinjaman Karyawan</button>
+
+                        <div class="pt-3 border-t space-y-2.5">
+                            <h4 class="font-extrabold text-gray-900 text-xs"><i class="fa-solid fa-umbrella-beach text-teal-600 mr-1"></i> Atur Jatah Cuti Tahunan</h4>
+                            <div class="grid grid-cols-3 gap-2">
+                                <select id="quotaEmpSelect" class="col-span-2 px-2.5 py-2 border rounded-xl font-bold outline-none"></select>
+                                <input type="number" id="quotaDaysInput" min="0" max="60" value="12" class="px-2.5 py-2 border rounded-xl font-black text-center outline-none">
+                            </div>
+                            <button type="button" onclick="officeApp.saveLeaveQuota()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-extrabold py-2 rounded-xl transition">Simpan Jatah Cuti</button>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-7 bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm">
+                        <div class="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
+                            <h3 class="text-xs sm:text-sm font-black text-gray-900">Buku Pinjaman &amp; Cicilan Karyawan</h3>
+                            <span class="text-[11px] text-gray-500">Klik "+ Cicilan" saat ada pembayaran</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead><tr class="bg-gray-100 text-gray-600 uppercase text-[11px]"><th class="p-3 font-bold">Karyawan &amp; Ket.</th><th class="p-3 font-bold text-right">Total</th><th class="p-3 font-bold text-right">Terbayar</th><th class="p-3 font-bold text-right">Sisa</th><th class="p-3 font-bold text-center">Aksi</th></tr></thead>
+                                <tbody id="offLoansTableBody" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1434,7 +1603,12 @@
                 paidPayrollKeys: {},
                 empList: [],
                 attList: [],
-                txList: []
+                txList: [],
+                hrSubTab: 'pengajuan',
+                announcements: [],
+                schedules: [],
+                loans: [],
+                leaveQuotas: []
             },
 
             async runWithActionLock(lockKey, fn) {
@@ -1512,7 +1686,7 @@
                 const now = new Date();
                 const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                 const today = `${ym}-${String(now.getDate()).padStart(2, '0')}`;
-                ['activeMonthInput', 'trfDate', 'expDate', 'resDate', 'debtDueInput', 'assetDateInput', 'hrDateInput', 'offEmpJoinDate'].forEach(id => {
+                ['activeMonthInput', 'trfDate', 'expDate', 'resDate', 'debtDueInput', 'assetDateInput', 'hrDateInput', 'offEmpJoinDate', 'schedDateInput'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.value = (id === 'activeMonthInput') ? ym : today;
                 });
@@ -1679,6 +1853,7 @@
                 if (!Array.isArray(list)) return;
                 this.state.attList = list;
                 this.renderPayrollTable();
+                this.renderOfficeAttendanceTable();
             },
 
             applyCloudConfig(cfg) {
@@ -2680,6 +2855,11 @@
                 this.syncRoleSelectFromOffice();
                 this.renderPayrollTable();
                 this.renderMasterEmployeeTable();
+                this.populateHrPlusEmployeeSelects();
+                this.renderOfficeAttendanceTable();
+                this.renderAnnouncementsList();
+                this.renderSchedulesTable();
+                this.renderLoansTable();
             },
 
             isDeviceAccount(emp) {
@@ -3094,6 +3274,254 @@
                 w.document.close();
             },
 
+
+            switchHrSubTab(sub) {
+                this.state.hrSubTab = sub;
+                ['pengajuan', 'absensi', 'pengumuman', 'jadwal'].forEach(k => {
+                    document.getElementById(`hrSubPane-${k}`)?.classList.toggle('hidden', k !== sub);
+                    document.getElementById(`hrSubBtn-${k}`)?.classList.toggle('is-active', k === sub);
+                });
+                if (sub === 'absensi') this.renderOfficeAttendanceTable();
+                if (sub === 'pengumuman') this.renderAnnouncementsList();
+                if (sub === 'jadwal') { this.populateHrPlusEmployeeSelects(); this.renderSchedulesTable(); this.renderLoansTable(); }
+            },
+
+            openAttendancePhotoModal(url, title) {
+                if (!url) return;
+                document.getElementById('officePhotoModalTitle').textContent = title || 'Foto Bukti Absensi';
+                document.getElementById('officePhotoModalImg').src = url;
+                document.getElementById('officePhotoModal').classList.remove('hidden');
+            },
+
+            populateHrPlusEmployeeSelects() {
+                const emps = (this.state.empList || []).filter(e => !this.isDeviceAccount(e) && e.status !== 'Non-Aktif');
+                const opts = emps.length > 0
+                    ? emps.map(e => `<option value="${this.escapeHtml(e.id)}||${this.escapeHtml(e.name)}">${this.escapeHtml(e.name)} (${this.escapeHtml(e.role || 'Staf')})</option>`).join('')
+                    : '<option value="||Karyawan">Belum ada karyawan aktif</option>';
+                ['schedEmpSelect', 'loanEmpSelect', 'quotaEmpSelect'].forEach(id => {
+                    const sel = document.getElementById(id);
+                    if (!sel) return;
+                    const prev = sel.value;
+                    sel.innerHTML = opts;
+                    if (prev && Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
+                });
+            },
+
+            renderOfficeAttendanceTable() {
+                const tb = document.getElementById('offAttTableBody');
+                const cnt = document.getElementById('offAttCountLabel');
+                if (!tb) return;
+                const ym = document.getElementById('activeMonthInput')?.value || '';
+                const q = (document.getElementById('offAttSearchInput')?.value || '').trim().toLowerCase();
+                let list = (this.state.attList || []).filter(a => !ym || String(a.dateStr || '').startsWith(ym));
+                if (q) list = list.filter(a => String(a.employeeName || '').toLowerCase().includes(q) || String(a.dateStr || '').includes(q));
+                if (cnt) cnt.textContent = `${list.length} catatan absensi (${ym || 'Semua'})`;
+                if (list.length === 0) {
+                    tb.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-gray-400">Belum ada catatan absensi pada bulan ini.</td></tr>';
+                    return;
+                }
+                tb.innerHTML = list.map(a => {
+                    const tIn = a.clockInTime ? new Date(a.clockInTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-';
+                    const tOut = a.clockOutTime ? new Date(a.clockOutTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Bertugas';
+                    const isLate = String(a.status || '').includes('Terlambat');
+                    const btns = [
+                        a.photoInUrl ? `<button type="button" onclick="officeApp.openAttendancePhotoModal('${this.escapeHtml(a.photoInUrl)}','Masuk: ${this.escapeHtml(a.employeeName)} (${this.escapeHtml(a.dateStr)})')" class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 font-bold text-[10px]"><i class="fa-solid fa-camera mr-1"></i>Masuk</button>` : '',
+                        a.photoOutUrl ? `<button type="button" onclick="officeApp.openAttendancePhotoModal('${this.escapeHtml(a.photoOutUrl)}','Pulang: ${this.escapeHtml(a.employeeName)} (${this.escapeHtml(a.dateStr)})')" class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]"><i class="fa-solid fa-camera mr-1"></i>Pulang</button>` : ''
+                    ].filter(Boolean).join(' ');
+                    return `
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-3"><div class="font-bold text-gray-900 font-mono">${this.escapeHtml(a.dateStr || '-')}</div><div class="text-[10px] text-gray-500">${this.escapeHtml(a.shiftName || '-')}</div></td>
+                            <td class="p-3 font-extrabold text-gray-900">${this.escapeHtml(a.employeeName || '-')}</td>
+                            <td class="p-3 font-mono text-gray-700">${tIn} – ${tOut}<div class="text-[10px] text-gray-400">${this.escapeHtml(a.durationText || '-')}</div></td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-black ${isLate ? 'bg-red-100 text-red-700' : 'bg-green-100 text-nutri-dark'}">${this.escapeHtml(a.status || 'Hadir')}</span><div class="text-[10px] text-gray-500 mt-0.5">${a.distanceMeters ?? '-'} m${a.note && a.note !== '-' ? ' • ' + this.escapeHtml(a.note) : ''}</div></td>
+                            <td class="p-3 text-center whitespace-nowrap space-x-1">${btns || '<span class="text-[10px] text-gray-400">Tanpa foto</span>'}</td>
+                        </tr>`;
+                }).join('');
+            },
+
+            async addAnnouncement() {
+                if (!['owner', 'hr'].includes(document.getElementById('viewRoleSelect')?.value)) return alert('Hanya Owner atau HR yang dapat membuat pengumuman.');
+                const title = (document.getElementById('annTitleInput')?.value || '').trim();
+                const body = (document.getElementById('annBodyInput')?.value || '').trim();
+                const priority = document.getElementById('annPriorityInput')?.value || 'info';
+                if (!title || !body) return alert('Isi judul dan isi pengumuman.');
+                const entry = {
+                    id: 'ANN-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(),
+                    title, body, priority, active: true,
+                    createdBy: this.state.currentUserName || 'Owner',
+                    createdAt: new Date().toISOString()
+                };
+                this.state.announcements.unshift(entry);
+                document.getElementById('annTitleInput').value = '';
+                document.getElementById('annBodyInput').value = '';
+                this.renderAnnouncementsList();
+                if (window.__officeCloud) await window.__officeCloud.upsertRow('hr_announcements', entry);
+            },
+
+            async toggleAnnouncement(id) {
+                const a = this.state.announcements.find(x => x.id === id);
+                if (!a) return;
+                a.active = a.active === false;
+                this.renderAnnouncementsList();
+                if (window.__officeCloud) await window.__officeCloud.upsertRow('hr_announcements', a);
+            },
+
+            async deleteAnnouncement(id) {
+                if (!confirm('Hapus pengumuman ini?')) return;
+                this.state.announcements = this.state.announcements.filter(x => x.id !== id);
+                this.renderAnnouncementsList();
+                if (window.__officeCloud) await window.__officeCloud.deleteRow('hr_announcements', id);
+            },
+
+            renderAnnouncementsList() {
+                const box = document.getElementById('offAnnouncementsList');
+                if (!box) return;
+                if (!this.state.announcements.length) {
+                    box.innerHTML = '<div class="p-6 text-center text-gray-400">Belum ada pengumuman tim. Buat di form sebelah kiri.</div>';
+                    return;
+                }
+                box.innerHTML = this.state.announcements.map(a => {
+                    const act = a.active !== false;
+                    return `
+                        <div class="p-3.5 flex items-start justify-between gap-3 ${!act ? 'opacity-55' : ''}">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black ${a.priority === 'urgent' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-700'}">${a.priority === 'urgent' ? 'PENTING' : 'INFO'}</span>
+                                    <span class="font-extrabold text-gray-900">${this.escapeHtml(a.title)}</span>
+                                </div>
+                                <p class="text-[11px] text-gray-600 mt-1">${this.escapeHtml(a.body)}</p>
+                            </div>
+                            <div class="flex items-center gap-1 flex-shrink-0">
+                                <button type="button" onclick="officeApp.toggleAnnouncement('${this.escapeHtml(a.id)}')" class="px-2.5 py-1 rounded-full text-[10px] font-bold ${act ? 'bg-green-100 text-nutri-dark' : 'bg-gray-100 text-gray-600'}">${act ? 'Aktif' : 'Arsip'}</button>
+                                <button type="button" onclick="officeApp.deleteAnnouncement('${this.escapeHtml(a.id)}')" class="px-2 py-1 rounded-full bg-red-50 text-red-600 text-[10px]"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>`;
+                }).join('');
+            },
+
+            async saveSchedule() {
+                if (!['owner', 'hr'].includes(document.getElementById('viewRoleSelect')?.value)) return alert('Hanya Owner atau HR yang dapat mengatur jadwal shift.');
+                const rawEmp = (document.getElementById('schedEmpSelect')?.value || '').split('||');
+                const employeeId = rawEmp[0] || '';
+                const employeeName = rawEmp[1] || '';
+                const date = document.getElementById('schedDateInput')?.value || '';
+                const shiftName = document.getElementById('schedShiftSelect')?.value || 'Shift 1';
+                const note = (document.getElementById('schedNoteInput')?.value || '').trim();
+                if (!employeeName || !date) return alert('Pilih karyawan dan tanggal shift.');
+                const id = `SCH-${date}-${(employeeId || employeeName).replace(/[^a-zA-Z0-9]/g, '')}`;
+                const entry = { id, date, schedDate: date, employeeId, employeeName, shiftName, note };
+                const idx = this.state.schedules.findIndex(x => x.id === id);
+                if (idx > -1) this.state.schedules[idx] = entry;
+                else this.state.schedules.unshift(entry);
+                document.getElementById('schedNoteInput').value = '';
+                this.renderSchedulesTable();
+                if (window.__officeCloud) await window.__officeCloud.upsertRow('hr_schedules', entry);
+            },
+
+            async deleteSchedule(id) {
+                this.state.schedules = this.state.schedules.filter(x => x.id !== id);
+                this.renderSchedulesTable();
+                if (window.__officeCloud) await window.__officeCloud.deleteRow('hr_schedules', id);
+            },
+
+            renderSchedulesTable() {
+                const tb = document.getElementById('offSchedulesTableBody');
+                if (!tb) return;
+                const list = [...(this.state.schedules || [])].sort((a, b) => String(b.date || b.schedDate || '').localeCompare(String(a.date || a.schedDate || ''))).slice(0, 60);
+                if (!list.length) {
+                    tb.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-gray-400">Belum ada jadwal shift diatur.</td></tr>';
+                    return;
+                }
+                tb.innerHTML = list.map(s => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-3 font-mono font-bold text-gray-700 whitespace-nowrap">${this.escapeHtml(s.date || s.schedDate || '-')}</td>
+                        <td class="p-3 font-extrabold text-gray-900">${this.escapeHtml(s.employeeName || '-')}</td>
+                        <td class="p-3"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-nutri-light text-nutri-dark">${this.escapeHtml(s.shiftName || 'Shift 1')}</span></td>
+                        <td class="p-3 text-gray-600">${this.escapeHtml(s.note || '-')}</td>
+                        <td class="p-3 text-center"><button type="button" onclick="officeApp.deleteSchedule('${this.escapeHtml(s.id)}')" class="text-red-500 hover:text-red-700 p-1"><i class="fa-solid fa-trash-can"></i></button></td>
+                    </tr>`).join('');
+            },
+
+            async addLoanRecord() {
+                if (!['owner', 'hr'].includes(document.getElementById('viewRoleSelect')?.value)) return alert('Hanya Owner atau HR yang dapat mencatat pinjaman.');
+                const rawEmp = (document.getElementById('loanEmpSelect')?.value || '').split('||');
+                const employeeId = rawEmp[0] || '';
+                const employeeName = rawEmp[1] || '';
+                const totalAmount = Number(document.getElementById('loanTotalInput')?.value) || 0;
+                const monthlyInstallment = Number(document.getElementById('loanInstallmentInput')?.value) || 0;
+                const note = (document.getElementById('loanNoteInput')?.value || '').trim() || '-';
+                if (!employeeName || totalAmount <= 0) return alert('Pilih karyawan dan isi nominal pinjaman.');
+                const entry = {
+                    id: 'LN-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(),
+                    employeeId, employeeName,
+                    date: new Date().toISOString().slice(0, 10),
+                    totalAmount, paidAmount: 0, monthlyInstallment,
+                    status: 'Aktif', note
+                };
+                this.state.loans.unshift(entry);
+                document.getElementById('loanTotalInput').value = '';
+                document.getElementById('loanInstallmentInput').value = '';
+                document.getElementById('loanNoteInput').value = '';
+                this.renderLoansTable();
+                if (window.__officeCloud) await window.__officeCloud.upsertRow('hr_loans', entry);
+            },
+
+            async payLoanInstallment(id) {
+                const l = this.state.loans.find(x => x.id === id);
+                if (!l || l.status === 'Lunas') return;
+                const remain = Math.max(0, (Number(l.totalAmount) || 0) - (Number(l.paidAmount) || 0));
+                const defPay = Math.min(remain, Number(l.monthlyInstallment) || remain);
+                const raw = prompt(`Catat pembayaran cicilan pinjaman ${l.employeeName}\nSisa saat ini: ${this.formatRp(remain)}\nMasukkan nominal cicilan dibayar (Rp):`, String(defPay));
+                if (raw === null) return;
+                const amt = Number(raw) || 0;
+                if (amt <= 0) return alert('Nominal cicilan harus lebih dari 0.');
+                l.paidAmount = Math.min(Number(l.totalAmount) || 0, (Number(l.paidAmount) || 0) + amt);
+                if (l.paidAmount >= (Number(l.totalAmount) || 0)) l.status = 'Lunas';
+                this.renderLoansTable();
+                if (window.__officeCloud) await window.__officeCloud.upsertRow('hr_loans', l);
+            },
+
+            async saveLeaveQuota() {
+                if (!['owner', 'hr'].includes(document.getElementById('viewRoleSelect')?.value)) return alert('Hanya Owner atau HR yang dapat mengatur jatah cuti.');
+                const rawEmp = (document.getElementById('quotaEmpSelect')?.value || '').split('||');
+                const employeeId = rawEmp[0] || '';
+                const employeeName = rawEmp[1] || '';
+                const annualQuota = Math.max(0, parseInt(document.getElementById('quotaDaysInput')?.value, 10) || 12);
+                const year = new Date().getFullYear();
+                if (!employeeName) return alert('Pilih karyawan terlebih dahulu.');
+                const id = `QTA-${year}-${(employeeId || employeeName).replace(/[^a-zA-Z0-9]/g, '')}`;
+                const prev = this.state.leaveQuotas.find(x => x.id === id);
+                const entry = { id, year, employeeId, employeeName, annualQuota, usedDays: Number(prev?.usedDays) || 0 };
+                const idx = this.state.leaveQuotas.findIndex(x => x.id === id);
+                if (idx > -1) this.state.leaveQuotas[idx] = entry;
+                else this.state.leaveQuotas.push(entry);
+                if (window.__officeCloud) await window.__officeCloud.upsertRow('hr_leave_quotas', entry);
+                alert(`Jatah cuti ${employeeName} tahun ${year} diatur menjadi ${annualQuota} hari.`);
+            },
+
+            renderLoansTable() {
+                const tb = document.getElementById('offLoansTableBody');
+                if (!tb) return;
+                if (!this.state.loans.length) {
+                    tb.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-gray-400">Belum ada catatan pinjaman karyawan.</td></tr>';
+                    return;
+                }
+                tb.innerHTML = this.state.loans.map(l => {
+                    const tot = Number(l.totalAmount) || 0;
+                    const paid = Number(l.paidAmount) || 0;
+                    const rem = Math.max(0, tot - paid);
+                    const done = l.status === 'Lunas' || rem <= 0;
+                    return `
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-3"><div class="font-extrabold text-gray-900">${this.escapeHtml(l.employeeName)}</div><div class="text-[10px] text-gray-500">${this.escapeHtml(l.date || '-')} • ${this.escapeHtml(l.note || '-')}</div></td>
+                            <td class="p-3 text-right font-bold">${this.formatRp(tot)}</td>
+                            <td class="p-3 text-right font-bold text-nutri-dark">${this.formatRp(paid)}</td>
+                            <td class="p-3 text-right font-black ${done ? 'text-nutri-dark' : 'text-red-600'}">${this.formatRp(rem)}</td>
+                            <td class="p-3 text-center whitespace-nowrap">${done ? '<span class="px-2 py-0.5 rounded-full bg-green-100 text-nutri-dark text-[10px] font-black">LUNAS</span>' : `<button type="button" onclick="officeApp.payLoanInstallment('${this.escapeHtml(l.id)}')" class="px-2.5 py-1 rounded-full bg-nutri-green text-white font-bold text-[10px]">+ Cicilan</button>`}</td>
+                        </tr>`;
+                }).join('');
+            },
+
             formatRp(v) { return 'Rp ' + Math.round(Number(v) || 0).toLocaleString('id-ID'); },
             escapeHtml(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
         };
@@ -3251,6 +3679,21 @@
                     onSnapshot(query(collection(this.db, "artifacts", appId, "public", "data", "attendance"), orderBy("clockInTime", "desc"), limit(500)), (snap) => {
                         officeApp.applyCloudAttendance(snap.docs.map(d => ({ id: d.id, ...d.data() })));
                     }, (err) => { console.warn('[Office] Listener error:', err?.message || err); logClientErrorRpc({ page: 'office.html', context: 'onSnapshot', message: err?.message || String(err) }); });
+                    onSnapshot(query(collection(this.db, "artifacts", appId, "public", "data", "hr_announcements"), orderBy("createdAt", "desc"), limit(30)), (snap) => {
+                        officeApp.state.announcements = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        officeApp.renderAnnouncementsList();
+                    }, () => {});
+                    onSnapshot(query(collection(this.db, "artifacts", appId, "public", "data", "hr_schedules"), orderBy("schedDate", "desc"), limit(200)), (snap) => {
+                        officeApp.state.schedules = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        officeApp.renderSchedulesTable();
+                    }, () => {});
+                    onSnapshot(query(collection(this.db, "artifacts", appId, "public", "data", "hr_loans"), limit(150)), (snap) => {
+                        officeApp.state.loans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        officeApp.renderLoansTable();
+                    }, () => {});
+                    onSnapshot(query(collection(this.db, "artifacts", appId, "public", "data", "hr_leave_quotas"), limit(150)), (snap) => {
+                        officeApp.state.leaveQuotas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    }, () => {});
                 }
             },
             async isAuthorizedStaffOrOwner(emailLow, uid = "") {
@@ -3404,6 +3847,20 @@
         });
         
     </script>
+    
+    <!-- MODAL LIGHTBOX FOTO BUKTI ABSENSI -->
+    <div id="officePhotoModal" class="fixed inset-0 bg-black/80 z-[97] hidden flex items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target===this)this.classList.add('hidden')">
+        <div class="bg-[#111827] border border-slate-700 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden text-xs">
+            <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                <h3 id="officePhotoModalTitle" class="text-sm font-black text-white">Foto Bukti Absensi</h3>
+                <button type="button" onclick="document.getElementById('officePhotoModal').classList.add('hidden')" class="text-slate-400 hover:text-red-400 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-3 bg-slate-950 text-center">
+                <img id="officePhotoModalImg" src="" alt="Bukti Absensi" class="max-h-[70vh] mx-auto rounded-2xl">
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL SLIP GAJI KARYAWAN -->
     <div id="payslipModal" class="fixed inset-0 bg-black/75 z-[96] hidden flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-[#111827] border border-slate-700 rounded-3xl shadow-2xl w-full max-w-md mx-auto overflow-hidden text-xs">
@@ -3428,7 +3885,7 @@
     </div>
 
     <script>
-        window.__NF_APP_VERSION = 'v133';
+        window.__NF_APP_VERSION = 'v136';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 
@@ -3822,7 +4279,7 @@
                     var meta = document.querySelector('meta[name="theme-color"]');
                     if (!meta) return;
                     var isOffice = document.body && document.body.classList.contains('nf-office-page');
-                    meta.setAttribute('content', (mode === 'dark' || isOffice) ? '#0b1120' : '#7cb342');
+                    meta.setAttribute('content', mode === 'natural' ? (isOffice ? '#f1f5f9' : '#7cb342') : '#0b1120');
                 } catch (e) {}
             }
 

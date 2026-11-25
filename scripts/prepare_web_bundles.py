@@ -12,7 +12,10 @@ SHARED_ASSETS = [
     "logo.png",
     "icon.png",
     "iconP.png",
+    "icon-office.png",
+    "icon-staff.png",
     "manifest.json",
+    "manifest-staff.json",
 ]
 
 def build_bundle(entry_html: str, app_role: str, out_dir: Path):
@@ -20,13 +23,11 @@ def build_bundle(entry_html: str, app_role: str, out_dir: Path):
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Copy shared assets
     for fn in SHARED_ASSETS:
         src = WEB_DIR / fn
         if src.exists():
             shutil.copy2(src, out_dir / fn)
 
-    # Copy entry HTML as index.html and inject native role marker inside <head>
     html = (WEB_DIR / entry_html).read_text(encoding="utf-8")
     marker = f'<script>window.__NF_NATIVE_APP__="{app_role}";window.__NF_ANDROID_SCHEME__="id.my.nutrifresh.{app_role}";</script>\n'
     if "<head>" in html:
@@ -35,7 +36,6 @@ def build_bundle(entry_html: str, app_role: str, out_dir: Path):
         html = marker + html
 
     (out_dir / "index.html").write_text(html, encoding="utf-8")
-    # Also keep original filename alias just in case any internal script references it
     if entry_html != "index.html":
         (out_dir / entry_html).write_text(html, encoding="utf-8")
 
@@ -45,3 +45,4 @@ if __name__ == "__main__":
     build_bundle("pos.html", "pos", ROOT / "desktop" / "pos-tauri" / "dist")
     build_bundle("office.html", "office", ROOT / "desktop" / "office-tauri" / "dist")
     build_bundle("pos.html", "pos", ROOT / "mobile" / "pos-android" / "www")
+    build_bundle("staff.html", "staff", ROOT / "mobile" / "staff-android" / "www")

@@ -636,4 +636,135 @@
             clearInterval(poll);
         }
     }, 150);
+
+
+    // =========================================================================
+    // UNIVERSAL SMART BACK BUTTON (ANDROID APK + MOBILE PWA/WEB)
+    // Priority: Close Overlay -> Close Modal -> Back to Home Tab -> 2x Tap Exit
+    // =========================================================================
+    let __nfLastBackAt = 0;
+
+    function showNfBackToast(msg) {
+        let el = document.getElementById("nfSmartBackToast");
+        if (!el) {
+            el = document.createElement("div");
+            el.id = "nfSmartBackToast";
+            el.style.cssText = "position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:100005;background:rgba(15,23,42,.92);color:#fff;padding:9px 16px;border-radius:9999px;font-family:Inter,system-ui,sans-serif;font-size:12px;font-weight:800;box-shadow:0 10px 26px rgba(0,0,0,.35);pointer-events:none;transition:opacity .2s ease;white-space:nowrap;";
+            document.body.appendChild(el);
+        }
+        el.textContent = msg;
+        el.style.opacity = "1";
+        clearTimeout(el.__t);
+        el.__t = setTimeout(() => { el.style.opacity = "0"; }, 1800);
+    }
+
+    function closeTopmostVisibleModal() {
+        // 1. Dynamic overlays (Camera Scanner, Native Printer Picker)
+        const camClose = document.getElementById("nfCamClose");
+        if (camClose) { camClose.click(); return true; }
+        const prModal = document.getElementById("nfNativePrinterModal");
+        if (prModal) { prModal.remove(); return true; }
+
+        // 2. Standard app modals (visible & not .hidden)
+        const candidates = Array.from(document.querySelectorAll(
+            'div[id$="Modal"], #memberModal, #customerItemModal, #customerCartModal, #parcelPreOrderModal, #publicReceiptModal, #webEntryChoiceModal, #iosInstallGuideModal, #payslipModal, #officePhotoModal, #staffPhotoModal, #staffAlertModal, #customModal'
+        )).filter((el) => {
+            if (!el || el.classList.contains("hidden")) return false;
+            if (el.id === "officeAuthGateModal") return false;
+            const st = window.getComputedStyle(el);
+            return st.display !== "none" && st.visibility !== "hidden" && st.opacity !== "0";
+        });
+
+        if (candidates.length === 0) return false;
+        // Sort by z-index descending, then DOM order descending
+        candidates.sort((a, b) => {
+            const za = parseInt(window.getComputedStyle(a).zIndex, 10) || 0;
+            const zb = parseInt(window.getComputedStyle(b).zIndex, 10) || 0;
+            return zb - za;
+        });
+        const top = candidates[0];
+        if (top.id === "publicReceiptModal" && window.app && typeof window.app.closePublicReceiptModal === "function") {
+            window.app.closePublicReceiptModal();
+            return true;
+        }
+        if (top.id === "posItemInputModal" && window.app && typeof window.app.closePosItemInputModal === "function") {
+            window.app.closePosItemInputModal();
+            return true;
+        }
+        top.classList.add("hidden");
+        return true;
+    }
+
+    window.__nfHandleHardwareBack = function () {
+        // 1. Tutup pop-up / overlay yang sedang terbuka
+        if (closeTopmostVisibleModal()) return "HANDLED";
+
+        const realApp = getReadyApp();
+
+        // 2. KATALOG (index.html): keluar mode cari / reset kategori ke Beranda
+        const custView = document.getElementById("customerView");
+        if (custView && realApp) {
+            if (custView.classList.contains("nf-search-active")) {
+                if (typeof realApp.exitCustomerSearchMode === "function") realApp.exitCustomerSearchMode(true);
+                return "HANDLED";
+            }
+            if (realApp.state && realApp.state.customerActiveCategory && realApp.state.customerActiveCategory !== "Semua") {
+                if (typeof realApp.resetCustomerFilters === "function") realApp.resetCustomerFilters();
+                return "HANDLED";
+            }
+        }
+
+        // 3. POS (pos.html): kembali dari Keranjang mobile -> Pilih Buah, atau dari tab lain (Atur/Stok/Laporan/PO/Tim/Member) -> Kasir
+        if (document.getElementById("posSearch") && realApp && realApp.state) {
+            if (realApp.state.currentAdminTab === "kasir" && realApp.state.mobilePosSubTab === "cart" && window.innerWidth < 1024) {
+                if (typeof realApp.setMobilePosSubTab === "function") realApp.setMobilePosSubTab("products");
+                return "HANDLED";
+            }
+            if (realApp.state.currentAdminTab && realApp.state.currentAdminTab !== "kasir") {
+                if (typeof realApp.switchAdminTab === "function") realApp.switchAdminTab("kasir");
+                return "HANDLED";
+            }
+        }
+
+        // 4. STAFF (staff.html): kembali dari tab Pengajuan/Gaji/Profil -> Absensi
+        if (window.staffApp && window.staffApp.state && window.staffApp.state.activeTab && window.staffApp.state.activeTab !== "absensi") {
+            if (typeof window.staffApp.switchTab === "function") window.staffApp.switchTab("absensi");
+            return "HANDLED";
+        }
+
+        // 5. OFFICE (office.html): kembali ke sub-tab/tab awal
+        if (window.officeApp && window.officeApp.state) {
+            if (window.officeApp.state.activeTab === "hrd" && window.officeApp.state.hrSubTab && window.officeApp.state.hrSubTab !== "pengajuan") {
+                window.officeApp.switchHrSubTab("pengajuan");
+                return "HANDLED";
+            }
+            if (window.officeApp.state.activeTab && window.officeApp.state.activeTab !== "ringkasan" && window.officeApp.isTabAllowedForRole("ringkasan")) {
+                window.officeApp.switchTab("ringkasan", true);
+                return "HANDLED";
+            }
+        }
+
+        // 6. Sudah di layar depan utama -> wajib tekan 2x dalam 2 detik untuk keluar
+        const now = Date.now();
+        if (now - __nfLastBackAt < 2000) {
+            return "EXIT";
+        }
+        __nfLastBackAt = now;
+        showNfBackToast("Tekan sekali lagi untuk keluar aplikasi");
+        return "HANDLED";
+    };
+
+    // Guard tombol Back browser HP / PWA (Chrome Android / Standalone Web)
+    if (!isAndroidNative() && !isTauri() && /Android|Mobile|iPhone|iPad/i.test(navigator.userAgent || "")) {
+        try {
+            window.history.pushState({ nfBackGuard: 1 }, "");
+            window.addEventListener("popstate", function () {
+                const res = window.__nfHandleHardwareBack();
+                if (res !== "EXIT") {
+                    try { window.history.pushState({ nfBackGuard: 1 }, ""); } catch (_) {}
+                }
+            });
+        } catch (_) {}
+    }
+
 })();

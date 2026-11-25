@@ -73,12 +73,22 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onBackPressed() {
         if (this.bridge != null && this.bridge.getWebView() != null) {
-            WebView wv = this.bridge.getWebView();
+            final WebView wv = this.bridge.getWebView();
             String cur = wv.getUrl();
             if (cur != null && cur.contains("localhost") && !cur.endsWith("/") && !cur.contains("index.html") && !cur.contains("pos.html")) {
                 wv.loadUrl("https://localhost/index.html");
                 return;
             }
+            wv.evaluateJavascript(
+                "(function(){return window.__nfHandleHardwareBack ? window.__nfHandleHardwareBack() : 'EXIT';})();",
+                val -> {
+                    String clean = val != null ? val.replace("\"", "").trim() : "EXIT";
+                    if ("EXIT".equals(clean)) {
+                        runOnUiThread(() -> MainActivity.super.onBackPressed());
+                    }
+                }
+            );
+            return;
         }
         super.onBackPressed();
     }

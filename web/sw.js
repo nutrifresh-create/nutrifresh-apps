@@ -1,12 +1,17 @@
-const SW_VERSION = 'v135';
-const CACHE_NAME = 'nutrifresh-v135';
+const SW_VERSION = 'v136';
+const CACHE_NAME = 'nutrifresh-v136';
 const CORE_ASSETS = [
   '/',
   '/pos.html',
   '/office.html',
+  '/staff.html',
   '/download.html',
   '/supabase-adapter.js',
   '/nutri-theme.css',
+  '/native-bridge.js',
+  '/manifest-staff.json',
+  '/icon-staff.png',
+  '/icon-office.png',
   '/manifest.json',
   '/icon.png',
   '/logo.png',
@@ -37,6 +42,7 @@ function getCanonicalCacheKey(pathname) {
   if (p === '/' || p === '/index' || p === '/index.html') return '/';
   if (p === '/pos' || p === '/pos.html') return '/pos.html';
   if (p === '/office' || p === '/office.html') return '/office.html';
+  if (p === '/staff' || p === '/staff.html') return '/staff.html';
   if (p === '/download' || p === '/download.html') return '/download.html';
   return pathname;
 }

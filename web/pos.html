@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script>if(!window.__NF_NATIVE_APP__ && window.location.hash==='#absensi'){window.location.replace('staff.html');}</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
@@ -1121,6 +1122,9 @@
             border: 1px solid #dcfce7 !important;
         }
 
+    
+        /* v136: Absensi moved to NutriFresh Staff */
+        html body #adminView > div:first-child nav #tab-absensi, html body #tab-absensi, html body #content-absensi { display: none !important; }
     </style>
     <link rel="stylesheet" href="nutri-theme.css">
 </head>
@@ -3550,7 +3554,7 @@
         const appObj = {
             state: {
                 currentView: 'customer',
-                currentAdminTab: 'absensi',
+                currentAdminTab: 'kasir',
                 currentSettingsGroup: 'toko',
                 currentSettingsSubTab: 'profil',
                 currentReportSubTab: 'penjualan',
@@ -4568,7 +4572,7 @@
                             return;
                         }
                         this.setupPrivateListeners();
-                        this.state.currentAdminTab = 'absensi';
+                        this.state.currentAdminTab = 'kasir';
                         this.showView('admin');
                     } else if (status === 'CLAIM_FIRST_OWNER') {
                         const emailLow = (cred.user.email || '').trim().toLowerCase();
@@ -4580,7 +4584,7 @@
                                 await this.persistSettings();
                                 await this.verifyAndHydrateGoogleStaff(cred.user, true);
                                 this.setupPrivateListeners();
-                                this.state.currentAdminTab = 'absensi';
+                                this.state.currentAdminTab = 'kasir';
                                 this.showView('admin');
                                 this.showAlert(`Gmail "${emailLow}" resmi terdaftar sebagai Pemilik Toko (Owner)!`);
                             } else {
@@ -11054,7 +11058,7 @@ Kirim PIN sementara ini ke WhatsApp pelanggan sekarang?`, () => {
                 if (dailyHead) dailyHead.innerHTML = empFilter ? `<i class="fa-solid fa-calendar-check text-blue-600 mr-1.5"></i> Log Kehadiran Khusus: <span class="text-blue-700 underline">${this.escapeHtml(empFilter)}</span>` : '<i class="fa-solid fa-calendar-check text-blue-600 mr-1.5"></i> Log Harian Absensi (Semua Karyawan)';
                 if (resetEmpBtn) resetEmpBtn.classList.toggle('hidden', !empFilter);
 
-                document.getElementById('repAttDailyTableBody').innerHTML = fAttFiltered.map(a => `<tr><td class="p-3">${this.escapeHtml(a.dateStr)} (${this.escapeHtml(a.shiftName)})</td><td class="p-3 font-bold">${this.escapeHtml(a.employeeName)}</td><td class="p-3 font-mono">${new Date(a.clockInTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td><td class="p-3 font-mono">${a.clockOutTime ? new Date(a.clockOutTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Bertugas'}</td><td class="p-3">${this.escapeHtml(a.durationText || '-')}</td><td class="p-3">${a.distanceMeters ?? '-'} m</td><td class="p-3"><div>${this.escapeHtml(a.status)}</div>${a.note && a.note !== '-' ? `<div class="text-[10px] text-gray-500">${this.escapeHtml(a.note)}</div>` : ''}</td><td class="p-3 text-center"><button type="button" onclick="app.deleteAttendanceLogRecord('${a.id}')" class="text-red-500 hover:bg-red-50 px-2 py-1 rounded-lg font-bold text-[11px]"><i class="fa-solid fa-trash-can"></i></button></td></tr>`).join('') || '<tr><td colspan="8" class="p-4 text-center text-gray-400">Belum ada catatan absensi.</td></tr>';
+                document.getElementById('repAttDailyTableBody').innerHTML = fAttFiltered.map(a => `<tr><td class="p-3">${this.escapeHtml(a.dateStr)} (${this.escapeHtml(a.shiftName)})</td><td class="p-3 font-bold">${this.escapeHtml(a.employeeName)}</td><td class="p-3 font-mono">${new Date(a.clockInTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td><td class="p-3 font-mono">${a.clockOutTime ? new Date(a.clockOutTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Bertugas'}</td><td class="p-3">${this.escapeHtml(a.durationText || '-')}</td><td class="p-3">${a.distanceMeters ?? '-'} m</td><td class="p-3"><div>${this.escapeHtml(a.status)}</div>${a.note && a.note !== '-' ? `<div class="text-[10px] text-gray-500">${this.escapeHtml(a.note)}</div>` : ''}${(a.photoInUrl || a.photoOutUrl) ? `<div class="mt-1 flex flex-wrap gap-1">${a.photoInUrl ? `<button type="button" onclick="document.getElementById('viewProofFullImg').src='${this.escapeHtml(a.photoInUrl)}';document.getElementById('viewProofModal').classList.remove('hidden')" class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold"><i class="fa-solid fa-camera mr-0.5"></i>Masuk</button>` : ''}${a.photoOutUrl ? `<button type="button" onclick="document.getElementById('viewProofFullImg').src='${this.escapeHtml(a.photoOutUrl)}';document.getElementById('viewProofModal').classList.remove('hidden')" class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold"><i class="fa-solid fa-camera mr-0.5"></i>Pulang</button>` : ''}</div>` : ''}</td><td class="p-3 text-center"><button type="button" onclick="app.deleteAttendanceLogRecord('${a.id}')" class="text-red-500 hover:bg-red-50 px-2 py-1 rounded-lg font-bold text-[11px]"><i class="fa-solid fa-trash-can"></i></button></td></tr>`).join('') || '<tr><td colspan="8" class="p-4 text-center text-gray-400">Belum ada catatan absensi.</td></tr>';
 
                 const dType = this.state.settings.memberDiscountType || 'none';
                 const dVal = Number(this.state.settings.memberDiscountValue) || 0;
@@ -11336,7 +11340,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v133';
+        window.__NF_APP_VERSION = 'v136';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;

@@ -163,7 +163,9 @@ const COLLECTION_MAP = {
             shift_name: d.shiftName ?? null,
             clock_in_time: toIsoOrNull(d.clockInTime),
             clock_out_time: toIsoOrNull(d.clockOutTime),
-            status: d.status ?? null
+            status: d.status ?? null,
+            ...(d.photoInUrl ? { photo_in_url: d.photoInUrl } : {}),
+            ...(d.photoOutUrl ? { photo_out_url: d.photoOutUrl } : {})
         })
     },
     members: {
@@ -586,6 +588,78 @@ const COLLECTION_MAP = {
             linked_tx_id: d.linkedTxId || null,
             items: Array.isArray(d.items) ? d.items : []
         })
+    },
+    hr_announcements: {
+        table: "nf_hr_announcements",
+        fields: {
+            branchId: "branch_id",
+            title: "title",
+            priority: "priority",
+            active: "active",
+            createdAt: "created_at"
+        },
+        extract: (d) => ({
+            title: d.title || "",
+            body: d.body || "",
+            priority: d.priority || "info",
+            active: d.active !== false,
+            created_by: d.createdBy || null,
+            created_at: toIsoOrNull(d.createdAt) || new Date().toISOString()
+        })
+    },
+    hr_schedules: {
+        table: "nf_hr_schedules",
+        fields: {
+            branchId: "branch_id",
+            date: "sched_date",
+            schedDate: "sched_date",
+            employeeId: "employee_id",
+            employeeName: "employee_name",
+            shiftName: "shift_name"
+        },
+        extract: (d) => ({
+            sched_date: d.date || d.schedDate || "",
+            employee_id: d.employeeId || null,
+            employee_name: d.employeeName || "",
+            shift_name: d.shiftName || "Shift 1",
+            note: d.note || ""
+        })
+    },
+    hr_loans: {
+        table: "nf_hr_loans",
+        fields: {
+            branchId: "branch_id",
+            employeeId: "employee_id",
+            employeeName: "employee_name",
+            date: "loan_date",
+            status: "status"
+        },
+        extract: (d) => ({
+            employee_id: d.employeeId || null,
+            employee_name: d.employeeName || "",
+            loan_date: d.date || d.loanDate || "",
+            total_amount: toNum(d.totalAmount, 0),
+            paid_amount: toNum(d.paidAmount, 0),
+            monthly_installment: toNum(d.monthlyInstallment, 0),
+            status: d.status || "Aktif",
+            note: d.note || ""
+        })
+    },
+    hr_leave_quotas: {
+        table: "nf_hr_leave_quotas",
+        fields: {
+            branchId: "branch_id",
+            year: "year",
+            employeeId: "employee_id",
+            employeeName: "employee_name"
+        },
+        extract: (d) => ({
+            year: Math.round(toNum(d.year, new Date().getFullYear())),
+            employee_id: d.employeeId || null,
+            employee_name: d.employeeName || "",
+            annual_quota: Math.round(toNum(d.annualQuota, 12)),
+            used_days: Math.round(toNum(d.usedDays, 0))
+        })
     }
 };
 
@@ -604,6 +678,8 @@ function rowToItem(row) {
     if ("active" in row && row.active !== null && row.active !== undefined && !("is_owner" in row)) base.active = !!row.active;
     if ("img_url" in row && row.img_url) base.img = row.img_url;
     if ("branch_id" in row && row.branch_id) base.branchId = row.branch_id;
+    if ("photo_in_url" in row && row.photo_in_url) base.photoInUrl = row.photo_in_url;
+    if ("photo_out_url" in row && row.photo_out_url) base.photoOutUrl = row.photo_out_url;
     return base;
 }
 
@@ -2263,6 +2339,20 @@ export async function getPublicReceiptRpc({ refId, token }) {
     const { data, error } = await supabase.rpc("nf_get_public_receipt", {
         p_ref_id: String(refId || "").trim(),
         p_token: String(token || "").trim().toUpperCase(),
+        p_tenant_id: TENANT_ID
+    });
+    if (error) throw error;
+    return data;
+}
+
+
+export async function attachAttendancePhotoRpc({ attendanceId, kind = "in", photoUrl = "" }) {
+    if (!supabase) throw new Error("Supabase belum terkonfigurasi.");
+    if (!attendanceId || !photoUrl) return { ok: false };
+    const { data, error } = await supabase.rpc("nf_attach_attendance_photo", {
+        p_attendance_id: String(attendanceId),
+        p_kind: String(kind || "in"),
+        p_photo_url: String(photoUrl),
         p_tenant_id: TENANT_ID
     });
     if (error) throw error;
