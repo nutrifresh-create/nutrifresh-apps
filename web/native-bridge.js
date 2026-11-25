@@ -36,14 +36,56 @@
         return null;
     }
 
-    // Immediately hide Absensi & Office link in Native POS app (zero flash!)
+    // Immediately hide Absensi & Office links in Native POS (higher specificity than pos.html v121 rules!)
     if (nativeAppRole === "pos") {
         const earlyStyle = document.createElement("style");
         earlyStyle.textContent = `
-            #tab-absensi, #content-absensi { display: none !important; }
-            a[href="office.html"] { display: none !important; }
+            html body #adminTopHeader > div > div:last-child a[href*="office.html"],
+            html body a[href*="office.html"],
+            html body #adminView > div:first-child nav #tab-absensi,
+            html body #adminView #tab-absensi,
+            html body #tab-absensi,
+            html body #content-absensi {
+                display: none !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+            }
         `;
         (document.head || document.documentElement).appendChild(earlyStyle);
+
+        // Hard block openOfficeWithDarkLoader so POS APK/EXE never navigates to https://localhost/office.html
+        window.openOfficeWithDarkLoader = function (ev) {
+            if (ev) {
+                ev.preventDefault();
+                ev.stopPropagation();
+            }
+            return false;
+        };
+    }
+
+    // Immediately hide Toko (pos.html) button in Native Office (.exe) so it never hits missing pos.html
+    if (nativeAppRole === "office") {
+        const offStyle = document.createElement("style");
+        offStyle.textContent = `
+            html body > header > div:first-child > div:last-child button[onclick*="goToStore"] {
+                display: none !important;
+            }
+        `;
+        (document.head || document.documentElement).appendChild(offStyle);
+    }
+
+    function stripNativeHiddenNodes() {
+        if (nativeAppRole === "pos") {
+            document.querySelectorAll('#tab-absensi, #content-absensi, a[href*="office.html"]').forEach((el) => {
+                el.remove();
+            });
+            // Trigger resize so iOS26 sliding lens immediately snaps cleanly to Kasir tab
+            try { window.dispatchEvent(new Event("resize")); } catch (_) {}
+        } else if (nativeAppRole === "office") {
+            document.querySelectorAll('button[onclick*="goToStore"]').forEach((el) => {
+                el.remove();
+            });
+        }
     }
 
     // =========================================================================
@@ -73,6 +115,9 @@
                     ev.preventDefault();
                     openExternalNative(href);
                 }
+            } else if (nativeAppRole === "pos" && href.includes("office.html")) {
+                ev.preventDefault();
+                ev.stopPropagation();
             } else if (nativeAppRole && (href === "index.html" || href.startsWith("index.html?"))) {
                 ev.preventDefault();
                 openExternalNative("https://nutrifresh.my.id/" + href.replace(/^index\.html/, ""));
@@ -408,7 +453,8 @@
         if (!app || posNativePatched) return;
         posNativePatched = true;
 
-        // Selalu pastikan tombol scan terpasang di UI
+        // Pastikan tombol Office/Absensi terhapus & tombol scan terpasang di UI
+        stripNativeHiddenNodes();
         injectPosCameraButtons();
 
         if (nativeAppRole !== "pos") return;
@@ -567,11 +613,16 @@
         }
     }
 
-    // Boot cleanly: inject camera buttons as soon as DOM is ready, then patch __nutriReadyApp when loaded
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", injectPosCameraButtons);
-    } else {
+    function onDomReadyInit() {
+        stripNativeHiddenNodes();
         injectPosCameraButtons();
+    }
+
+    // Boot cleanly: strip hidden native buttons & inject camera buttons immediately on DOM ready
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", onDomReadyInit);
+    } else {
+        onDomReadyInit();
     }
 
     let tries = 0;

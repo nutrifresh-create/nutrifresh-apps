@@ -58,6 +58,31 @@ public class MainActivity extends BridgeActivity {
         deliverPendingOAuth();
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (this.bridge != null && this.bridge.getWebView() != null) {
+            WebView wv = this.bridge.getWebView();
+            String cur = wv.getUrl();
+            if (cur != null && cur.contains("localhost") && cur.contains("office.html")) {
+                wv.loadUrl("https://localhost/index.html");
+            }
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (this.bridge != null && this.bridge.getWebView() != null) {
+            WebView wv = this.bridge.getWebView();
+            String cur = wv.getUrl();
+            if (cur != null && cur.contains("localhost") && !cur.endsWith("/") && !cur.contains("index.html") && !cur.contains("pos.html")) {
+                wv.loadUrl("https://localhost/index.html");
+                return;
+            }
+        }
+        super.onBackPressed();
+    }
+
     private void captureOAuthIntent(Intent intent) {
         if (intent == null) return;
         Uri data = intent.getData();
