@@ -1,0 +1,11 @@
+{
+  "appId": "id.my.nutrifresh.app",
+  "appName": "NutriFresh",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

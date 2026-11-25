@@ -2266,6 +2266,10 @@
                     <i class="fa-solid fa-basket-shopping text-sm mr-1.5"></i> Keranjang
                     <span id="deskCartItemCount" class="ml-1.5 bg-amber-400 text-gray-900 text-[10px] font-black px-1.5 py-0.5 rounded-full hidden">0</span>
                 </button>
+                <button type="button" onclick="app.openCustomerOrdersModal()" class="relative bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold px-3.5 py-2 rounded-full transition text-xs flex items-center">
+                    <i class="fa-solid fa-receipt text-blue-600 mr-1.5"></i> Pesanan
+                    <span id="deskActiveOrdersCount" class="ml-1.5 bg-blue-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full hidden">0</span>
+                </button>
                 <button type="button" id="btnMemberTop" onclick="app.openMemberModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-extrabold px-3.5 py-2 rounded-full transition text-xs flex items-center">
                     <i class="fa-solid fa-crown text-amber-600 mr-1.5"></i> <span id="memberTopLabel">Member</span>
                 </button>
@@ -2613,6 +2617,24 @@
                 <span id="nutriToastText">Ditambahkan ke keranjang</span>
             </div>
 
+
+            <!-- PIL MELAYANG PESANAN AKTIF ALA GRAB / GOJEK (v138) -->
+            <div id="customerFloatingOrderPill" class="hidden fixed bottom-[82px] inset-x-3 md:inset-x-auto md:left-6 md:bottom-6 md:w-[340px] z-[49] transition-all">
+                <button type="button" onclick="app.openCustomerOrdersModal('active')" class="w-full bg-slate-900/95 hover:bg-slate-800 text-white px-3.5 py-2.5 rounded-full shadow-2xl border border-lime-400/50 flex items-center justify-between gap-2.5 text-xs active:scale-[0.98] transition backdrop-blur-md">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="relative flex h-3 w-3 flex-shrink-0">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-lime-400"></span>
+                        </span>
+                        <div class="text-left min-w-0">
+                            <span id="floatOrdTitle" class="font-black text-lime-300 block truncate leading-tight">Pesanan Aktif</span>
+                            <span id="floatOrdStatusSub" class="text-[11px] text-slate-200 font-semibold block truncate leading-tight mt-0.5">Menunggu ditimbang toko...</span>
+                        </div>
+                    </div>
+                    <span class="bg-lime-400 text-slate-950 font-black text-[10px] px-2.5 py-1 rounded-full flex-shrink-0 whitespace-nowrap">Pantau →</span>
+                </button>
+            </div>
+
             <!-- PITA KERANJANG MENGAMBANG MOBILE (ALA GOFOOD / ASTRO) -->
             <div id="customerFloatingCartBar" class="hidden md:hidden fixed bottom-[64px] inset-x-3 z-40">
                 <button type="button" onclick="app.showCustomerCartModal()" class="w-full bg-gradient-to-r from-nutri-dark to-nutri-green text-white px-4 py-3 rounded-2xl shadow-xl border border-white/25 flex items-center justify-between text-xs font-extrabold active:scale-[0.98] transition">
@@ -2640,7 +2662,7 @@
                 <button type="button" id="mobNav-home" onclick="app.resetCustomerFilters(); window.scrollTo(0,0); document.getElementById('mainContent').scrollTo({top:0, behavior:'smooth'});" class="flex flex-col items-center text-nutri-green font-extrabold text-[11px] w-1/5 transition"><div class="px-3 py-0.5 rounded-full bg-nutri-light mb-0.5"><i class="fa-solid fa-house text-base"></i></div><span>Beranda</span></button>
                 <button type="button" id="mobNav-promo" onclick="app.setCustomerCategory('Obral', true)" class="flex flex-col items-center text-gray-500 hover:text-red-500 font-bold text-[11px] w-1/5 transition"><div class="px-3 py-0.5 rounded-full mb-0.5"><i class="fa-solid fa-fire text-base text-red-500"></i></div><span>Promo</span></button>
                 <button type="button" onclick="app.showCustomerCartModal()" class="flex flex-col items-center text-gray-600 hover:text-nutri-green font-bold text-[11px] relative w-1/5 transition"><div class="px-3 py-0.5 rounded-full mb-0.5"><i class="fa-solid fa-basket-shopping text-base text-nutri-green"></i></div><span>Keranjang</span><span id="cartItemCount" class="absolute top-0 right-3 bg-red-500 text-white text-[9px] font-black min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center hidden shadow-sm">0</span></button>
-                <button type="button" onclick="app.openStoreWhatsAppChat()" class="flex flex-col items-center text-gray-500 hover:text-green-600 font-bold text-[11px] w-1/5 transition"><div class="px-3 py-0.5 rounded-full mb-0.5"><i class="fa-brands fa-whatsapp text-base text-green-600"></i></div><span>Chat Toko</span></button>
+                <button type="button" id="mobNav-orders" onclick="app.openCustomerOrdersModal()" class="flex flex-col items-center text-gray-600 hover:text-blue-600 font-bold text-[11px] relative w-1/5 transition"><div class="px-3 py-0.5 rounded-full mb-0.5"><i class="fa-solid fa-receipt text-base text-blue-600"></i></div><span>Pesanan</span><span id="mobActiveOrdersCount" class="absolute top-0 right-3 bg-blue-600 text-white text-[9px] font-black min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center hidden shadow-sm">0</span></button>
                 <button type="button" onclick="app.openMemberModal()" class="flex flex-col items-center text-gray-500 hover:text-amber-600 font-bold text-[11px] w-1/5 transition"><div class="px-3 py-0.5 rounded-full mb-0.5"><i class="fa-solid fa-crown text-base text-amber-500"></i></div><span id="mobMemberLabel">Member</span></button>
             </nav>
         </div>
@@ -2978,7 +3000,10 @@
                                         </div>
                                     </button>
                                 </div>
-                                <button type="button" onclick="app.forceRefreshCatalogApp()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-3 transition flex items-center justify-center gap-1.5 text-[11px]">
+                                <button type="button" id="btnMemEnableNotify" onclick="app.requestCustomerNotifications(true)" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold py-2.5 px-3 transition flex items-center justify-center gap-1.5 text-[11px]">
+                                    <i class="fa-solid fa-bell text-blue-600"></i> <span id="lblMemNotifyStatus">Aktifkan Notifikasi Status Pesanan</span>
+                                </button>
+                                                                <button type="button" onclick="app.forceRefreshCatalogApp()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-3 transition flex items-center justify-center gap-1.5 text-[11px]">
                                     <i class="fa-solid fa-arrows-rotate text-nutri-green"></i> <span>Segarkan Data &amp; Versi Aplikasi</span>
                                 </button>
                             </div>
@@ -3354,15 +3379,67 @@
                         </div>
                         <span class="text-xl md:text-2xl font-black text-nutri-brown" id="customerCartTotal">Rp 0</span>
                     </div>
-                    <button type="button" onclick="app.sendWhatsAppOrder()" id="btnCheckoutWA" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 active:scale-[0.99] text-white font-extrabold py-3.5 rounded-2xl shadow-lg shadow-green-600/20 transition flex justify-center items-center text-sm md:text-base">
-                        <i class="fa-brands fa-whatsapp mr-2 text-xl"></i> Kirim Pesanan ke WhatsApp Toko
+                    <div id="custCartFreeShipBanner" class="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-[11px] font-bold text-emerald-800 flex items-center justify-between">
+                        <span><i class="fa-solid fa-truck-fast text-nutri-green mr-1.5"></i> <span id="custCartFreeShipText">Gratis Ongkir • Tanpa biaya tambahan</span></span>
+                        <span class="text-[10px] bg-white px-2 py-0.5 rounded-full border border-emerald-200 font-black text-nutri-dark">Rp 0</span>
+                    </div>
+                    <button type="button" onclick="app.submitAppDirectOrder()" id="btnCheckoutAppDirect" class="w-full bg-gradient-to-r from-nutri-dark to-nutri-green hover:opacity-95 active:scale-[0.99] text-white font-extrabold py-3.5 rounded-2xl shadow-lg shadow-green-600/20 transition flex justify-center items-center text-sm md:text-base">
+                        <i class="fa-solid fa-bag-shopping mr-2 text-base"></i> Pesan Langsung di Aplikasi
                     </button>
+                    <div class="text-center pt-0.5">
+                        <button type="button" onclick="app.sendWhatsAppOrder()" id="btnCheckoutWA" class="text-[11px] font-bold text-green-700 hover:text-green-800 hover:underline inline-flex items-center gap-1.5 py-1">
+                            <i class="fa-brands fa-whatsapp text-sm"></i> <span>Atau kirim pesanan lewat WhatsApp Toko</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
     </main>
 
+
+
+    <!-- MODAL PESANAN SAYA & PELACAKAN REAL-TIME (v138 — ALA GRAB / GOJEK) -->
+    <div id="customerOrdersModal" class="fixed inset-0 bg-black/65 z-[85] hidden flex items-end sm:items-center justify-center fade-in backdrop-blur-sm sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-lg mx-auto overflow-hidden border border-gray-200 flex flex-col max-h-[93vh]">
+            <div class="px-5 py-4 border-b bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white flex justify-between items-center flex-shrink-0">
+                <div class="flex items-center space-x-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-2xl bg-lime-400/20 border border-lime-400/40 flex items-center justify-center text-lime-300 text-base flex-shrink-0">
+                        <i class="fa-solid fa-receipt"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="text-sm sm:text-base font-black leading-tight truncate">Pesanan Saya</h3>
+                        <p id="custOrdersLiveSub" class="text-[11px] text-emerald-200 truncate">Status timbangan &amp; pengantaran diperbarui otomatis</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <button type="button" onclick="app.refreshCustomerOrders(true)" title="Segarkan Status" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition"><i id="custOrdersRefreshIcon" class="fa-solid fa-rotate text-xs"></i></button>
+                    <button type="button" onclick="document.getElementById('customerOrdersModal').classList.add('hidden')" aria-label="Tutup" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+            </div>
+
+            <!-- BANNER AJAKAN OTOMATIS AKTIFKAN NOTIFIKASI (AGAR PELANGGAN LANGSUNG TAHU TANPA DIBERI TAHU MANUAL) -->
+            <div id="custOrdersNotifyBanner" class="hidden px-4 py-3 bg-blue-50 border-b border-blue-200 flex items-center justify-between gap-2.5 text-xs flex-shrink-0">
+                <div class="flex items-start gap-2.5 min-w-0">
+                    <span class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 text-sm"><i class="fa-solid fa-bell"></i></span>
+                    <div class="min-w-0">
+                        <p class="font-extrabold text-blue-950 leading-tight">Aktifkan Notifikasi Pesanan</p>
+                        <p id="custOrdersNotifyHint" class="text-[10.5px] text-blue-800 leading-snug mt-0.5">HP langsung berbunyi saat buah selesai ditimbang &amp; kurir berangkat.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="app.requestCustomerNotifications(true)" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[11px] px-3 py-2 rounded-full shadow-sm whitespace-nowrap flex-shrink-0 transition">Aktifkan</button>
+            </div>
+
+            <!-- 2 TAB: SEDANG BERJALAN vs RIWAYAT SELESAI -->
+            <div class="px-4 py-2.5 bg-gray-50 border-b grid grid-cols-2 gap-1.5 flex-shrink-0 text-xs">
+                <button type="button" id="custOrdTab-active" onclick="app.setCustomerOrdersTab('active')" class="py-2 rounded-full font-extrabold bg-nutri-green text-white shadow-sm transition">⏳ Sedang Berjalan</button>
+                <button type="button" id="custOrdTab-done" onclick="app.setCustomerOrdersTab('done')" class="py-2 rounded-full font-bold bg-gray-200 text-gray-700 transition">✅ Riwayat Selesai</button>
+            </div>
+
+            <div id="custOrdersListContainer" class="p-4 overflow-y-auto flex-1 space-y-3.5 text-xs bg-slate-50/70"></div>
+        </div>
+    </div>
+    <input type="file" id="custOrderProofFileInput" accept="image/*" class="hidden" onchange="app.handleCustomerProofFileSelected(event)">
 
     <!-- MODAL RESI DIGITAL ONLINE & DOWNLOAD PNG (v131 — ?resi=...&k=...) -->
     <div id="publicReceiptModal" class="fixed inset-0 bg-black/65 z-[96] hidden flex items-center justify-center fade-in backdrop-blur-sm p-4">
@@ -3446,7 +3523,7 @@
             ensureQrCodeLoaded,
             memberRegisterPinRpc, memberLoginPinRpc, memberGoogleSyncRpc,
             memberGetPortalRpc, memberUpdateProfileRpc, memberRedeemRewardRpc,
-            installGlobalErrorTracker, logClientErrorRpc, submitParcelOrderRpc, submitOnlineOrderRpc, getPublicReceiptRpc
+            installGlobalErrorTracker, logClientErrorRpc, submitParcelOrderRpc, submitOnlineOrderRpc, getPublicReceiptRpc, customerGetOrdersRpc, customerUploadOrderProofRpc, uploadDataUrlToStorage
         } from "./supabase-adapter.js";
 
         installGlobalErrorTracker("index.html");
@@ -3492,6 +3569,12 @@
                 poDestinationsTemp: [{ address: '', qty: 1 }],
                 poLastSubmitted: null,
                 publicReceiptPayload: null,
+                myOrdersList: [],
+                myOrdersTab: 'active',
+                myOrdersPaymentInfo: { qrisImg: '', bankInfo: '', freeShippingMin: 0, waNumber: '6289508011241' },
+                myOrdersPollTimer: null,
+                uploadingProofOrderId: '',
+                uploadingProofOrderToken: '',
                 customerCart: [],
                 deferredInstallPrompt: null,
                 promoCarouselIndex: 0,
@@ -3778,6 +3861,7 @@
                 this.restoreCustomerCheckoutDraft();
                 this.updateCustomerCartBadge();
                 this.startCountdownTimer();
+                this.initCustomerOrdersTracker();
                 this._entryChoiceDismissedThisSession = sessionStorage.getItem('nutri_entry_choice_done') === '1';
                 this.bindEntryReappearListeners();
                 this.updateCustomerHeader();
@@ -4578,6 +4662,7 @@
                         floatBar.classList.remove('hidden');
                     } else floatBar.classList.add('hidden');
                 }
+                this.updateFloatingOrderPillPosition();
             },
             submitItemToCustomerCart() {
                 const p = this.state.inventory.find(i => i.id === document.getElementById('custModalProductId').value); if (!p) return;
@@ -4634,6 +4719,13 @@
                         vBox.classList.add('hidden');
                     }
                 }
+                const freeMin = Number(this.state.settings?.freeShippingMinOrder) || 0;
+                const fsTxt = document.getElementById('custCartFreeShipText');
+                if (fsTxt) {
+                    fsTxt.textContent = freeMin > 0
+                        ? (tot >= freeMin ? `✓ Gratis Ongkir tercapai (Min. ${this.formatCurrency(freeMin)})` : `Tambah ${this.formatCurrency(freeMin - tot)} lagi untuk Gratis Ongkir`)
+                        : 'Gratis Ongkir • Promo berlaku untuk semua pesanan';
+                }
                 document.getElementById('customerCartTotal').textContent = this.formatCurrency(tot);
                 document.getElementById('customerCartModal').classList.remove('hidden');
             },
@@ -4650,6 +4742,450 @@
                 this.showCustomerToast(`Voucher ${v.voucherCode} dipasang ke keranjang!`);
                 this.showCustomerCartModal();
             },
+
+            // ==========================================
+            // TAHAP 3 (v138): PESAN LANGSUNG DI APLIKASI, PIL MELAYANG ALA GRAB/GOJEK,
+            // LIVE TRACKER 5 TAHAP, UPLOAD BUKTI TRANSFER & NOTIFIKASI OTOMATIS
+            // ==========================================
+            getSavedCustomerOrderRefs() {
+                try {
+                    const arr = JSON.parse(localStorage.getItem('nutri_my_order_refs_v1') || '[]');
+                    return Array.isArray(arr) ? arr.filter(x => x && x.id && x.token) : [];
+                } catch (e) { return []; }
+            },
+            saveCustomerOrderRef(id, token, snapshot = null) {
+                const refs = this.getSavedCustomerOrderRefs().filter(x => x.id !== id);
+                refs.unshift({ id, token: String(token || '').toUpperCase(), at: Date.now() });
+                try { localStorage.setItem('nutri_my_order_refs_v1', JSON.stringify(refs.slice(0, 25))); } catch (e) {}
+                if (snapshot) {
+                    const idx = (this.state.myOrdersList || []).findIndex(o => o.id === id);
+                    if (idx > -1) this.state.myOrdersList[idx] = snapshot;
+                    else this.state.myOrdersList.unshift(snapshot);
+                    try { localStorage.setItem('nutri_my_orders_cache_v1', JSON.stringify(this.state.myOrdersList.slice(0, 25))); } catch (e) {}
+                }
+            },
+            initCustomerOrdersTracker() {
+                try {
+                    const cached = JSON.parse(localStorage.getItem('nutri_my_orders_cache_v1') || '[]');
+                    if (Array.isArray(cached)) this.state.myOrdersList = cached;
+                } catch (e) {}
+                this.renderCustomerOrderIndicators();
+                this.refreshCustomerOrders(false);
+                if (this.state.myOrdersPollTimer) clearInterval(this.state.myOrdersPollTimer);
+                this.state.myOrdersPollTimer = setInterval(() => {
+                    if (document.hidden) return;
+                    const hasRefs = this.getSavedCustomerOrderRefs().length > 0;
+                    const hasActive = (this.state.myOrdersList || []).some(o => !['Selesai', 'Dibatalkan'].includes(o.orderStatus));
+                    if (hasRefs && (hasActive || !document.getElementById('customerOrdersModal')?.classList.contains('hidden'))) {
+                        this.refreshCustomerOrders(false);
+                    }
+                }, 8000);
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden && this.getSavedCustomerOrderRefs().length > 0) {
+                        this.refreshCustomerOrders(false);
+                    }
+                });
+            },
+            updateFloatingOrderPillPosition() {
+                const pill = document.getElementById('customerFloatingOrderPill');
+                const cartBar = document.getElementById('customerFloatingCartBar');
+                if (!pill) return;
+                if (window.innerWidth < 768) {
+                    const cartVisible = cartBar && !cartBar.classList.contains('hidden');
+                    pill.style.bottom = cartVisible
+                        ? 'calc(152px + env(safe-area-inset-bottom))'
+                        : 'calc(82px + env(safe-area-inset-bottom))';
+                } else {
+                    pill.style.bottom = '';
+                }
+            },
+            syncNotificationPromptUI() {
+                const status = window.nfNotify ? window.nfNotify.getStatus() : 'unsupported';
+                const banner = document.getElementById('custOrdersNotifyBanner');
+                const hint = document.getElementById('custOrdersNotifyHint');
+                const memLbl = document.getElementById('lblMemNotifyStatus');
+                if (memLbl) {
+                    memLbl.textContent = status === 'granted'
+                        ? '✓ Notifikasi Status Pesanan AKTIF (Ketuk untuk tes bunyi)'
+                        : (status === 'denied' ? 'Notifikasi diblokir browser — buka Setelan HP' : 'Aktifkan Notifikasi Status Pesanan');
+                }
+                if (!banner) return;
+                if (status === 'granted') {
+                    banner.classList.add('hidden');
+                    return;
+                }
+                banner.classList.remove('hidden');
+                if (hint) {
+                    if (this.isIosSafari() && !this.isStandaloneApp()) {
+                        hint.textContent = 'Di iPhone: pasang ke Layar Utama lewat tombol Bagikan Safari agar notifikasi bisa aktif.';
+                    } else if (status === 'denied') {
+                        hint.textContent = 'Izin notifikasi terblokir. Ketuk ikon gembok di alamat browser → Izinkan Notifikasi.';
+                    } else {
+                        hint.textContent = 'HP langsung berbunyi saat buah selesai ditimbang, siap dibayar, atau kurir berangkat.';
+                    }
+                }
+            },
+            async requestCustomerNotifications(showFeedback = true) {
+                if (!window.nfNotify) return;
+                if (this.isIosSafari() && !this.isStandaloneApp()) {
+                    document.getElementById('iosInstallGuideModal')?.classList.remove('hidden');
+                    return;
+                }
+                const cur = window.nfNotify.getStatus();
+                if (cur === 'granted') {
+                    await window.nfNotify.send({
+                        title: 'Notifikasi NutriFresh Aktif 🔔',
+                        body: 'Anda akan langsung mendapat kabar saat buah selesai ditimbang atau diantar.',
+                        sound: 'status'
+                    });
+                    this.syncNotificationPromptUI();
+                    return;
+                }
+                const res = await window.nfNotify.requestPermission();
+                this.syncNotificationPromptUI();
+                if (res === 'granted') {
+                    await window.nfNotify.send({
+                        title: 'Notifikasi Berhasil Diaktifkan! ✓',
+                        body: 'Sekarang Anda otomatis dikabari setiap perkembangan pesanan buah Anda.',
+                        sound: 'status'
+                    });
+                } else if (showFeedback) {
+                    this.showAlert('Izin notifikasi belum aktif. Jika sebelumnya sempat ditolak, buka Pengaturan HP / ikon gembok browser → Izin → Notifikasi → Izinkan.');
+                }
+            },
+            async refreshCustomerOrders(showSpin = false) {
+                const refs = this.getSavedCustomerOrderRefs();
+                const ic = document.getElementById('custOrdersRefreshIcon');
+                if (showSpin && ic) ic.classList.add('fa-spin');
+                try {
+                    if (refs.length > 0 && !this.state.isOfflineMode) {
+                        const prevMap = new Map((this.state.myOrdersList || []).map(o => [o.id, o.orderStatus]));
+                        const res = await customerGetOrdersRpc(refs);
+                        if (res && res.paymentInfo) {
+                            this.state.myOrdersPaymentInfo = { ...this.state.myOrdersPaymentInfo, ...res.paymentInfo };
+                        }
+                        if (res && Array.isArray(res.orders)) {
+                            const cloudMap = new Map(res.orders.map(o => [o.id, o]));
+                            // Deteksi perubahan status -> kirim Notifikasi otomatis!
+                            res.orders.forEach(o => {
+                                const oldSt = prevMap.get(o.id);
+                                if (oldSt && oldSt !== o.orderStatus) {
+                                    let body = `Status pesanan ${o.orderCode || o.id}: ${o.orderStatus}`;
+                                    if (o.orderStatus === 'Menunggu Pembayaran') {
+                                        const grand = (Number(o.finalTotal) || Number(o.estimatedTotal) || 0) + (Number(o.shippingFee) || 0);
+                                        body = `Buah selesai ditimbang! Total final ${this.formatCurrency(grand)}. Ketuk untuk bayar / upload bukti.`;
+                                    } else if (o.orderStatus === 'Diantar Kurir') {
+                                        body = `Kurir NutriFresh sedang mengantar pesanan ${o.orderCode || o.id} ke alamat Anda!`;
+                                    } else if (o.orderStatus === 'Siap Diambil') {
+                                        body = `Pesanan ${o.orderCode || o.id} sudah siap diambil di gerai NutriFresh!`;
+                                    } else if (o.orderStatus === 'Selesai') {
+                                        body = `Pesanan ${o.orderCode || o.id} selesai. Terima kasih telah berbelanja di NutriFresh!`;
+                                    }
+                                    if (window.nfNotify) {
+                                        window.nfNotify.send({
+                                            title: `Update Pesanan NutriFresh 🍐`,
+                                            body,
+                                            tag: `ord-${o.id}`,
+                                            sound: 'status',
+                                            onClick: () => this.openCustomerOrdersModal('active')
+                                        });
+                                    }
+                                }
+                            });
+                            // Gabungkan dengan cache lokal jika ada order lokal belum tersinkron
+                            const merged = [...res.orders];
+                            (this.state.myOrdersList || []).forEach(lo => {
+                                if (lo && lo.id && !cloudMap.has(lo.id) && refs.some(r => r.id === lo.id)) merged.push(lo);
+                            });
+                            merged.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+                            this.state.myOrdersList = merged;
+                            try { localStorage.setItem('nutri_my_orders_cache_v1', JSON.stringify(merged.slice(0, 25))); } catch (e) {}
+                        }
+                    }
+                } catch (err) {
+                    console.warn('[Katalog] Refresh pesanan:', err?.message || err);
+                } finally {
+                    if (ic) setTimeout(() => ic.classList.remove('fa-spin'), 350);
+                    this.renderCustomerOrderIndicators();
+                    if (!document.getElementById('customerOrdersModal')?.classList.contains('hidden')) {
+                        this.renderCustomerOrdersModalBody();
+                    }
+                }
+            },
+            renderCustomerOrderIndicators() {
+                const active = (this.state.myOrdersList || []).filter(o => !['Selesai', 'Dibatalkan'].includes(o.orderStatus));
+                const cnt = active.length;
+                ['deskActiveOrdersCount', 'mobActiveOrdersCount'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.textContent = String(cnt);
+                    el.classList.toggle('hidden', cnt <= 0);
+                });
+
+                const pill = document.getElementById('customerFloatingOrderPill');
+                const titleEl = document.getElementById('floatOrdTitle');
+                const subEl = document.getElementById('floatOrdStatusSub');
+                if (pill && titleEl && subEl) {
+                    if (cnt > 0) {
+                        const top = active[0];
+                        const statusEmoji = {
+                            'Menunggu Timbang': '⏳',
+                            'Sedang Ditimbang': '⚖️',
+                            'Menunggu Pembayaran': '💳',
+                            'Menunggu Konfirmasi': '💳',
+                            'Menunggu Verifikasi Bayar': '🔎',
+                            'Diantar Kurir': '🛵',
+                            'Siap Diambil': '🛍️'
+                        }[top.orderStatus] || '🍐';
+                        titleEl.textContent = cnt > 1
+                            ? `${cnt} Pesanan Aktif • #${top.orderCode || top.id}`
+                            : `Pesanan #${top.orderCode || top.id}`;
+                        const grand = (Number(top.finalTotal) || Number(top.estimatedTotal) || 0) + (Number(top.shippingFee) || 0);
+                        subEl.textContent = `${statusEmoji} ${top.orderStatus || 'Diproses'} • ${this.formatCurrency(grand)}`;
+                        pill.classList.remove('hidden');
+                        this.updateFloatingOrderPillPosition();
+                    } else {
+                        pill.classList.add('hidden');
+                    }
+                }
+            },
+            openCustomerOrdersModal(tab = null) {
+                if (tab) this.state.myOrdersTab = tab;
+                document.getElementById('customerOrdersModal')?.classList.remove('hidden');
+                this.setCustomerOrdersTab(this.state.myOrdersTab || 'active');
+                this.syncNotificationPromptUI();
+                this.refreshCustomerOrders(true);
+            },
+            setCustomerOrdersTab(tab) {
+                this.state.myOrdersTab = tab === 'done' ? 'done' : 'active';
+                const bAct = document.getElementById('custOrdTab-active');
+                const bDone = document.getElementById('custOrdTab-done');
+                if (bAct) bAct.className = this.state.myOrdersTab === 'active' ? 'py-2 rounded-full font-extrabold bg-nutri-green text-white shadow-sm transition' : 'py-2 rounded-full font-bold bg-gray-200 text-gray-700 transition';
+                if (bDone) bDone.className = this.state.myOrdersTab === 'done' ? 'py-2 rounded-full font-extrabold bg-nutri-green text-white shadow-sm transition' : 'py-2 rounded-full font-bold bg-gray-200 text-gray-700 transition';
+                this.renderCustomerOrdersModalBody();
+            },
+            getOrderStepNumber(st) {
+                if (st === 'Selesai') return 5;
+                if (st === 'Diantar Kurir' || st === 'Siap Diambil') return 4;
+                if (st === 'Menunggu Pembayaran' || st === 'Menunggu Konfirmasi' || st === 'Menunggu Verifikasi Bayar') return 3;
+                if (st === 'Sedang Ditimbang') return 2;
+                return 1;
+            },
+            renderCustomerOrdersModalBody() {
+                const box = document.getElementById('custOrdersListContainer');
+                if (!box) return;
+                const wantDone = this.state.myOrdersTab === 'done';
+                const list = (this.state.myOrdersList || []).filter(o => {
+                    const closed = ['Selesai', 'Dibatalkan'].includes(o.orderStatus);
+                    return wantDone ? closed : !closed;
+                });
+                if (list.length === 0) {
+                    box.innerHTML = `<div class="bg-white rounded-3xl border border-gray-200 p-8 text-center text-gray-400 space-y-2"><i class="fa-solid fa-basket-shopping text-3xl text-gray-300"></i><p class="font-bold">${wantDone ? 'Belum ada riwayat pesanan selesai.' : 'Belum ada pesanan yang sedang berjalan.'}</p><p class="text-[11px]">Pesanan yang Anda buat di aplikasi otomatis muncul &amp; bisa dipantau langsung di sini.</p></div>`;
+                    return;
+                }
+
+                const payInfo = this.state.myOrdersPaymentInfo || {};
+                const qrisUrl = payInfo.qrisImg || this.state.settings?.qrisImg || '';
+                const bankInfo = payInfo.bankInfo || this.state.settings?.bankTransferInfo || '';
+
+                box.innerHTML = list.map(ord => {
+                    const isCancelled = ord.orderStatus === 'Dibatalkan';
+                    const step = this.getOrderStepNumber(ord.orderStatus);
+                    const steps = [
+                        { n: 1, lbl: 'Masuk' },
+                        { n: 2, lbl: 'Timbang' },
+                        { n: 3, lbl: 'Bayar' },
+                        { n: 4, lbl: ord.deliveryMode === 'Ambil di Toko' ? 'Siap' : 'Diantar' },
+                        { n: 5, lbl: 'Selesai' }
+                    ];
+                    const items = Array.isArray(ord.weighedItems) && ord.weighedItems.length > 0 ? ord.weighedItems : (Array.isArray(ord.items) ? ord.items : []);
+                    const subtotalVal = Number(ord.finalTotal) || Number(ord.estimatedTotal) || 0;
+                    const shipFee = Number(ord.shippingFee) || 0;
+                    const grandTotal = subtotalVal + shipFee;
+                    const needPay = !isCancelled && ['Menunggu Pembayaran', 'Menunggu Konfirmasi'].includes(ord.orderStatus);
+                    const isVerifying = ord.orderStatus === 'Menunggu Verifikasi Bayar';
+                    const isCod = String(ord.paymentMethod || '').toLowerCase().includes('cash') || String(ord.paymentMethod || '').toLowerCase().includes('tunai');
+
+                    return `
+                        <div class="bg-white rounded-3xl border ${needPay ? 'border-amber-400 ring-2 ring-amber-200/70' : 'border-gray-200'} p-4 shadow-sm space-y-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <span class="font-mono font-black text-[11px] bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full">${this.escapeHtml(ord.orderCode || ord.id)}</span>
+                                    <div class="text-[10px] text-gray-400 mt-1">${ord.createdAt ? new Date(ord.createdAt).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-'} • ${this.escapeHtml(ord.deliveryMode || 'Kirim ke Rumah')}</div>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black flex-shrink-0 ${isCancelled ? 'bg-red-100 text-red-700' : (ord.orderStatus === 'Selesai' ? 'bg-green-100 text-nutri-dark' : (needPay ? 'bg-amber-100 text-amber-900' : 'bg-blue-100 text-blue-800'))}">${this.escapeHtml(ord.orderStatus || 'Menunggu Timbang')}</span>
+                            </div>
+
+                            ${!isCancelled ? `
+                            <!-- Progress Bar 5 Langkah -->
+                            <div class="grid grid-cols-5 gap-1 pt-1">
+                                ${steps.map(s => {
+                                    const active = step >= s.n;
+                                    const cur = step === s.n;
+                                    return `<div class="text-center">
+                                        <div class="h-1.5 rounded-full mb-1 ${active ? 'bg-nutri-green' : 'bg-gray-200'} ${cur ? 'animate-pulse' : ''}"></div>
+                                        <span class="text-[9.5px] ${cur ? 'font-black text-nutri-dark' : (active ? 'font-bold text-gray-700' : 'text-gray-400')}">${s.lbl}</span>
+                                    </div>`;
+                                }).join('')}
+                            </div>` : ''}
+
+                            <!-- Rincian Item -->
+                            <div class="bg-gray-50 border border-gray-100 rounded-2xl p-2.5 space-y-1 text-[11px]">
+                                ${items.map(it => `<div class="flex justify-between gap-2"><span class="text-gray-700 truncate">${this.formatStockDisplay(it.qty, it.unit)} × ${this.escapeHtml(it.name)}</span><span class="font-bold text-gray-900 flex-shrink-0">${this.formatCurrency(it.subtotal || this.calculateLineAmount(it, it.qty))}</span></div>`).join('')}
+                                <div class="flex justify-between pt-1.5 mt-1 border-t border-gray-200/80 text-[11px]">
+                                    <span class="text-gray-500 font-bold">Ongkos Kirim</span>
+                                    <span class="font-extrabold ${shipFee === 0 ? 'text-emerald-700' : 'text-gray-800'}">${shipFee === 0 ? 'Gratis (Rp 0)' : this.formatCurrency(shipFee)}</span>
+                                </div>
+                                <div class="flex justify-between items-center pt-1 font-black text-xs">
+                                    <span class="text-gray-700">${step >= 3 ? 'Total Final' : 'Estimasi Total'}</span>
+                                    <span class="text-nutri-brown text-sm">${this.formatCurrency(grandTotal)}</span>
+                                </div>
+                            </div>
+
+                            ${ord.cashierNote ? `<div class="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-[11px] text-blue-900"><strong>Catatan Toko:</strong> ${this.escapeHtml(ord.cashierNote)}</div>` : ''}
+
+                            ${ord.weighPhotoUrl ? `
+                            <div class="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-[11px]">
+                                <span class="font-bold text-emerald-900"><i class="fa-solid fa-scale-balanced mr-1"></i> Foto Hasil Timbangan Toko</span>
+                                <a href="${this.escapeHtml(ord.weighPhotoUrl)}" target="_blank" rel="noopener" class="font-extrabold text-emerald-700 underline">Lihat Foto →</a>
+                            </div>` : ''}
+
+                            ${needPay ? `
+                            <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-3 space-y-2.5">
+                                <div class="font-extrabold text-amber-950 text-xs flex items-center gap-1.5"><i class="fa-solid fa-wallet text-amber-600"></i> Buah Siap! Silakan Lakukan Pembayaran (${this.formatCurrency(grandTotal)})</div>
+                                ${isCod ? `<p class="text-[11px] text-amber-900">Metode Anda <strong>Cash / Tunai (COD)</strong>. Siapkan uang tunai sebesar <strong>${this.formatCurrency(grandTotal)}</strong> saat kurir tiba atau saat ambil di toko.</p>` : `
+                                    ${qrisUrl ? `<div class="bg-white p-2.5 rounded-xl border border-amber-200 text-center"><img src="${this.escapeHtml(qrisUrl)}" alt="QRIS NutriFresh" class="max-h-48 mx-auto rounded-lg"><span class="text-[10px] font-bold text-gray-500 block mt-1">Scan QRIS NutriFresh di atas sesuai total final</span></div>` : ''}
+                                    ${bankInfo ? `<div class="bg-white p-2.5 rounded-xl border border-amber-200 text-[11px] text-gray-800 whitespace-pre-line font-mono">${this.escapeHtml(bankInfo)}</div>` : ''}
+                                    ${(!qrisUrl && !bankInfo) ? `<p class="text-[11px] text-amber-900">Hubungi tombol <strong>Chat Toko</strong> untuk meminta QRIS / nomor rekening pembayaran.</p>` : ''}
+                                    <button type="button" onclick="app.triggerUploadCustomerOrderProof('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-full shadow-sm transition text-xs flex items-center justify-center gap-1.5">
+                                        <i class="fa-solid fa-upload"></i> <span>Upload Bukti Transfer / QRIS</span>
+                                    </button>
+                                `}
+                            </div>` : ''}
+
+                            ${isVerifying ? `
+                            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-[11px] text-emerald-900 font-bold flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
+                                <span>Bukti bayar sudah diterima! Kasir sedang memverifikasi &amp; menyiapkan pengantaran.</span>
+                            </div>` : ''}
+
+                            <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-gray-100">
+                                <button type="button" onclick="app.openPublicReceiptModal('${this.escapeHtml(ord.linkedTxId || ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[11px] transition"><i class="fa-solid fa-file-invoice mr-1"></i> Resi Digital</button>
+                                <button type="button" onclick="app.openCustomerOrderWaHelp('${this.escapeHtml(ord.orderCode || ord.id)}')" class="px-3 py-1.5 rounded-full bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 font-extrabold text-[11px] transition"><i class="fa-brands fa-whatsapp mr-1"></i> Chat Toko</button>
+                            </div>
+                        </div>`;
+                }).join('');
+            },
+            triggerUploadCustomerOrderProof(orderId, token) {
+                this.state.uploadingProofOrderId = orderId;
+                this.state.uploadingProofOrderToken = token;
+                const inp = document.getElementById('custOrderProofFileInput');
+                if (inp) { inp.value = ''; inp.click(); }
+            },
+            handleCustomerProofFileSelected(ev) {
+                const file = ev?.target?.files?.[0];
+                const orderId = this.state.uploadingProofOrderId;
+                const token = this.state.uploadingProofOrderToken;
+                if (!file || !orderId || !token) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = async () => {
+                        const maxSide = 680;
+                        let w = img.width, h = img.height;
+                        if (w > maxSide || h > maxSide) {
+                            if (w >= h) { h = Math.round((h * maxSide) / w); w = maxSide; }
+                            else { w = Math.round((w * maxSide) / h); h = maxSide; }
+                        }
+                        const cv = document.createElement('canvas');
+                        cv.width = w; cv.height = h;
+                        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+                        const compressed = cv.toDataURL('image/jpeg', 0.62);
+                        try {
+                            this.showCustomerToast('Mengunggah bukti bayar...');
+                            let finalUrl = compressed;
+                            try {
+                                const uploaded = await uploadDataUrlToStorage(compressed, 'proofs', `${orderId}_cust`);
+                                if (uploaded && uploaded.startsWith('http')) finalUrl = uploaded;
+                            } catch (_) {}
+                            await customerUploadOrderProofRpc({ orderId, token, proofUrl: finalUrl });
+                            this.showCustomerToast('Bukti transfer terkirim ke kasir!');
+                            await this.refreshCustomerOrders(true);
+                        } catch (err) {
+                            this.showAlert('Gagal mengunggah bukti bayar: ' + this.cleanRpcErrorMsg(err));
+                        }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            },
+            openCustomerOrderWaHelp(code) {
+                const msg = `Halo NutriFresh 🍐, saya ingin menanyakan pesanan *#${code}* saya.`;
+                window.open(`https://wa.me/${this.normalizeWaPhone(this.state.settings.waNumber || '6289508011241')}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+            },
+            async submitAppDirectOrder() {
+                if (this.state.customerCart.length === 0) return;
+                this.persistCustomerCheckoutDraft();
+                const name = (document.getElementById('custName')?.value || '').trim();
+                const rawPhone = (document.getElementById('custPhone')?.value || '').trim();
+                const mem = this.state.customerMember;
+                const phone = this.normalizeWaPhone(rawPhone || (mem && mem.phone) || '');
+                const delivery = document.getElementById('custDelivery')?.value || 'Kirim ke Rumah';
+                const address = (document.getElementById('custAddress')?.value || '').trim();
+                const payment = document.getElementById('custPayment')?.value || 'QRIS';
+                const vch = this.state.selectedCartVoucher;
+
+                if (name.length < 2) return this.showAlert('Isi Nama Pemesan terlebih dahulu.');
+                if (!phone || phone.length < 10) return this.showAlert('Isi Nomor WhatsApp aktif (minimal 10 digit) agar toko bisa menghubungi jika ada info timbangan.');
+                if (delivery === 'Kirim ke Rumah' && address.length < 4) return this.showAlert('Isi Alamat Lengkap Pengiriman terlebih dahulu (atau pilih Ambil di Toko).');
+
+                const cartSnapshot = this.state.customerCart.map(i => ({
+                    id: i.id, name: i.name, price: Number(i.price) || 0, unit: i.unit || 'Gram',
+                    qty: Math.round(Number(i.qty) || 0), requestedQty: Math.round(Number(i.qty) || 0),
+                    subtotal: this.calculateLineAmount(i, i.qty),
+                    weightPref: i.weightPref || 'Boleh lebih sedikit', itemNote: i.itemNote || ''
+                }));
+                let estimatedTotal = cartSnapshot.reduce((s, it) => s + (Number(it.subtotal) || 0), 0);
+                if (vch && vch.rewardType === 'voucher_rp' && estimatedTotal >= (Number(vch.minSpend) || 0)) {
+                    estimatedTotal = Math.max(0, estimatedTotal - (Number(vch.discountRp) || 0));
+                }
+
+                const btn = document.getElementById('btnCheckoutAppDirect');
+                if (btn) btn.disabled = true;
+
+                try {
+                    const fullAddr = (delivery === 'Kirim ke Rumah' && mem && mem.addressNote && address) ? `${address} (Patokan: ${mem.addressNote})` : address;
+                    const res = await submitOnlineOrderRpc({
+                        customerName: name, customerPhone: phone, items: cartSnapshot,
+                        deliveryMode: delivery, address: fullAddr, paymentMethod: payment,
+                        voucherCode: vch?.voucherCode || '', voucherTitle: vch?.title || '', estimatedTotal
+                    });
+                    if (!res || !res.orderCode) throw new Error('Server belum mengembalikan kode pesanan.');
+
+                    const newOrderObj = {
+                        id: res.orderCode, orderCode: res.orderCode, receiptToken: res.receiptToken || '',
+                        customerName: name, customerPhone: phone, deliveryMode: delivery, address: fullAddr,
+                        paymentMethod: payment, estimatedTotal, finalTotal: estimatedTotal, shippingFee: 0,
+                        orderStatus: 'Menunggu Timbang', items: cartSnapshot, createdAt: new Date().toISOString()
+                    };
+                    this.saveCustomerOrderRef(newOrderObj.id, newOrderObj.receiptToken, newOrderObj);
+
+                    this.state.customerCart = [];
+                    this.state.selectedCartVoucher = null;
+                    this.persistCustomerCart();
+                    this.updateCustomerCartBadge();
+                    this.renderCustomerProducts();
+                    document.getElementById('customerCartModal')?.classList.add('hidden');
+                    this.renderCustomerOrderIndicators();
+                    this.openCustomerOrdersModal('active');
+                    this.showCustomerToast(`Pesanan #${res.orderCode} berhasil masuk ke toko!`);
+                } catch (err) {
+                    this.showAlert('Gagal mengirim pesanan ke server: ' + this.cleanRpcErrorMsg(err) + '\nAnda juga bisa mencoba tombol "Atau kirim pesanan lewat WhatsApp Toko".');
+                } finally {
+                    if (btn) btn.disabled = false;
+                }
+            },
+
             async sendWhatsAppOrder() {
                 if (this.state.customerCart.length === 0) return;
                 this.persistCustomerCheckoutDraft();
@@ -4758,6 +5294,7 @@
                 msg += `Pembayaran: ${payment}\n`;
                 if (savedToCloud) msg += `\n🧾 *Resi & Status Digital:*\n${receiptUrl}`;
 
+                if (savedToCloud) this.saveCustomerOrderRef(orderCode, receiptToken, localRec);
                 this.state.customerCart = [];
                 this.state.selectedCartVoucher = null;
                 this.persistCustomerCart();
@@ -6161,7 +6698,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v137';
+        window.__NF_APP_VERSION = 'v138';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 

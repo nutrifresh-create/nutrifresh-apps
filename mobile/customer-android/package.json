@@ -1,0 +1,11 @@
+{
+  "name": "nutrifresh-customer-android",
+  "version": "1.3.8",
+  "private": true,
+  "description": "NutriFresh Customer Android (.apk) - Katalog Buah, Order Langsung, Live Tracker & Notifikasi",
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  }
+}

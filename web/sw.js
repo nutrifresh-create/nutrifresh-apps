@@ -1,5 +1,5 @@
-const SW_VERSION = 'v137';
-const CACHE_NAME = 'nutrifresh-v137';
+const SW_VERSION = 'v138';
+const CACHE_NAME = 'nutrifresh-v138';
 const CORE_ASSETS = [
   '/',
   '/pos.html',
@@ -206,6 +206,18 @@ self.addEventListener('fetch', (event) => {
       } finally {
         finishBg();
       }
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const c of clients) {
+        if ('focus' in c) return c.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow('/');
     })
   );
 });

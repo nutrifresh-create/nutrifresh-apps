@@ -586,6 +586,11 @@ const COLLECTION_MAP = {
             final_total: toNum(d.finalTotal ?? d.estimatedTotal, 0),
             order_status: d.orderStatus || "Menunggu Timbang",
             linked_tx_id: d.linkedTxId || null,
+            shipping_fee: toNum(d.shippingFee, 0),
+            ...(d.weighPhotoUrl ? { weigh_photo_url: d.weighPhotoUrl } : {}),
+            ...(d.paymentProofUrl ? { payment_proof_url: d.paymentProofUrl } : {}),
+            ...(d.cashierNote !== undefined ? { cashier_note: String(d.cashierNote || "") } : {}),
+            status_updated_at: new Date().toISOString(),
             items: Array.isArray(d.items) ? d.items : []
         })
     },
@@ -680,6 +685,10 @@ function rowToItem(row) {
     if ("branch_id" in row && row.branch_id) base.branchId = row.branch_id;
     if ("photo_in_url" in row && row.photo_in_url) base.photoInUrl = row.photo_in_url;
     if ("photo_out_url" in row && row.photo_out_url) base.photoOutUrl = row.photo_out_url;
+    if ("shipping_fee" in row && row.shipping_fee !== null && row.shipping_fee !== undefined) base.shippingFee = Number(row.shipping_fee);
+    if ("weigh_photo_url" in row && row.weigh_photo_url) base.weighPhotoUrl = row.weigh_photo_url;
+    if ("payment_proof_url" in row && row.payment_proof_url) base.paymentProofUrl = row.payment_proof_url;
+    if ("cashier_note" in row && row.cashier_note) base.cashierNote = row.cashier_note;
     return base;
 }
 
@@ -787,6 +796,12 @@ async function offloadImagesInPayload(colName, docId, payload) {
             nextSlides.push(slide);
         }
         copy.promoSlides = nextSlides;
+    }
+    if (colName === "settings" && docId === "store_settings" && typeof copy.qrisImg === "string" && copy.qrisImg.startsWith("data:image/")) {
+        copy.qrisImg = await uploadDataUrlToStorage(copy.qrisImg, "banners", "qris_store");
+    }
+    if (colName === "online_orders" && typeof copy.weighPhotoUrl === "string" && copy.weighPhotoUrl.startsWith("data:image/")) {
+        copy.weighPhotoUrl = await uploadDataUrlToStorage(copy.weighPhotoUrl, "proofs", (docId || "ord") + "_weigh");
     }
 
     return copy;
@@ -2353,6 +2368,34 @@ export async function attachAttendancePhotoRpc({ attendanceId, kind = "in", phot
         p_attendance_id: String(attendanceId),
         p_kind: String(kind || "in"),
         p_photo_url: String(photoUrl),
+        p_tenant_id: TENANT_ID
+    });
+    if (error) throw error;
+    return data;
+}
+
+
+// =========================================================================
+// TAHAP 3 (v138) — LIVE TRACKING ORDER PELANGGAN & UPLOAD BUKTI BAYAR
+// =========================================================================
+export async function customerGetOrdersRpc(refs = []) {
+    if (!supabase) return { ok: false, orders: [], paymentInfo: {} };
+    const cleanRefs = Array.isArray(refs) ? refs.filter((r) => r && r.id && r.token).slice(0, 30) : [];
+    const { data, error } = await supabase.rpc("nf_customer_get_orders", {
+        p_refs: cleanRefs,
+        p_tenant_id: TENANT_ID
+    });
+    if (error) throw error;
+    return data || { ok: true, orders: [], paymentInfo: {} };
+}
+
+export async function customerUploadOrderProofRpc({ orderId, token, proofUrl, paymentMethod = "" }) {
+    if (!supabase) throw new Error("Supabase belum terkonfigurasi.");
+    const { data, error } = await supabase.rpc("nf_customer_upload_order_proof", {
+        p_order_id: String(orderId || "").trim(),
+        p_token: String(token || "").trim().toUpperCase(),
+        p_proof_url: String(proofUrl || "").trim(),
+        p_payment_method: String(paymentMethod || "").trim(),
         p_tenant_id: TENANT_ID
     });
     if (error) throw error;

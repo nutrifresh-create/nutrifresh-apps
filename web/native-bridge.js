@@ -667,7 +667,7 @@
 
         // 2. Standard app modals (visible & not .hidden)
         const candidates = Array.from(document.querySelectorAll(
-            'div[id$="Modal"], #memberModal, #customerItemModal, #customerCartModal, #parcelPreOrderModal, #publicReceiptModal, #webEntryChoiceModal, #iosInstallGuideModal, #payslipModal, #officePhotoModal, #staffPhotoModal, #staffAlertModal, #customModal'
+            'div[id$="Modal"], #memberModal, #customerItemModal, #customerCartModal, #parcelPreOrderModal, #publicReceiptModal, #customerOrdersModal, #webEntryChoiceModal, #iosInstallGuideModal, #payslipModal, #officePhotoModal, #staffPhotoModal, #staffAlertModal, #customModal'
         )).filter((el) => {
             if (!el || el.classList.contains("hidden")) return false;
             if (el.id === "officeAuthGateModal") return false;
@@ -766,5 +766,138 @@
             });
         } catch (_) {}
     }
+
+
+
+    // =========================================================================
+    // UNIFIED NOTIFICATION ENGINE (ANDROID NATIVE APK + PWA/WEB + PC DESKTOP)
+    // =========================================================================
+    let __nfAudioCtx = null;
+
+    function unlockAudioCtx() {
+        try {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return null;
+            if (!__nfAudioCtx) __nfAudioCtx = new Ctx();
+            if (__nfAudioCtx.state === "suspended") __nfAudioCtx.resume().catch(() => {});
+            return __nfAudioCtx;
+        } catch (_) { return null; }
+    }
+
+    function playChime(type = "order") {
+        try {
+            const ctx = unlockAudioCtx();
+            if (!ctx) return;
+            const now = ctx.currentTime;
+            const freqs = type === "order" ? [880, 1174.66, 1567.98] : [659.25, 987.77];
+            freqs.forEach((f, idx) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(f, now + idx * 0.11);
+                gain.gain.setValueAtTime(0.001, now + idx * 0.11);
+                gain.gain.exponentialRampToValueAtTime(0.22, now + idx * 0.11 + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.11 + 0.28);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now + idx * 0.11);
+                osc.stop(now + idx * 0.11 + 0.30);
+            });
+        } catch (_) {}
+    }
+
+    // Unlock Web Audio on first user interaction so POS/Customer bell can ring reliably
+    ["click", "touchstart", "keydown"].forEach((evName) => {
+        document.addEventListener(evName, () => { unlockAudioCtx(); }, { once: true, passive: true });
+    });
+
+    function showInAppNotifyBanner(title, body, onClickCb) {
+        let box = document.getElementById("nfLiveNotifyBanner");
+        if (box) box.remove();
+        box = document.createElement("div");
+        box.id = "nfLiveNotifyBanner";
+        box.style.cssText = "position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:100020;width:calc(100% - 24px);max-width:410px;background:rgba(15,23,42,.95);color:#fff;border:1.5px solid rgba(132,204,22,.65);border-radius:20px;padding:12px 15px;box-shadow:0 18px 40px rgba(0,0,0,.38);display:flex;align-items:center;gap:11px;font-family:Inter,system-ui,sans-serif;cursor:pointer;backdrop-filter:blur(10px);";
+        box.innerHTML = `
+            <div style="width:36px;height:36px;border-radius:12px;background:#7cb342;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;"><i class="fa-solid fa-bell"></i></div>
+            <div style="min-width:0;flex:1;">
+                <div style="font-size:12.5px;font-weight:900;color:#d9f99d;line-height:1.2;">${escapeHtml(title)}</div>
+                <div style="font-size:11.5px;color:#e2e8f0;margin-top:2px;line-height:1.3;">${escapeHtml(body)}</div>
+            </div>
+            <button type="button" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:26px;height:26px;border-radius:999px;font-weight:900;cursor:pointer;flex-shrink:0;">✕</button>`;
+        box.querySelector("button").onclick = (e) => { e.stopPropagation(); box.remove(); };
+        box.onclick = () => { box.remove(); if (typeof onClickCb === "function") onClickCb(); };
+        document.body.appendChild(box);
+        setTimeout(() => { if (box.parentNode) box.remove(); }, 6500);
+    }
+
+    window.nfPlayChime = playChime;
+    window.nfNotify = {
+        getStatus() {
+            if (isAndroidNative() && typeof window.NfAndroidNative.hasNotificationPermission === "function") {
+                return window.NfAndroidNative.hasNotificationPermission() ? "granted" : "default";
+            }
+            if (typeof window.Notification === "undefined") return "unsupported";
+            return window.Notification.permission || "default";
+        },
+        async requestPermission() {
+            unlockAudioCtx();
+            if (isAndroidNative() && typeof window.NfAndroidNative.requestNotificationPermission === "function") {
+                try {
+                    window.NfAndroidNative.requestNotificationPermission();
+                    const deadline = Date.now() + 8000;
+                    while (Date.now() < deadline) {
+                        await new Promise((r) => setTimeout(r, 300));
+                        if (window.NfAndroidNative.hasNotificationPermission()) {
+                            playChime("status");
+                            return "granted";
+                        }
+                    }
+                    return window.NfAndroidNative.hasNotificationPermission() ? "granted" : "default";
+                } catch (_) { return "default"; }
+            }
+            if (typeof window.Notification === "undefined") return "unsupported";
+            try {
+                const res = await window.Notification.requestPermission();
+                if (res === "granted") playChime("status");
+                return res;
+            } catch (_) { return "default"; }
+        },
+        async send({ title = "NutriFresh", body = "", tag = "nf-alert", sound = "order", onClick = null } = {}) {
+            try { if (navigator.vibrate) navigator.vibrate([120, 60, 120]); } catch (_) {}
+            playChime(sound);
+            showInAppNotifyBanner(title, body, onClick);
+
+            // 1. Android Native Notification (Status Bar + Sound + Vibration)
+            if (isAndroidNative() && typeof window.NfAndroidNative.showLocalNotification === "function") {
+                try {
+                    window.NfAndroidNative.showLocalNotification(String(title), String(body));
+                    return true;
+                } catch (_) {}
+            }
+
+            // 2. ServiceWorker / Web Notification API (Chrome Android PWA, Windows PC, Edge, macOS, iOS PWA)
+            if (typeof window.Notification !== "undefined" && window.Notification.permission === "granted") {
+                try {
+                    if ("serviceWorker" in navigator) {
+                        const reg = await navigator.serviceWorker.getRegistration();
+                        if (reg && typeof reg.showNotification === "function") {
+                            await reg.showNotification(title, {
+                                body,
+                                icon: "/icon.png",
+                                badge: "/icon.png",
+                                tag,
+                                renotify: true,
+                                vibrate: [150, 70, 150]
+                            });
+                            return true;
+                        }
+                    }
+                    new window.Notification(title, { body, icon: "/icon.png", tag });
+                    return true;
+                } catch (_) {}
+            }
+            return false;
+        }
+    };
 
 })();

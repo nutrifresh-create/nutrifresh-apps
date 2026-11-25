@@ -10,6 +10,10 @@ ICONS_SRC = BASE_DIR / "icons"
 MAIN_ACTIVITY_JAVA = r"""package id.my.nutrifresh.pos;
 
 import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import androidx.core.app.NotificationCompat;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -40,12 +44,16 @@ public class MainActivity extends BridgeActivity {
     private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private static final int REQ_BT_PERMS = 4382;
     private static final int REQ_CAM_PERM = 4383;
+    private static final int REQ_NOTIF_PERM = 4384;
+    private static final String CH_ID = "nutrifresh_pos_alerts";
+    private int notifCounter = 200;
     private String pendingOAuthUrl = null;
     private PermissionRequest pendingWebPermReq = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        createNotificationChannel();
         captureOAuthIntent(getIntent());
         setupNativeBridge();
     }
@@ -91,6 +99,21 @@ public class MainActivity extends BridgeActivity {
             return;
         }
         super.onBackPressed();
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel ch = new NotificationChannel(CH_ID, "Order Masuk NutriFresh POS", NotificationManager.IMPORTANCE_HIGH);
+            ch.setDescription("Notifikasi order online baru & bukti transfer pelanggan");
+            ch.enableVibration(true);
+            NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            if (nm != null) nm.createNotificationChannel(ch);
+        }
+    }
+
+    private boolean hasNotifPermissionInternal() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true;
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
     }
 
     private void captureOAuthIntent(Intent intent) {
@@ -177,6 +200,44 @@ public class MainActivity extends BridgeActivity {
     }
 
     public class NfAndroidNativeBridge {
+        @JavascriptInterface
+        public boolean hasNotificationPermission() {
+            return hasNotifPermissionInternal();
+        }
+
+        @JavascriptInterface
+        public void requestNotificationPermission() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotifPermissionInternal()) {
+                runOnUiThread(() -> ActivityCompat.requestPermissions(
+                    MainActivity.this,
+                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                    REQ_NOTIF_PERM
+                ));
+            }
+        }
+
+        @JavascriptInterface
+        public void showLocalNotification(String title, String body) {
+            if (!hasNotifPermissionInternal()) return;
+            runOnUiThread(() -> {
+                try {
+                    Intent i = new Intent(MainActivity.this, MainActivity.class);
+                    i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    PendingIntent pi = PendingIntent.getActivity(MainActivity.this, 0, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                    NotificationCompat.Builder b = new NotificationCompat.Builder(MainActivity.this, CH_ID)
+                        .setSmallIcon(getApplicationInfo().icon)
+                        .setContentTitle(title != null ? title : "NutriFresh POS")
+                        .setContentText(body != null ? body : "")
+                        .setStyle(new NotificationCompat.BigTextStyle().bigText(body != null ? body : ""))
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setAutoCancel(true)
+                        .setContentIntent(pi);
+                    NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                    if (nm != null) nm.notify(++notifCounter, b.build());
+                } catch (Exception ignored) {}
+            });
+        }
+
         @JavascriptInterface
         public boolean hasCameraPermission() {
             return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
@@ -290,7 +351,7 @@ def configure():
     perms = [
         '<uses-permission android:name="android.permission.INTERNET" />',
         '<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />',
-        '<uses-permission android:name="android.permission.CAMERA" />',
+        '<uses-permission android:name="android.permission.CAMERA" />','<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />','<uses-permission android:name="android.permission.VIBRATE" />',
         '<uses-permission android:name="android.permission.BLUETOOTH" />',
         '<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />',
         '<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />',

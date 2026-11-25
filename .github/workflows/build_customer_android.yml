@@ -1,0 +1,53 @@
+name: Build NutriFresh Customer (.apk)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-customer-apk:
+    name: Build NutriFresh Customer (.apk)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Prepare web bundle for Customer Android
+        run: python3 scripts/prepare_web_bundles.py
+
+      - name: Install Capacitor dependencies
+        working-directory: mobile/customer-android
+        run: npm install
+
+      - name: Generate Android native project
+        working-directory: mobile/customer-android
+        run: npx cap add android && npx cap sync android
+
+      - name: Configure icons, Notifications, OAuth Deep Link & Smart Back
+        run: python3 mobile/customer-android/scripts/configure_android.py
+
+      - name: Build Release-ready APK (debug-signed for direct sideload install)
+        working-directory: mobile/customer-android/android
+        run: chmod +x gradlew && ./gradlew assembleDebug
+
+      - name: Rename APK
+        run: cp mobile/customer-android/android/app/build/outputs/apk/debug/app-debug.apk NutriFresh.apk
+
+      - name: Upload NutriFresh.apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: NutriFresh_Customer_APK
+          path: NutriFresh.apk
+          retention-days: 30
