@@ -1259,7 +1259,8 @@
                     await window.nfNotify.send({
                         title: '🔔 Pengingat Shift & Dzikir Aktif!',
                         body: `Dzikir Pagi ${pagi}, Petang ${petang}, dan ${count} jadwal shift mendatang sudah terjadwal di HP Anda.`,
-                        sound: 'status'
+                        sound: 'status',
+                        forceOsBanner: true
                     });
                 } else {
                     this.alert('Pengaturan pengingat berhasil disimpan.');

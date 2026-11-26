@@ -4772,22 +4772,63 @@
                     const cached = JSON.parse(localStorage.getItem('nutri_my_orders_cache_v1') || '[]');
                     if (Array.isArray(cached)) this.state.myOrdersList = cached;
                 } catch (e) {}
+                this._notifiedOrderEvents = new Set();
+                this._ordersRefreshInFlight = false;
+                this._ordersPollTick = 0;
                 this.renderCustomerOrderIndicators();
-                this.refreshCustomerOrders(false);
+                this.syncNativeLiveOrderState();
+                this.refreshCustomerOrders(false, true);
                 if (this.state.myOrdersPollTimer) clearInterval(this.state.myOrdersPollTimer);
                 this.state.myOrdersPollTimer = setInterval(() => {
                     if (document.hidden) return;
+                    this._ordersPollTick = (this._ordersPollTick || 0) + 1;
+                    const modalOpen = !document.getElementById('customerOrdersModal')?.classList.contains('hidden');
+                    // Saat layar Pesanan Saya / Chat dibuka: refresh tiap 3 detik agar chat instan; selain itu tiap 9 detik
+                    if (!modalOpen && (this._ordersPollTick % 3 !== 0)) return;
                     const hasRefs = this.getSavedCustomerOrderRefs().length > 0 || !!(this.state.customerMember && this.state.customerMember.phone);
                     const hasActive = (this.state.myOrdersList || []).some(o => !['Selesai', 'Dibatalkan'].includes(o.orderStatus));
-                    if (hasRefs && (hasActive || !document.getElementById('customerOrdersModal')?.classList.contains('hidden'))) {
-                        this.refreshCustomerOrders(false);
+                    if (hasRefs && (hasActive || modalOpen)) {
+                        this.refreshCustomerOrders(false, false);
                     }
-                }, 8000);
+                }, 3000);
                 document.addEventListener('visibilitychange', () => {
                     if (!document.hidden && (this.getSavedCustomerOrderRefs().length > 0 || (this.state.customerMember && this.state.customerMember.phone))) {
-                        this.refreshCustomerOrders(false);
+                        // Silent sync saat kembali ke aplikasi (notif saat background sudah dikirim lewat FCM!)
+                        this.refreshCustomerOrders(false, true);
                     }
                 });
+            },
+            syncNativeLiveOrderState() {
+                try {
+                    if (!window.NfAndroidNative || typeof window.NfAndroidNative.syncActiveOrderState !== 'function') return;
+                    const active = (this.state.myOrdersList || []).filter(o => o && !['Selesai', 'Dibatalkan'].includes(o.orderStatus));
+                    if (active.length === 0) {
+                        window.NfAndroidNative.syncActiveOrderState(JSON.stringify({ active: false }));
+                        return;
+                    }
+                    const top = active[0];
+                    const items = Array.isArray(top.weighedItems) && top.weighedItems.length > 0
+                        ? top.weighedItems
+                        : (Array.isArray(top.items) ? top.items : []);
+                    const summaryParts = items.slice(0, 4).map(it => `${this.formatStockDisplay(it.qty, it.unit)} ${String(it.name || 'Buah').replace('[OBRAL]', '').trim()}`);
+                    if (items.length > 4) summaryParts.push(`+${items.length - 4} item`);
+                    const grand = (Number(top.finalTotal) || Number(top.estimatedTotal) || 0) + (Number(top.shippingFee) || 0);
+                    const payload = {
+                        active: true,
+                        orderId: top.id || top.orderCode || '',
+                        orderCode: top.orderCode || top.id || '',
+                        receiptToken: top.receiptToken || '',
+                        customerName: top.customerName || this.state.customerMember?.name || 'Pelanggan',
+                        status: top.orderStatus || 'Menunggu Timbang',
+                        step: this.getOrderStepNumber(top.orderStatus),
+                        itemsSummary: summaryParts.join(', ') || 'Pesanan buah segar NutriFresh',
+                        totalText: this.formatCurrency(grand),
+                        courierName: top.courierName || '',
+                        deliveryMode: top.deliveryMode || 'Kirim ke Rumah',
+                        replyUrl: (SUPABASE_CONFIG && SUPABASE_CONFIG.url) ? `${SUPABASE_CONFIG.url}/functions/v1/send-push` : ''
+                    };
+                    window.NfAndroidNative.syncActiveOrderState(JSON.stringify(payload));
+                } catch (_) {}
             },
             updateFloatingOrderPillPosition() {
                 const pill = document.getElementById('customerFloatingOrderPill');
@@ -4839,7 +4880,8 @@
                     await window.nfNotify.send({
                         title: 'Notifikasi NutriFresh Aktif 🔔',
                         body: 'Anda akan langsung mendapat kabar saat buah selesai ditimbang atau diantar.',
-                        sound: 'status'
+                        sound: 'status',
+                        forceOsBanner: true
                     });
                     this.syncNotificationPromptUI();
                     return;
@@ -4856,7 +4898,9 @@
                     this.showAlert('Izin notifikasi belum aktif. Jika sebelumnya sempat ditolak, buka Pengaturan HP / ikon gembok browser → Izin → Notifikasi → Izinkan.');
                 }
             },
-            async refreshCustomerOrders(showSpin = false) {
+            async refreshCustomerOrders(showSpin = false, silentNotify = false) {
+                if (this._ordersRefreshInFlight) return;
+                this._ordersRefreshInFlight = true;
                 const refs = this.getSavedCustomerOrderRefs();
                 const ic = document.getElementById('custOrdersRefreshIcon');
                 if (showSpin && ic) ic.classList.add('fa-spin');
@@ -4871,37 +4915,45 @@
                         if (res && Array.isArray(res.orders)) {
                             const cloudMap = new Map(res.orders.map(o => [o.id, o]));
                             const prevChatLenMap = new Map((this.state.myOrdersList || []).map(o => [o.id, Array.isArray(o.orderChat) ? o.orderChat.length : 0]));
-                            // Deteksi perubahan status & pesan baru dari toko/kurir -> kirim Notifikasi otomatis!
+                            // Deteksi perubahan status & pesan baru (anti-duplikat & tidak banjir saat baru buka app dari background!)
+                            if (!this._notifiedOrderEvents) this._notifiedOrderEvents = new Set();
+                            const skipLocalNotify = !!silentNotify || !!window.NfAndroidNative;
                             res.orders.forEach(o => {
                                 const oldSt = prevMap.get(o.id);
                                 const oldChatLen = prevChatLenMap.get(o.id) || 0;
                                 const curChat = Array.isArray(o.orderChat) ? o.orderChat : [];
                                 if (oldSt && oldSt !== o.orderStatus) {
-                                    let body = `Status pesanan ${o.orderCode || o.id}: ${o.orderStatus}`;
-                                    if (o.orderStatus === 'Menunggu Pembayaran') {
-                                        const grand = (Number(o.finalTotal) || Number(o.estimatedTotal) || 0) + (Number(o.shippingFee) || 0);
-                                        body = `Buah selesai ditimbang! Total final ${this.formatCurrency(grand)}. Ketuk untuk ACC / bayar.`;
-                                    } else if (o.orderStatus === 'Diantar Kurir') {
-                                        body = `Kurir ${o.courierName || 'NutriFresh'} sedang mengantar pesanan ${o.orderCode || o.id} ke alamat Anda!`;
-                                    } else if (o.orderStatus === 'Siap Diambil' || o.orderStatus === 'Disetujui — Siap Diambil') {
-                                        body = `Pesanan ${o.orderCode || o.id} sudah siap diambil di gerai NutriFresh!`;
-                                    } else if (String(o.orderStatus || '').startsWith('Terkirim')) {
-                                        body = `Pesanan ${o.orderCode || o.id} telah diterima. Terima kasih!`;
-                                    } else if (o.orderStatus === 'Selesai') {
-                                        body = `Pesanan ${o.orderCode || o.id} selesai. Resi digital sudah siap diunduh!`;
-                                    }
-                                    if (window.nfNotify) {
-                                        window.nfNotify.send({
-                                            title: `Update Pesanan NutriFresh 🍐`,
-                                            body,
-                                            tag: `ord-${o.id}`,
-                                            sound: 'status',
-                                            onClick: () => this.openCustomerOrdersModal('active')
-                                        });
+                                    const evKey = `st|${o.id}|${o.orderStatus}`;
+                                    if (!skipLocalNotify && !this._notifiedOrderEvents.has(evKey)) {
+                                        this._notifiedOrderEvents.add(evKey);
+                                        let body = `Status pesanan ${o.orderCode || o.id}: ${o.orderStatus}`;
+                                        if (o.orderStatus === 'Menunggu Pembayaran') {
+                                            const grand = (Number(o.finalTotal) || Number(o.estimatedTotal) || 0) + (Number(o.shippingFee) || 0);
+                                            body = `Buah selesai ditimbang! Total final ${this.formatCurrency(grand)}. Ketuk untuk ACC / bayar.`;
+                                        } else if (o.orderStatus === 'Diantar Kurir') {
+                                            body = `Kurir ${o.courierName || 'NutriFresh'} sedang mengantar pesanan ${o.orderCode || o.id} ke alamat Anda!`;
+                                        } else if (o.orderStatus === 'Siap Diambil' || o.orderStatus === 'Disetujui — Siap Diambil') {
+                                            body = `Pesanan ${o.orderCode || o.id} sudah siap diambil di gerai NutriFresh!`;
+                                        } else if (String(o.orderStatus || '').startsWith('Terkirim')) {
+                                            body = `Pesanan ${o.orderCode || o.id} telah diterima. Terima kasih!`;
+                                        } else if (o.orderStatus === 'Selesai') {
+                                            body = `Pesanan ${o.orderCode || o.id} selesai. Resi digital sudah siap diunduh!`;
+                                        }
+                                        if (window.nfNotify) {
+                                            window.nfNotify.send({
+                                                title: `Update Pesanan NutriFresh 🍐`,
+                                                body,
+                                                tag: `ord-${o.id}`,
+                                                sound: 'status',
+                                                onClick: () => this.openCustomerOrdersModal('active')
+                                            });
+                                        }
                                     }
                                 } else if (oldSt && curChat.length > oldChatLen) {
                                     const lastMsg = curChat[curChat.length - 1];
-                                    if (lastMsg && lastMsg.sender !== 'customer' && window.nfNotify) {
+                                    const evKey = `chat|${o.id}|${lastMsg?.id || curChat.length}`;
+                                    if (!skipLocalNotify && lastMsg && lastMsg.sender !== 'customer' && !this._notifiedOrderEvents.has(evKey) && window.nfNotify) {
+                                        this._notifiedOrderEvents.add(evKey);
                                         window.nfNotify.send({
                                             title: `💬 Pesan dari ${lastMsg.name || 'Toko NutriFresh'}`,
                                             body: lastMsg.text || 'Ada pesan baru pada pesanan Anda.',
@@ -4925,8 +4977,10 @@
                 } catch (err) {
                     console.warn('[Katalog] Refresh pesanan:', err?.message || err);
                 } finally {
+                    this._ordersRefreshInFlight = false;
                     if (ic) setTimeout(() => ic.classList.remove('fa-spin'), 350);
                     this.renderCustomerOrderIndicators();
+                    this.syncNativeLiveOrderState();
                     const modalEl = document.getElementById('customerOrdersModal');
                     if (modalEl && !modalEl.classList.contains('hidden')) {
                         const fp = JSON.stringify((this.state.myOrdersList || []).map(o => [
@@ -5420,6 +5474,7 @@
                     this.renderCustomerProducts();
                     document.getElementById('customerCartModal')?.classList.add('hidden');
                     this.renderCustomerOrderIndicators();
+                    this.syncNativeLiveOrderState();
                     this.openCustomerOrdersModal('active');
                     this.showCustomerToast(`Pesanan #${res.orderCode} berhasil masuk ke toko!`);
                     if (window.nfPermissions) {
@@ -6983,7 +7038,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v146';
+        window.__NF_APP_VERSION = 'v147';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 

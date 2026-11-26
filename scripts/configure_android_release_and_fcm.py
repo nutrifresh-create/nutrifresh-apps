@@ -6,24 +6,717 @@ import sys
 from pathlib import Path
 
 # Universal Android Release Signing + Auto versionCode + Smart Permissions (v145)
-# + Native In-App Self-Updater (v146) + Optional Firebase FCM
+# + Native In-App Self-Updater (v146) + Gojek-Style Live Order, Direct Reply & Zero-Duplicate FCM (v147)
 # Usage: python3 scripts/configure_android_release_and_fcm.py <mobile_subdir> <package_id> <channel_id> [app_role]
 
-FCM_SERVICE_JAVA = """package __PACKAGE_ID__;
+LIVE_ORDER_HELPER_JAVA = r"""package __PACKAGE_ID__;
 
+import android.app.Activity;
+import android.app.Application;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.Bundle;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.Person;
+import androidx.core.app.RemoteInput;
+import java.lang.ref.WeakReference;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+public class NfLiveOrderHelper {
+    public static final String CH_ALERTS = "__CHANNEL_ID__";
+    public static final String CH_LIVE = "__CHANNEL_ID___live";
+    public static final String APP_ROLE = "__APP_ROLE__";
+    public static final String PREFS = "nf_live_order_prefs";
+    public static final String REPLY_KEY = "nf_direct_reply_text";
+    public static final String EXTRA_OPEN_ORDER_ID = "nf_open_order_id";
+    public static final String DEFAULT_REPLY_URL = "https://dsidhlpgdanmgndrbksx.supabase.co/functions/v1/send-push";
+    public static final int LIVE_ORDER_NOTIF_ID = 904200;
+
+    private static volatile boolean appInForeground = false;
+    private static volatile boolean lifecycleRegistered = false;
+    private static WeakReference<MainActivity> activeMainActivity = new WeakReference<>(null);
+    private static final LinkedHashSet<String> recentOutboxIds = new LinkedHashSet<>();
+    private static final LinkedHashSet<Integer> activeChatNotifIds = new LinkedHashSet<>();
+    private static volatile String pendingOpenOrderId = "";
+
+    public static void ensureChannels(Context ctx) {
+        if (ctx == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+        try {
+            NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return;
+
+            NotificationChannel chAlerts = new NotificationChannel(
+                CH_ALERTS,
+                "Notifikasi & Chat NutriFresh",
+                NotificationManager.IMPORTANCE_HIGH
+            );
+            chAlerts.setDescription("Notifikasi pesanan buah, status timbangan, kurir & pesan chat NutriFresh");
+            chAlerts.enableVibration(true);
+            chAlerts.setShowBadge(true);
+            nm.createNotificationChannel(chAlerts);
+
+            NotificationChannel chLive = new NotificationChannel(
+                CH_LIVE,
+                "Status Pesanan Aktif (Live)",
+                NotificationManager.IMPORTANCE_LOW
+            );
+            chLive.setDescription("Kartu status pesanan aktif ala Gojek saat berada di luar aplikasi");
+            chLive.setSound(null, null);
+            chLive.enableVibration(false);
+            chLive.setShowBadge(false);
+            nm.createNotificationChannel(chLive);
+        } catch (Exception ignored) {}
+    }
+
+    public static void registerLifecycle(final MainActivity activity) {
+        if (activity == null) return;
+        ensureChannels(activity);
+        activeMainActivity = new WeakReference<>(activity);
+        appInForeground = true;
+        cancelLiveOrderNotification(activity);
+        clearTrackedChatNotifications(activity);
+        handleLaunchIntent(activity, activity.getIntent());
+
+        if (lifecycleRegistered) return;
+        lifecycleRegistered = true;
+        try {
+            activity.getApplication().registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
+                @Override
+                public void onActivityCreated(Activity act, Bundle savedInstanceState) {
+                    if (act instanceof MainActivity) {
+                        ensureChannels(act);
+                        activeMainActivity = new WeakReference<>((MainActivity) act);
+                    }
+                }
+                @Override
+                public void onActivityStarted(Activity act) {
+                    if (act instanceof MainActivity) {
+                        activeMainActivity = new WeakReference<>((MainActivity) act);
+                    }
+                }
+                @Override
+                public void onActivityResumed(Activity act) {
+                    if (act instanceof MainActivity) {
+                        activeMainActivity = new WeakReference<>((MainActivity) act);
+                        appInForeground = true;
+                        cancelLiveOrderNotification(act);
+                        clearTrackedChatNotifications(act);
+                        dispatchJs("if(window.__nfOnAppResume){window.__nfOnAppResume();}");
+                        flushPendingOpenOrder();
+                    }
+                }
+                @Override
+                public void onActivityPaused(Activity act) {
+                    if (act instanceof MainActivity) {
+                        appInForeground = false;
+                        showLiveOrderIfActive(act);
+                    }
+                }
+                @Override
+                public void onActivityStopped(Activity act) {
+                    if (act instanceof MainActivity) {
+                        appInForeground = false;
+                        showLiveOrderIfActive(act);
+                    }
+                }
+                @Override
+                public void onActivitySaveInstanceState(Activity act, Bundle outState) {}
+                @Override
+                public void onActivityDestroyed(Activity act) {}
+            });
+        } catch (Exception ignored) {}
+    }
+
+    public static boolean isAppInForeground() {
+        return appInForeground;
+    }
+
+    public static void handleLaunchIntent(Context ctx, Intent intent) {
+        if (intent == null) return;
+        try {
+            String ordId = intent.getStringExtra(EXTRA_OPEN_ORDER_ID);
+            if (ordId != null && !ordId.trim().isEmpty()) {
+                pendingOpenOrderId = ordId.trim();
+                intent.removeExtra(EXTRA_OPEN_ORDER_ID);
+                flushPendingOpenOrder();
+            }
+        } catch (Exception ignored) {}
+    }
+
+    public static void flushPendingOpenOrder() {
+        final String ordId = pendingOpenOrderId;
+        if (ordId == null || ordId.isEmpty()) return;
+        final MainActivity act = activeMainActivity.get();
+        if (act == null || act.isFinishing()) return;
+        pendingOpenOrderId = "";
+        act.runOnUiThread(() -> {
+            try {
+                if (act.getBridge() != null && act.getBridge().getWebView() != null) {
+                    act.getBridge().getWebView().postDelayed(() -> {
+                        try {
+                            if (act.getBridge() != null && act.getBridge().getWebView() != null) {
+                                act.getBridge().getWebView().evaluateJavascript(
+                                    "if(window.__nfOpenOrderFromNotif){window.__nfOpenOrderFromNotif(" + JSONObject.quote(ordId) + ");}",
+                                    null
+                                );
+                            }
+                        } catch (Exception ignored) {}
+                    }, 450);
+                }
+            } catch (Exception ignored) {}
+        });
+    }
+
+    public static void dispatchJs(final String jsCode) {
+        final MainActivity act = activeMainActivity.get();
+        if (act == null || act.isFinishing()) return;
+        act.runOnUiThread(() -> {
+            try {
+                if (act.getBridge() != null && act.getBridge().getWebView() != null) {
+                    act.getBridge().getWebView().evaluateJavascript(jsCode, null);
+                }
+            } catch (Exception ignored) {}
+        });
+    }
+
+    public static void dispatchPushToWebView(final String jsonPayload) {
+        dispatchJs("if(window.__nfOnPushReceived){window.__nfOnPushReceived(" + JSONObject.quote(jsonPayload) + ");}");
+    }
+
+    public static synchronized boolean isDuplicateOutboxId(String outboxId) {
+        if (outboxId == null || outboxId.trim().isEmpty()) return false;
+        String key = outboxId.trim();
+        if (recentOutboxIds.contains(key)) return true;
+        recentOutboxIds.add(key);
+        if (recentOutboxIds.size() > 50) {
+            Iterator<String> it = recentOutboxIds.iterator();
+            if (it.hasNext()) {
+                it.next();
+                it.remove();
+            }
+        }
+        return false;
+    }
+
+    public static void saveLiveOrderState(Context ctx, String jsonStr) {
+        if (ctx == null || jsonStr == null) return;
+        try {
+            JSONObject obj = new JSONObject(jsonStr);
+            boolean active = obj.optBoolean("active", false);
+            SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            if (!active) {
+                sp.edit().putBoolean("active", false).apply();
+                cancelLiveOrderNotification(ctx);
+                return;
+            }
+            sp.edit()
+                .putBoolean("active", true)
+                .putString("order_id", obj.optString("orderId", ""))
+                .putString("order_code", obj.optString("orderCode", obj.optString("orderId", "")))
+                .putString("receipt_token", obj.optString("receiptToken", ""))
+                .putString("customer_name", obj.optString("customerName", "Pelanggan"))
+                .putString("status", obj.optString("status", "Menunggu Timbang"))
+                .putInt("step", Math.max(1, Math.min(5, obj.optInt("step", 1))))
+                .putString("items_summary", obj.optString("itemsSummary", "Pesanan buah segar NutriFresh"))
+                .putString("total_text", obj.optString("totalText", "Rp 0"))
+                .putString("courier_name", obj.optString("courierName", ""))
+                .putString("delivery_mode", obj.optString("deliveryMode", "Kirim ke Rumah"))
+                .putString("reply_url", obj.optString("replyUrl", DEFAULT_REPLY_URL))
+                .apply();
+            if (!appInForeground) {
+                showLiveOrderIfActive(ctx);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    public static void updateLiveOrderFromFcm(Context ctx, Map<String, String> data) {
+        if (ctx == null || data == null) return;
+        if (!"customer".equals(APP_ROLE)) return;
+        String orderId = safe(data.get("order_id"));
+        if (orderId.isEmpty()) orderId = safe(data.get("ref_id"));
+        if (!orderId.startsWith("ORD-")) return;
+
+        String status = safe(data.get("order_status"));
+        if (status.isEmpty()) return;
+
+        SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        if ("Selesai".equalsIgnoreCase(status) || "Dibatalkan".equalsIgnoreCase(status)) {
+            sp.edit().putBoolean("active", false).apply();
+            cancelLiveOrderNotification(ctx);
+            return;
+        }
+
+        int step = 1;
+        try { step = Integer.parseInt(safe(data.get("step"))); } catch (Exception ignored) {}
+        step = Math.max(1, Math.min(5, step));
+
+        SharedPreferences.Editor ed = sp.edit();
+        ed.putBoolean("active", true);
+        ed.putString("order_id", orderId);
+        if (!safe(data.get("order_code")).isEmpty()) ed.putString("order_code", safe(data.get("order_code")));
+        else if (sp.getString("order_code", "").isEmpty()) ed.putString("order_code", orderId);
+        if (!safe(data.get("receipt_token")).isEmpty()) ed.putString("receipt_token", safe(data.get("receipt_token")));
+        if (!safe(data.get("customer_name")).isEmpty()) ed.putString("customer_name", safe(data.get("customer_name")));
+        ed.putString("status", status);
+        ed.putInt("step", step);
+        if (!safe(data.get("items_summary")).isEmpty()) ed.putString("items_summary", safe(data.get("items_summary")));
+        if (!safe(data.get("total_text")).isEmpty()) ed.putString("total_text", safe(data.get("total_text")));
+        if (!safe(data.get("courier_name")).isEmpty()) ed.putString("courier_name", safe(data.get("courier_name")));
+        if (!safe(data.get("delivery_mode")).isEmpty()) ed.putString("delivery_mode", safe(data.get("delivery_mode")));
+        if (!safe(data.get("reply_url")).isEmpty()) ed.putString("reply_url", safe(data.get("reply_url")));
+        ed.apply();
+
+        if (!appInForeground) {
+            showLiveOrderIfActive(ctx);
+        }
+    }
+
+    public static void cancelLiveOrderNotification(Context ctx) {
+        if (ctx == null) return;
+        try {
+            NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) nm.cancel(LIVE_ORDER_NOTIF_ID);
+        } catch (Exception ignored) {}
+    }
+
+    public static synchronized void clearTrackedChatNotifications(Context ctx) {
+        if (ctx == null) return;
+        try {
+            NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                for (Integer id : activeChatNotifIds) {
+                    nm.cancel(id);
+                }
+            }
+            activeChatNotifIds.clear();
+        } catch (Exception ignored) {}
+    }
+
+    public static void showLiveOrderIfActive(Context ctx) {
+        if (ctx == null || !"customer".equals(APP_ROLE) || appInForeground) return;
+        try {
+            SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            if (!sp.getBoolean("active", false)) {
+                cancelLiveOrderNotification(ctx);
+                return;
+            }
+            String status = sp.getString("status", "Menunggu Timbang");
+            if ("Selesai".equalsIgnoreCase(status) || "Dibatalkan".equalsIgnoreCase(status)) {
+                sp.edit().putBoolean("active", false).apply();
+                cancelLiveOrderNotification(ctx);
+                return;
+            }
+            ensureChannels(ctx);
+            NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return;
+
+            String orderId = sp.getString("order_id", "");
+            String orderCode = sp.getString("order_code", orderId);
+            String receiptToken = sp.getString("receipt_token", "");
+            String customerName = sp.getString("customer_name", "Pelanggan");
+            int step = Math.max(1, Math.min(5, sp.getInt("step", 1)));
+            String itemsSummary = sp.getString("items_summary", "Pesanan buah segar NutriFresh");
+            String totalText = sp.getString("total_text", "Rp 0");
+            String courierName = sp.getString("courier_name", "");
+            String replyUrl = sp.getString("reply_url", DEFAULT_REPLY_URL);
+
+            String emoji = step >= 4 ? "🛵" : (step == 3 ? "💳" : (step == 2 ? "⚖️" : "🍐"));
+            String title = emoji + " " + status + " • #" + orderCode;
+            String shortLine = totalText + " • " + itemsSummary;
+            StringBuilder big = new StringBuilder();
+            big.append("Tahap ").append(step).append("/5: ").append(status);
+            big.append("\nBuah: ").append(itemsSummary);
+            big.append("\nTotal: ").append(totalText);
+            if (!courierName.isEmpty()) {
+                big.append("\nKurir: ").append(courierName);
+            }
+
+            Intent launch = new Intent(ctx, MainActivity.class);
+            launch.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            launch.putExtra(EXTRA_OPEN_ORDER_ID, orderId);
+            PendingIntent pi = PendingIntent.getActivity(
+                ctx,
+                LIVE_ORDER_NOTIF_ID,
+                launch,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+
+            NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CH_LIVE)
+                .setSmallIcon(ctx.getApplicationInfo().icon)
+                .setContentTitle(title)
+                .setContentText(shortLine)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(big.toString()))
+                .setProgress(5, step, false)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setSilent(true)
+                .setAutoCancel(false)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setContentIntent(pi);
+
+            if (!orderId.isEmpty() && !receiptToken.isEmpty()) {
+                NotificationCompat.Action replyAction = buildDirectReplyAction(
+                    ctx,
+                    orderId,
+                    receiptToken,
+                    "customer",
+                    customerName,
+                    replyUrl,
+                    LIVE_ORDER_NOTIF_ID,
+                    true
+                );
+                if (replyAction != null) b.addAction(replyAction);
+            }
+
+            nm.notify(LIVE_ORDER_NOTIF_ID, b.build());
+        } catch (Exception ignored) {}
+    }
+
+    public static void showAlertNotification(
+        Context ctx,
+        String title,
+        String body,
+        String eventType,
+        String refId,
+        Map<String, String> data
+    ) {
+        if (ctx == null) return;
+        try {
+            ensureChannels(ctx);
+            NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return;
+
+            String cleanRef = safe(refId);
+            boolean isChat = "chat".equalsIgnoreCase(safe(eventType))
+                || title.contains("💬") || title.contains("Pesan dari") || title.contains("Chat dari");
+
+            int notifId;
+            if (isChat && !cleanRef.isEmpty()) {
+                notifId = 700000 + Math.abs(cleanRef.hashCode() % 100000);
+            } else if (!cleanRef.isEmpty()) {
+                notifId = 600000 + Math.abs(cleanRef.hashCode() % 100000);
+            } else {
+                notifId = 500000 + Math.abs((title + "|" + body).hashCode() % 100000);
+            }
+
+            Intent launch = new Intent(ctx, MainActivity.class);
+            launch.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            if (!cleanRef.isEmpty()) launch.putExtra(EXTRA_OPEN_ORDER_ID, cleanRef);
+            PendingIntent pi = PendingIntent.getActivity(
+                ctx,
+                notifId,
+                launch,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+
+            if (isChat && !cleanRef.isEmpty()) {
+                synchronized (NfLiveOrderHelper.class) {
+                    activeChatNotifIds.add(notifId);
+                }
+                String senderName = data != null ? safe(data.get("sender_name")) : "";
+                if (senderName.isEmpty()) {
+                    senderName = "customer".equals(APP_ROLE) ? "Toko NutriFresh" : "Pelanggan";
+                }
+                String chatText = data != null ? safe(data.get("chat_text")) : "";
+                if (chatText.isEmpty()) chatText = body;
+
+                appendChatHistoryLine(ctx, cleanRef, senderName, chatText, false);
+
+                String receiptToken = data != null ? safe(data.get("receipt_token")) : "";
+                String replyUrl = data != null && !safe(data.get("reply_url")).isEmpty() ? safe(data.get("reply_url")) : DEFAULT_REPLY_URL;
+                String myName = "customer".equals(APP_ROLE)
+                    ? (data != null && !safe(data.get("customer_name")).isEmpty() ? safe(data.get("customer_name")) : "Pelanggan")
+                    : ("staff".equals(APP_ROLE) ? "Kurir NutriFresh" : "Kasir NutriFresh");
+                String myRole = "customer".equals(APP_ROLE) ? "customer" : ("staff".equals(APP_ROLE) ? "courier" : "store");
+
+                if (receiptToken.isEmpty() && "customer".equals(APP_ROLE)) {
+                    SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+                    if (cleanRef.equals(sp.getString("order_id", ""))) {
+                        receiptToken = sp.getString("receipt_token", "");
+                    }
+                }
+
+                showChatNotification(ctx, notifId, cleanRef, title, receiptToken, myRole, myName, replyUrl, false);
+                return;
+            }
+
+            NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CH_ALERTS)
+                .setSmallIcon(ctx.getApplicationInfo().icon)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setAutoCancel(true)
+                .setContentIntent(pi);
+
+            nm.notify(notifId, b.build());
+        } catch (Exception ignored) {}
+    }
+
+    public static void appendChatHistoryLine(Context ctx, String orderId, String senderName, String text, boolean isSelf) {
+        try {
+            SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            String key = "chat_hist_" + orderId;
+            JSONArray arr = new JSONArray(sp.getString(key, "[]"));
+            JSONObject item = new JSONObject();
+            item.put("sender", senderName);
+            item.put("text", text);
+            item.put("ts", System.currentTimeMillis());
+            item.put("self", isSelf);
+            arr.put(item);
+            // Keep only last 6 messages in notification thread
+            while (arr.length() > 6) {
+                arr.remove(0);
+            }
+            sp.edit().putString(key, arr.toString()).apply();
+        } catch (Exception ignored) {}
+    }
+
+    public static void showChatNotification(
+        Context ctx,
+        int notifId,
+        String orderId,
+        String convTitle,
+        String receiptToken,
+        String myRole,
+        String myName,
+        String replyUrl,
+        boolean silentUpdate
+    ) {
+        try {
+            ensureChannels(ctx);
+            NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return;
+
+            Person me = new Person.Builder().setName("Anda").build();
+            NotificationCompat.MessagingStyle style = new NotificationCompat.MessagingStyle(me)
+                .setConversationTitle(convTitle != null && !convTitle.isEmpty() ? convTitle : ("Chat #" + orderId));
+
+            SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            JSONArray arr = new JSONArray(sp.getString("chat_hist_" + orderId, "[]"));
+            String lastText = "";
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject it = arr.optJSONObject(i);
+                if (it == null) continue;
+                boolean isSelf = it.optBoolean("self", false);
+                String txt = it.optString("text", "");
+                long ts = it.optLong("ts", System.currentTimeMillis());
+                lastText = txt;
+                Person p = isSelf ? me : new Person.Builder().setName(it.optString("sender", "NutriFresh")).build();
+                style.addMessage(txt, ts, p);
+            }
+
+            Intent launch = new Intent(ctx, MainActivity.class);
+            launch.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            launch.putExtra(EXTRA_OPEN_ORDER_ID, orderId);
+            PendingIntent pi = PendingIntent.getActivity(
+                ctx,
+                notifId,
+                launch,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+
+            NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CH_ALERTS)
+                .setSmallIcon(ctx.getApplicationInfo().icon)
+                .setContentTitle(convTitle != null && !convTitle.isEmpty() ? convTitle : ("Chat #" + orderId))
+                .setContentText(lastText)
+                .setStyle(style)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setAutoCancel(true)
+                .setContentIntent(pi);
+
+            if (silentUpdate) {
+                b.setSilent(true).setOnlyAlertOnce(true);
+            } else {
+                b.setDefaults(NotificationCompat.DEFAULT_ALL);
+            }
+
+            if (orderId != null && !orderId.isEmpty() && receiptToken != null && !receiptToken.isEmpty()) {
+                NotificationCompat.Action replyAction = buildDirectReplyAction(
+                    ctx, orderId, receiptToken, myRole, myName, replyUrl, notifId, false
+                );
+                if (replyAction != null) b.addAction(replyAction);
+            }
+
+            nm.notify(notifId, b.build());
+        } catch (Exception ignored) {}
+    }
+
+    private static NotificationCompat.Action buildDirectReplyAction(
+        Context ctx,
+        String orderId,
+        String receiptToken,
+        String myRole,
+        String myName,
+        String replyUrl,
+        int notifId,
+        boolean isLiveOrder
+    ) {
+        try {
+            RemoteInput remoteInput = new RemoteInput.Builder(REPLY_KEY)
+                .setLabel("Tulis balasan cepat...")
+                .build();
+            Intent replyIntent = new Intent(ctx, NfDirectReplyReceiver.class);
+            replyIntent.putExtra("order_id", orderId);
+            replyIntent.putExtra("receipt_token", receiptToken);
+            replyIntent.putExtra("sender_role", myRole);
+            replyIntent.putExtra("sender_name", myName);
+            replyIntent.putExtra("reply_url", replyUrl != null && !replyUrl.isEmpty() ? replyUrl : DEFAULT_REPLY_URL);
+            replyIntent.putExtra("notif_id", notifId);
+            replyIntent.putExtra("is_live_order", isLiveOrder);
+
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= 31) {
+                flags |= PendingIntent.FLAG_MUTABLE;
+            }
+            PendingIntent replyPi = PendingIntent.getBroadcast(
+                ctx,
+                notifId + (isLiveOrder ? 17 : 31),
+                replyIntent,
+                flags
+            );
+            return new NotificationCompat.Action.Builder(
+                android.R.drawable.ic_menu_send,
+                isLiveOrder ? "💬 Balas Chat" : "Balas",
+                replyPi
+            ).addRemoteInput(remoteInput).setAllowGeneratedReplies(true).build();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static String safe(String s) {
+        return s == null ? "" : s.trim();
+    }
+}
+"""
+
+DIRECT_REPLY_RECEIVER_JAVA = r"""package __PACKAGE_ID__;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import androidx.core.app.RemoteInput;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import org.json.JSONObject;
+
+public class NfDirectReplyReceiver extends BroadcastReceiver {
+    @Override
+    public void onReceive(final Context context, final Intent intent) {
+        if (context == null || intent == null) return;
+        Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
+        if (remoteInput == null) return;
+        CharSequence seq = remoteInput.getCharSequence(NfLiveOrderHelper.REPLY_KEY);
+        final String replyText = seq != null ? seq.toString().trim() : "";
+        if (replyText.isEmpty()) return;
+
+        final String orderId = intent.getStringExtra("order_id");
+        final String receiptToken = intent.getStringExtra("receipt_token");
+        final String senderRole = intent.getStringExtra("sender_role");
+        final String senderName = intent.getStringExtra("sender_name");
+        final String replyUrl = intent.getStringExtra("reply_url");
+        final int notifId = intent.getIntExtra("notif_id", 700001);
+        final boolean isLiveOrder = intent.getBooleanExtra("is_live_order", false);
+
+        if (orderId == null || orderId.isEmpty() || receiptToken == null || receiptToken.isEmpty()) return;
+
+        final PendingResult pendingResult = goAsync();
+        new Thread(() -> {
+            HttpURLConnection conn = null;
+            boolean ok = false;
+            try {
+                String endpoint = (replyUrl != null && replyUrl.startsWith("http")) ? replyUrl : NfLiveOrderHelper.DEFAULT_REPLY_URL;
+                JSONObject body = new JSONObject();
+                body.put("action", "direct_reply");
+                body.put("order_id", orderId);
+                body.put("receipt_token", receiptToken);
+                body.put("sender_role", senderRole != null ? senderRole : "customer");
+                body.put("sender_name", senderName != null ? senderName : "Pelanggan");
+                body.put("message", replyText);
+
+                conn = (HttpURLConnection) new URL(endpoint).openConnection();
+                conn.setRequestMethod("POST");
+                conn.setConnectTimeout(12000);
+                conn.setReadTimeout(12000);
+                conn.setDoOutput(true);
+                conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                byte[] outBytes = body.toString().getBytes("UTF-8");
+                OutputStream os = conn.getOutputStream();
+                os.write(outBytes);
+                os.flush();
+                os.close();
+
+                int code = conn.getResponseCode();
+                ok = (code >= 200 && code < 300);
+            } catch (Exception ignored) {
+                ok = false;
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+
+            try {
+                if (isLiveOrder) {
+                    NfLiveOrderHelper.showLiveOrderIfActive(context);
+                    if (ok) {
+                        NfLiveOrderHelper.appendChatHistoryLine(context, orderId, "Anda", replyText + " ✓", true);
+                    }
+                } else {
+                    NfLiveOrderHelper.appendChatHistoryLine(
+                        context,
+                        orderId,
+                        "Anda",
+                        ok ? (replyText + " ✓") : ("(Gagal kirim) " + replyText),
+                        true
+                    );
+                    NfLiveOrderHelper.showChatNotification(
+                        context,
+                        notifId,
+                        orderId,
+                        "Chat Pesanan #" + orderId,
+                        receiptToken,
+                        senderRole != null ? senderRole : "customer",
+                        senderName != null ? senderName : "Pelanggan",
+                        replyUrl,
+                        true
+                    );
+                }
+                if (ok) {
+                    NfLiveOrderHelper.dispatchJs("if(window.__nfOnAppResume){window.__nfOnAppResume();}");
+                }
+            } catch (Exception ignored) {}
+
+            try { pendingResult.finish(); } catch (Exception ignored) {}
+        }).start();
+    }
+}
+"""
+
+FCM_SERVICE_JAVA = """package __PACKAGE_ID__;
+
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import java.util.Map;
+import org.json.JSONObject;
 
 public class NfFirebaseMessagingService extends FirebaseMessagingService {
-    private static final String CH_ID = "__CHANNEL_ID__";
-
     @Override
     public void onNewToken(String token) {
         super.onNewToken(token);
@@ -49,42 +742,40 @@ public class NfFirebaseMessagingService extends FirebaseMessagingService {
             if (data.containsKey("title") && data.get("title") != null) title = data.get("title");
             if (data.containsKey("body") && data.get("body") != null) body = data.get("body");
         }
-        showNotification(title, body);
-    }
 
-    private void showNotification(String title, String body) {
-        try {
-            NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            if (nm == null) return;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                NotificationChannel ch = new NotificationChannel(
-                    CH_ID,
-                    "Notifikasi NutriFresh",
-                    NotificationManager.IMPORTANCE_HIGH
-                );
-                ch.enableVibration(true);
-                nm.createNotificationChannel(ch);
-            }
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            PendingIntent pi = PendingIntent.getActivity(
-                this,
-                (int) (System.currentTimeMillis() & 0x7fff),
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-            );
-            NotificationCompat.Builder b = new NotificationCompat.Builder(this, CH_ID)
-                .setSmallIcon(getApplicationInfo().icon)
-                .setContentTitle(title)
-                .setContentText(body)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
-                .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setDefaults(NotificationCompat.DEFAULT_ALL)
-                .setAutoCancel(true)
-                .setContentIntent(pi);
-            nm.notify((int) (System.currentTimeMillis() & 0x7fffffff), b.build());
-        } catch (Exception ignored) {}
+        String outboxId = data != null ? data.get("outbox_id") : "";
+        if (NfLiveOrderHelper.isDuplicateOutboxId(outboxId)) {
+            return;
+        }
+
+        // Selalu perbarui state Live Order (termasuk saat aplikasi sedang tertutup/di background)
+        NfLiveOrderHelper.updateLiveOrderFromFcm(this, data);
+
+        String eventType = data != null && data.get("event_type") != null ? data.get("event_type") : "general";
+        String refId = data != null && data.get("ref_id") != null ? data.get("ref_id") : "";
+
+        // Jika pengguna sedang membuka aplikasi (foreground):
+        // JANGAN penuhi status bar Android! Langsung picu refresh WebView instan (< 1 detik) + banner in-app!
+        if (NfLiveOrderHelper.isAppInForeground()) {
+            try {
+                JSONObject j = new JSONObject();
+                j.put("title", title);
+                j.put("body", body);
+                j.put("eventType", eventType);
+                j.put("refId", refId);
+                j.put("outboxId", outboxId != null ? outboxId : "");
+                if (data != null) {
+                    if (data.get("order_status") != null) j.put("orderStatus", data.get("order_status"));
+                    if (data.get("sender_name") != null) j.put("senderName", data.get("sender_name"));
+                }
+                NfLiveOrderHelper.dispatchPushToWebView(j.toString());
+            } catch (Exception ignored) {}
+            return;
+        }
+
+        // Pengguna sedang di luar aplikasi (Home Screen / WA / Layar Mati):
+        // Tampilkan 1 notifikasi presisi (ID deterministik, anti-duplikat, + Direct Reply untuk chat!)
+        NfLiveOrderHelper.showAlertNotification(this, title, body, eventType, refId, data);
     }
 }
 """
@@ -116,7 +807,7 @@ SMART_PERM_AND_UPDATER_FIELDS = r"""
             conn.setInstanceFollowRedirects(false);
             conn.setConnectTimeout(timeoutMs);
             conn.setReadTimeout(timeoutMs);
-            conn.setRequestProperty("User-Agent", "NutriFresh-Android-Updater/1.46");
+            conn.setRequestProperty("User-Agent", "NutriFresh-Android-Updater/1.47");
             conn.setRequestProperty("Cache-Control", "no-cache");
             int code = conn.getResponseCode();
             if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308) {
@@ -175,6 +866,20 @@ SMART_PERM_AND_UPDATER_FIELDS = r"""
     public class NfAndroidNativeBridge {"""
 
 SMART_PERM_AND_UPDATER_METHODS = r"""
+        @JavascriptInterface
+        public void syncActiveOrderState(final String jsonStr) {
+            try {
+                NfLiveOrderHelper.saveLiveOrderState(MainActivity.this, jsonStr);
+            } catch (Exception ignored) {}
+        }
+
+        @JavascriptInterface
+        public void clearLiveOrderNotification() {
+            try {
+                NfLiveOrderHelper.saveLiveOrderState(MainActivity.this, "{\"active\":false}");
+            } catch (Exception ignored) {}
+        }
+
         @JavascriptInterface
         public String getAppVersionJson() {
             try {
@@ -519,7 +1224,7 @@ def main():
     # 1. Auto-increment versionCode & versionName so Android allows direct in-place Update!
     run_num = int(os.environ.get("GITHUB_RUN_NUMBER", "1") or "1")
     ver_code = 100 + run_num
-    ver_name = f"1.46.{run_num}"
+    ver_name = f"1.47.{run_num}"
 
     gh_repo = (os.environ.get("GITHUB_REPOSITORY") or "nutrifresh-create/nutrifresh-apps").strip()
     update_manifest_url = f"https://github.com/{gh_repo}/releases/download/latest-apks/update-{app_role}.json"
@@ -583,12 +1288,24 @@ def main():
     else:
         print(f"[signing] ANDROID_KEYSTORE_BASE64 not set yet -> fallback to debug signing (versionCode={ver_code})")
 
-    # 3. Universal v145+v146 Manifest Permissions + Dedicated NfUpdateFileProvider + Native Bridge
+    # 3. Universal v145+v146+v147 Java Classes (NfUpdateFileProvider, NfLiveOrderHelper, NfDirectReplyReceiver)
     res_xml_dir.mkdir(parents=True, exist_ok=True)
     (res_xml_dir / "nf_update_paths.xml").write_text(UPDATE_PATHS_XML.lstrip("\n"), encoding="utf-8")
     java_dir.mkdir(parents=True, exist_ok=True)
     (java_dir / "NfUpdateFileProvider.java").write_text(
         UPDATE_PROVIDER_JAVA.replace("__PACKAGE_ID__", pkg_id).lstrip("\n"), encoding="utf-8"
+    )
+    (java_dir / "NfLiveOrderHelper.java").write_text(
+        LIVE_ORDER_HELPER_JAVA
+        .replace("__PACKAGE_ID__", pkg_id)
+        .replace("__CHANNEL_ID__", channel_id)
+        .replace("__APP_ROLE__", app_role)
+        .lstrip("\n"),
+        encoding="utf-8",
+    )
+    (java_dir / "NfDirectReplyReceiver.java").write_text(
+        DIRECT_REPLY_RECEIVER_JAVA.replace("__PACKAGE_ID__", pkg_id).lstrip("\n"),
+        encoding="utf-8",
     )
 
     if manifest_path.exists():
@@ -621,11 +1338,37 @@ def main():
             m_txt = m_txt.replace("</application>", provider_xml, 1)
             print("[updater] Registered dedicated NfUpdateFileProvider in AndroidManifest.xml!")
 
+        if "NfDirectReplyReceiver" not in m_txt:
+            recv_xml = (
+                '\n        <receiver\n'
+                '            android:name=".NfDirectReplyReceiver"\n'
+                '            android:exported="false" />\n'
+                '        <meta-data\n'
+                '            android:name="com.google.firebase.messaging.default_notification_channel_id"\n'
+                f'            android:value="{channel_id}" />\n'
+                '    </application>'
+            )
+            m_txt = m_txt.replace("</application>", recv_xml, 1)
+            print(f"[v147] Registered NfDirectReplyReceiver & default FCM channel '{channel_id}' in AndroidManifest.xml!")
+
         manifest_path.write_text(m_txt, encoding="utf-8")
 
     ma_path = java_dir / "MainActivity.java"
     if ma_path.exists():
         ma = ma_path.read_text(encoding="utf-8")
+        if "NfLiveOrderHelper.registerLifecycle" not in ma:
+            ma = ma.replace(
+                "setupNativeBridge();",
+                "setupNativeBridge();\n        NfLiveOrderHelper.registerLifecycle(this);",
+                1,
+            )
+        if "NfLiveOrderHelper.handleLaunchIntent" not in ma:
+            if "super.onNewIntent(intent);" in ma:
+                ma = ma.replace(
+                    "super.onNewIntent(intent);",
+                    "super.onNewIntent(intent);\n        NfLiveOrderHelper.handleLaunchIntent(this, intent);",
+                    1,
+                )
         if "downloadAndInstallUpdate" not in ma and "    public class NfAndroidNativeBridge {" in ma:
             fields_block = SMART_PERM_AND_UPDATER_FIELDS.replace("__UPDATE_MANIFEST_URL__", update_manifest_url)
             ma = ma.replace("    public class NfAndroidNativeBridge {", fields_block, 1)
@@ -634,8 +1377,8 @@ def main():
                 "    public class NfAndroidNativeBridge {" + SMART_PERM_AND_UPDATER_METHODS,
                 1,
             )
-            ma_path.write_text(ma, encoding="utf-8")
-            print(f"[perms+updater] Injected Smart Permissions & In-App Self-Updater into {ma_path.name} ({update_manifest_url})!")
+            print(f"[v147] Injected Live Order, Smart Permissions & In-App Self-Updater into {ma_path.name}!")
+        ma_path.write_text(ma, encoding="utf-8")
 
     # 4. Optional Firebase Cloud Messaging (FCM) for real background Push Notifications!
     gs_json = (os.environ.get("FIREBASE_GOOGLE_SERVICES_JSON") or "").strip()
@@ -682,7 +1425,7 @@ def main():
             g_txt += "\napply plugin: 'com.google.gms.google-services'\n"
 
         java_dir.mkdir(parents=True, exist_ok=True)
-        svc_code = FCM_SERVICE_JAVA.replace("__PACKAGE_ID__", pkg_id).replace("__CHANNEL_ID__", channel_id).lstrip("\n")
+        svc_code = FCM_SERVICE_JAVA.replace("__PACKAGE_ID__", pkg_id).lstrip("\n")
         (java_dir / "NfFirebaseMessagingService.java").write_text(svc_code, encoding="utf-8")
 
         m_txt = manifest_path.read_text(encoding="utf-8")
@@ -751,7 +1494,7 @@ def main():
                     1,
                 )
                 ma_path.write_text(ma, encoding="utf-8")
-        print(f"[fcm] Firebase Cloud Messaging enabled for {pkg_id}!")
+        print(f"[fcm] Firebase Cloud Messaging v147 (Zero-Duplicate + Live Order + Direct Reply) enabled for {pkg_id}!")
     else:
         print(f"[fcm] FIREBASE_GOOGLE_SERVICES_JSON not configured yet -> skipped cleanly (build continues).")
 

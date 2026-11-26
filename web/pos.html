@@ -5965,7 +5965,8 @@
                     await window.nfNotify.send({
                         title: 'Tes Bel Notifikasi POS 🔔',
                         body: 'Suara & notifikasi order masuk NutriFresh POS sudah aktif!',
-                        sound: 'order'
+                        sound: 'order',
+                        forceOsBanner: true
                     });
                     this.syncPosNotifyBellUI();
                     return;
@@ -11743,7 +11744,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v146';
+        window.__NF_APP_VERSION = 'v147';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;

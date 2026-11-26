@@ -901,17 +901,30 @@
                 return res;
             } catch (_) { return "default"; }
         },
-        async send({ title = "NutriFresh", body = "", tag = "nf-alert", sound = "order", onClick = null } = {}) {
+        async send({ title = "NutriFresh", body = "", tag = "nf-alert", sound = "order", onClick = null, forceOsBanner = false } = {}) {
+            // Anti-duplikat 20 detik (mencegah 1 event memicu notifikasi berkali-kali saat polling/reconnect)
+            if (!window.__nfRecentNotifMap) window.__nfRecentNotifMap = {};
+            const dedupeKey = `${tag}|${title}|${body}`;
+            const nowMs = Date.now();
+            if (!forceOsBanner && window.__nfRecentNotifMap[dedupeKey] && (nowMs - window.__nfRecentNotifMap[dedupeKey]) < 20000) {
+                return false;
+            }
+            window.__nfRecentNotifMap[dedupeKey] = nowMs;
+
             try { if (navigator.vibrate) navigator.vibrate([120, 60, 120]); } catch (_) {}
             playChime(sound);
             showInAppNotifyBanner(title, body, onClick);
 
-            // 1. Android Native Notification (Status Bar + Sound + Vibration)
-            if (isAndroidNative() && typeof window.NfAndroidNative.showLocalNotification === "function") {
-                try {
-                    window.NfAndroidNative.showLocalNotification(String(title), String(body));
-                    return true;
-                } catch (_) {}
+            // 1. Android Native APK: Notifikasi status bar ditangani 1 pintu oleh FCM Native + Live Order ala Gojek!
+            // Hanya tembak showLocalNotification jika memang tombol Tes Manual (forceOsBanner: true).
+            if (isAndroidNative()) {
+                if (forceOsBanner && typeof window.NfAndroidNative.showLocalNotification === "function") {
+                    try {
+                        window.NfAndroidNative.showLocalNotification(String(title), String(body));
+                        return true;
+                    } catch (_) {}
+                }
+                return true;
             }
 
             // 2. ServiceWorker / Web Notification API (Chrome Android PWA, Windows PC, Edge, macOS, iOS PWA)
@@ -1760,4 +1773,79 @@
             if (window.nfUpdater) window.nfUpdater.check(false);
         }, 4500);
     }
+
+    // =========================================================================
+    // NATIVE FCM FOREGROUND & RESUME BRIDGE (ZERO-DUPLICATE + INSTANT REFRESH v147)
+    // =========================================================================
+    window.__nfOnPushReceived = function (rawJsonStr) {
+        try {
+            const p = typeof rawJsonStr === "string" ? JSON.parse(rawJsonStr || "{}") : (rawJsonStr || {});
+            const title = String(p.title || "NutriFresh");
+            const body = String(p.body || "");
+            const eventType = String(p.eventType || "general");
+            const refId = String(p.refId || "");
+            const realApp = getReadyApp();
+
+            // 1. Langsung segarkan data di halaman aktif (< 1 detik tanpa tunggu polling!)
+            if (document.getElementById("customerView") && realApp && typeof realApp.refreshCustomerOrders === "function") {
+                realApp.refreshCustomerOrders(false, true);
+            } else if (window.staffApp && typeof window.staffApp.loadAllData === "function") {
+                window.staffApp.loadAllData();
+            }
+
+            // 2. Jika pelanggan sedang menatap layar Pesanan Saya, cukup bunyikan chime lembut tanpa banner menumpuk
+            const custOrdModal = document.getElementById("customerOrdersModal");
+            const isViewingCustOrders = !!(custOrdModal && !custOrdModal.classList.contains("hidden"));
+            if (isViewingCustOrders && (eventType === "chat" || eventType === "order_status")) {
+                playChime("status");
+                return;
+            }
+
+            // 3. Tampilkan 1 banner in-app bersih (dedupe otomatis oleh window.nfNotify.send)
+            if (window.nfNotify) {
+                window.nfNotify.send({
+                    title,
+                    body,
+                    tag: `fcm-${eventType}-${refId || p.outboxId || "gen"}`,
+                    sound: eventType === "order_status" ? "order" : "status",
+                    onClick: () => {
+                        if (window.__nfOpenOrderFromNotif) window.__nfOpenOrderFromNotif(refId);
+                    }
+                });
+            }
+        } catch (_) {}
+    };
+
+    window.__nfOnAppResume = function () {
+        try {
+            const realApp = getReadyApp();
+            if (document.getElementById("customerView") && realApp && typeof realApp.refreshCustomerOrders === "function") {
+                // Silent sync saat kembali ke aplikasi (tanpa memicu banjir notifikasi lokal!)
+                realApp.refreshCustomerOrders(false, true);
+            } else if (window.staffApp && typeof window.staffApp.loadAllData === "function") {
+                window.staffApp.loadAllData();
+            }
+        } catch (_) {}
+    };
+
+    window.__nfOpenOrderFromNotif = function (orderId) {
+        try {
+            const realApp = getReadyApp();
+            if (document.getElementById("customerView") && realApp && typeof realApp.openCustomerOrdersModal === "function") {
+                realApp.openCustomerOrdersModal("active");
+                return;
+            }
+            if (document.getElementById("posSearch") && realApp && typeof realApp.openOnlineOrdersModal === "function") {
+                realApp.openOnlineOrdersModal();
+                return;
+            }
+            if (window.staffApp && typeof window.staffApp.switchTab === "function") {
+                if (orderId && String(orderId).startsWith("ORD-")) {
+                    window.staffApp.switchTab("antaran");
+                } else {
+                    window.staffApp.switchTab("absensi");
+                }
+            }
+        } catch (_) {}
+    };
 })();
