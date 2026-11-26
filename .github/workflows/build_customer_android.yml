@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Prepare web bundle for Customer Android
+      - name: Prepare web bundles
         run: python3 scripts/prepare_web_bundles.py
 
       - name: Install Capacitor dependencies
@@ -33,15 +33,37 @@ jobs:
         working-directory: mobile/customer-android
         run: npx cap add android && npx cap sync android
 
-      - name: Configure icons, Notifications, OAuth Deep Link & Smart Back
+      - name: Configure app icons, permissions & native bridge
         run: python3 mobile/customer-android/scripts/configure_android.py
 
-      - name: Build Release-ready APK (debug-signed for direct sideload install)
-        working-directory: mobile/customer-android/android
-        run: chmod +x gradlew && ./gradlew assembleDebug
+      - name: Configure Permanent Release Signing, VersionCode & Firebase FCM
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          FIREBASE_GOOGLE_SERVICES_JSON: ${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}
+        run: python3 scripts/configure_android_release_and_fcm.py mobile/customer-android id.my.nutrifresh.app nutrifresh_alerts
 
-      - name: Rename APK
-        run: cp mobile/customer-android/android/app/build/outputs/apk/debug/app-debug.apk NutriFresh.apk
+      - name: Build APK (Signed Release if Keystore Secret set, else Debug)
+        working-directory: mobile/customer-android/android
+        run: |
+          chmod +x gradlew
+          if [ -f .nf_release_signed ]; then
+            echo "Building PERMANENTLY SIGNED Release APK..."
+            ./gradlew assembleRelease
+          else
+            echo "Building Debug APK (add ANDROID_KEYSTORE_BASE64 secret for in-place updates)..."
+            ./gradlew assembleDebug
+          fi
+
+      - name: Collect APK artifact
+        run: |
+          if [ -f mobile/customer-android/android/app/build/outputs/apk/release/app-release.apk ]; then
+            cp mobile/customer-android/android/app/build/outputs/apk/release/app-release.apk NutriFresh.apk
+          else
+            cp mobile/customer-android/android/app/build/outputs/apk/debug/app-debug.apk NutriFresh.apk
+          fi
 
       - name: Upload NutriFresh.apk
         uses: actions/upload-artifact@v4

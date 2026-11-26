@@ -7,12 +7,221 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 ANDROID_DIR = BASE_DIR / "android"
 ICONS_SRC = BASE_DIR / "icons"
 
+REMINDER_RECEIVER_JAVA = r"""package id.my.nutrifresh.staff;
+
+import android.app.AlarmManager;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Build;
+import androidx.core.app.NotificationCompat;
+import java.util.Calendar;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+public class NfReminderReceiver extends BroadcastReceiver {
+    public static final String CH_ID = "nutrifresh_staff_alerts";
+    public static final String PREFS = "nf_staff_reminders";
+    public static final String ACTION_FIRE = "id.my.nutrifresh.staff.ACTION_REMINDER";
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        if (context == null || intent == null) return;
+        String action = intent.getAction();
+
+        if (Intent.ACTION_BOOT_COMPLETED.equals(action) || Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) {
+            rescheduleAllFromPrefs(context);
+            return;
+        }
+
+        int reqId = intent.getIntExtra("req_id", 1001);
+        String title = intent.getStringExtra("title");
+        String body = intent.getStringExtra("body");
+        boolean daily = intent.getBooleanExtra("daily", false);
+        int hour = intent.getIntExtra("hour", -1);
+        int minute = intent.getIntExtra("minute", -1);
+
+        showNotification(context, reqId, title != null ? title : "NutriFresh Staff", body != null ? body : "");
+
+        // Jika pengingat harian (Zikir Pagi / Petang), otomatis jadwalkan ulang untuk besok di jam yang sama!
+        if (daily && hour >= 0 && minute >= 0) {
+            scheduleDailyAlarm(context, reqId, hour, minute, title, body, true);
+        }
+    }
+
+    public static void showNotification(Context context, int id, String title, String body) {
+        try {
+            NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel ch = new NotificationChannel(
+                    CH_ID,
+                    "Pengingat Shift, Dzikir & Antaran",
+                    NotificationManager.IMPORTANCE_HIGH
+                );
+                ch.setDescription("Pengingat keberangkatan shift, zikir pagi/petang, dan antaran kurir NutriFresh");
+                ch.enableVibration(true);
+                nm.createNotificationChannel(ch);
+            }
+            Intent launch = new Intent(context, MainActivity.class);
+            launch.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            PendingIntent pi = PendingIntent.getActivity(
+                context, id, launch,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+            NotificationCompat.Builder b = new NotificationCompat.Builder(context, CH_ID)
+                .setSmallIcon(context.getApplicationInfo().icon)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setAutoCancel(true)
+                .setContentIntent(pi);
+            nm.notify(id, b.build());
+        } catch (Exception ignored) {}
+    }
+
+    public static void scheduleOneShotAlarm(Context context, int reqId, long triggerAtMillis, String title, String body) {
+        try {
+            if (triggerAtMillis <= System.currentTimeMillis() + 5000L) return;
+            AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (am == null) return;
+            Intent i = new Intent(context, NfReminderReceiver.class);
+            i.setAction(ACTION_FIRE);
+            i.putExtra("req_id", reqId);
+            i.putExtra("title", title);
+            i.putExtra("body", body);
+            i.putExtra("daily", false);
+            PendingIntent pi = PendingIntent.getBroadcast(
+                context, reqId, i,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi);
+            } else {
+                am.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    public static void scheduleDailyAlarm(Context context, int reqId, int hour, int minute, String title, String body, boolean forceNextDay) {
+        try {
+            AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (am == null) return;
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.HOUR_OF_DAY, hour);
+            cal.set(Calendar.MINUTE, minute);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            if (forceNextDay || cal.getTimeInMillis() <= System.currentTimeMillis() + 5000L) {
+                cal.add(Calendar.DAY_OF_MONTH, 1);
+            }
+            Intent i = new Intent(context, NfReminderReceiver.class);
+            i.setAction(ACTION_FIRE);
+            i.putExtra("req_id", reqId);
+            i.putExtra("title", title);
+            i.putExtra("body", body);
+            i.putExtra("daily", true);
+            i.putExtra("hour", hour);
+            i.putExtra("minute", minute);
+            PendingIntent pi = PendingIntent.getBroadcast(
+                context, reqId, i,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
+            } else {
+                am.set(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    public static void cancelAlarm(Context context, int reqId) {
+        try {
+            AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (am == null) return;
+            Intent i = new Intent(context, NfReminderReceiver.class);
+            i.setAction(ACTION_FIRE);
+            PendingIntent pi = PendingIntent.getBroadcast(
+                context, reqId, i,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+            am.cancel(pi);
+        } catch (Exception ignored) {}
+    }
+
+    public static void saveAndApplyPlan(Context context, String planJson) {
+        try {
+            SharedPreferences sp = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            // Batalkan alarm shift lama (slot 2000..2030) sebelum menjadwalkan yang baru
+            for (int k = 2000; k <= 2030; k++) {
+                cancelAlarm(context, k);
+            }
+            cancelAlarm(context, 1101);
+            cancelAlarm(context, 1102);
+
+            sp.edit().putString("plan_json", planJson != null ? planJson : "{}").apply();
+            rescheduleAllFromPrefs(context);
+        } catch (Exception ignored) {}
+    }
+
+    public static void rescheduleAllFromPrefs(Context context) {
+        try {
+            SharedPreferences sp = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            String raw = sp.getString("plan_json", "");
+            if (raw == null || raw.trim().isEmpty()) return;
+            JSONObject obj = new JSONObject(raw);
+
+            if (obj.optBoolean("dzikirEnabled", true)) {
+                int pagiH = obj.optInt("pagiHour", 6);
+                int pagiM = obj.optInt("pagiMin", 0);
+                int petangH = obj.optInt("petangHour", 16);
+                int petangM = obj.optInt("petangMin", 30);
+                scheduleDailyAlarm(
+                    context, 1101, pagiH, pagiM,
+                    "☀️ Waktunya Dzikir Pagi",
+                    "Awali hari penuh berkah. Jangan lupa baca Dzikir Pagi & ceklis di Absensi NutriFresh Staff.",
+                    false
+                );
+                scheduleDailyAlarm(
+                    context, 1102, petangH, petangM,
+                    "🌆 Waktunya Dzikir Petang",
+                    "Luangkan sejenak untuk membaca Dzikir Petang & ceklis di Absensi NutriFresh Staff.",
+                    false
+                );
+            }
+
+            JSONArray shifts = obj.optJSONArray("shifts");
+            if (shifts != null) {
+                int max = Math.min(shifts.length(), 30);
+                for (int i = 0; i < max; i++) {
+                    JSONObject s = shifts.optJSONObject(i);
+                    if (s == null) continue;
+                    long ts = s.optLong("triggerAt", 0L);
+                    String title = s.optString("title", "⏰ Persiapan Berangkat Shift");
+                    String body = s.optString("body", "Jadwal shift Anda sebentar lagi dimulai.");
+                    scheduleOneShotAlarm(context, 2000 + i, ts, title, body);
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+}
+"""
+
 MAIN_ACTIVITY_JAVA = r"""package id.my.nutrifresh.staff;
 
 import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
@@ -29,14 +238,17 @@ import org.json.JSONObject;
 public class MainActivity extends BridgeActivity {
     private static final int REQ_CAM_PERM = 5381;
     private static final int REQ_GEO_PERM = 5382;
+    private static final int REQ_NOTIF_PERM = 5383;
     private String pendingOAuthUrl = null;
     private PermissionRequest pendingWebPermReq = null;
     private GeolocationPermissions.Callback pendingGeoCallback = null;
     private String pendingGeoOrigin = null;
+    private int notifCounter = 300;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        createNotificationChannel();
         captureOAuthIntent(getIntent());
         setupNativeBridge();
     }
@@ -70,6 +282,20 @@ public class MainActivity extends BridgeActivity {
             return;
         }
         super.onBackPressed();
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel ch = new NotificationChannel(
+                NfReminderReceiver.CH_ID,
+                "Pengingat Shift, Dzikir & Antaran",
+                NotificationManager.IMPORTANCE_HIGH
+            );
+            ch.setDescription("Pengingat jadwal shift, zikir pagi/petang, dan antaran kurir NutriFresh");
+            ch.enableVibration(true);
+            NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            if (nm != null) nm.createNotificationChannel(ch);
+        }
     }
 
     private void captureOAuthIntent(Intent intent) {
@@ -139,6 +365,11 @@ public class MainActivity extends BridgeActivity {
             || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 
+    private boolean hasNotifPermissionInternal() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true;
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+    }
+
     private void ensureCameraPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQ_CAM_PERM);
@@ -202,6 +433,43 @@ public class MainActivity extends BridgeActivity {
         }
 
         @JavascriptInterface
+        public boolean hasNotificationPermission() {
+            return hasNotifPermissionInternal();
+        }
+
+        @JavascriptInterface
+        public void requestNotificationPermission() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotifPermissionInternal()) {
+                runOnUiThread(() -> ActivityCompat.requestPermissions(
+                    MainActivity.this,
+                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                    REQ_NOTIF_PERM
+                ));
+            }
+        }
+
+        @JavascriptInterface
+        public void showLocalNotification(String title, String body) {
+            if (!hasNotifPermissionInternal()) return;
+            runOnUiThread(() -> NfReminderReceiver.showNotification(
+                MainActivity.this,
+                ++notifCounter,
+                title != null ? title : "NutriFresh Staff",
+                body != null ? body : ""
+            ));
+        }
+
+        @JavascriptInterface
+        public String syncStaffReminderPlan(String planJson) {
+            try {
+                NfReminderReceiver.saveAndApplyPlan(MainActivity.this, planJson);
+                return "OK";
+            } catch (Exception e) {
+                return "ERR:" + e.getMessage();
+            }
+        }
+
+        @JavascriptInterface
         public void openExternalAuth(String url) {
             openExternalUrl(url);
         }
@@ -233,6 +501,10 @@ def configure():
         '<uses-permission android:name="android.permission.CAMERA" />',
         '<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />',
         '<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />',
+        '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />',
+        '<uses-permission android:name="android.permission.VIBRATE" />',
+        '<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />',
+        '<uses-permission android:name="android.permission.WAKE_LOCK" />',
     ]
     missing = [p for p in perms if p.split('"')[1] not in txt]
     if missing:
@@ -251,8 +523,22 @@ def configure():
         </activity>"""
         txt = txt.replace("</activity>", oauth_filter, 1)
 
+    if "NfReminderReceiver" not in txt:
+        recv_xml = """
+        <receiver
+            android:name=".NfReminderReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="id.my.nutrifresh.staff.ACTION_REMINDER" />
+            </intent-filter>
+        </receiver>
+    </application>"""
+        txt = txt.replace("</application>", recv_xml, 1)
+
     manifest.write_text(txt, encoding="utf-8")
-    print("[android-staff] AndroidManifest.xml updated OK.")
+    print("[android-staff] AndroidManifest.xml updated OK (Notifications + Alarm Receiver).")
 
     res_dir = ANDROID_DIR / "app" / "src" / "main" / "res"
     anydpi = res_dir / "mipmap-anydpi-v26"
@@ -266,10 +552,11 @@ def configure():
                 shutil.copy2(png, target / png.name)
     print("[android-staff] NutriFresh Staff launcher icons installed across all DPIs.")
 
-    ma_path = ANDROID_DIR / "app" / "src" / "main" / "java" / "id" / "my" / "nutrifresh" / "staff" / "MainActivity.java"
-    ma_path.parent.mkdir(parents=True, exist_ok=True)
-    ma_path.write_text(MAIN_ACTIVITY_JAVA.lstrip("\n"), encoding="utf-8")
-    print(f"[android-staff] MainActivity.java injected OK at {ma_path}")
+    pkg_dir = ANDROID_DIR / "app" / "src" / "main" / "java" / "id" / "my" / "nutrifresh" / "staff"
+    pkg_dir.mkdir(parents=True, exist_ok=True)
+    (pkg_dir / "NfReminderReceiver.java").write_text(REMINDER_RECEIVER_JAVA.lstrip("\n"), encoding="utf-8")
+    (pkg_dir / "MainActivity.java").write_text(MAIN_ACTIVITY_JAVA.lstrip("\n"), encoding="utf-8")
+    print(f"[android-staff] MainActivity.java + NfReminderReceiver.java injected OK at {pkg_dir}")
 
 if __name__ == "__main__":
     configure()

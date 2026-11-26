@@ -403,7 +403,10 @@ const COLLECTION_MAP = {
             status: d.status || "Menunggu",
             hours: toNum(d.hours, 0),
             cash_amount: toNum(d.cashAmount, 0),
-            note: d.note ?? null
+            note: d.note ?? null,
+            ...(d.disbursementStatus !== undefined ? { disbursement_status: String(d.disbursementStatus || "") } : {}),
+            ...(d.disbursedBy ? { disbursed_by: String(d.disbursedBy) } : {}),
+            ...(d.transferRef ? { transfer_ref: String(d.transferRef) } : {})
         })
     },
     office_payroll: {
@@ -413,14 +416,19 @@ const COLLECTION_MAP = {
             empName: "emp_name",
             base: "base_salary",
             allowance: "allowance",
-            isPaid: "is_paid"
+            isPaid: "is_paid",
+            paymentStatus: "payment_status"
         },
         extract: (d) => ({
             ym: d.ym ?? null,
             emp_name: d.empName ?? null,
             base_salary: toNum(d.base, 1500000),
             allowance: toNum(d.allowance, 0),
-            is_paid: !!d.isPaid
+            is_paid: !!d.isPaid,
+            payment_status: d.paymentStatus || (d.isPaid ? "Dibayar" : "Draft"),
+            submitted_by: d.submittedBy ?? null,
+            paid_by: d.paidBy ?? null,
+            transfer_ref: d.transferRef ?? null
         })
     },
     point_rewards: {
@@ -650,7 +658,25 @@ const COLLECTION_MAP = {
             paid_amount: toNum(d.paidAmount, 0),
             monthly_installment: toNum(d.monthlyInstallment, 0),
             status: d.status || "Aktif",
-            note: d.note || ""
+            note: d.note || "",
+            ...(d.disbursedBy ? { disbursed_by: String(d.disbursedBy) } : {}),
+            ...(d.transferRef ? { transfer_ref: String(d.transferRef) } : {})
+        })
+    },
+    hr_dzikir: {
+        table: "nf_hr_dzikir",
+        fields: {
+            branchId: "branch_id",
+            dateStr: "date_str",
+            employeeId: "employee_id",
+            employeeName: "employee_name"
+        },
+        extract: (d) => ({
+            date_str: d.dateStr || "",
+            employee_id: d.employeeId || null,
+            employee_name: d.employeeName || "",
+            pagi_at: toIsoOrNull(d.pagiAt),
+            petang_at: toIsoOrNull(d.petangAt)
         })
     },
     hr_leave_quotas: {
@@ -2385,15 +2411,31 @@ export async function attachAttendancePhotoRpc({ attendanceId, kind = "in", phot
 // =========================================================================
 // TAHAP 3 (v138) — LIVE TRACKING ORDER PELANGGAN & UPLOAD BUKTI BAYAR
 // =========================================================================
-export async function customerGetOrdersRpc(refs = []) {
+export async function customerGetOrdersRpc(refs = [], phone = "") {
     if (!supabase) return { ok: false, orders: [], paymentInfo: {} };
     const cleanRefs = Array.isArray(refs) ? refs.filter((r) => r && r.id && r.token).slice(0, 30) : [];
+    const cleanPhone = String(phone || "").replace(/\D/g, "");
     const { data, error } = await supabase.rpc("nf_customer_get_orders", {
         p_refs: cleanRefs,
-        p_tenant_id: TENANT_ID
+        p_tenant_id: TENANT_ID,
+        p_phone: cleanPhone
     });
     if (error) throw error;
     return data || { ok: true, orders: [], paymentInfo: {} };
+}
+
+export async function registerPushDeviceRpc({ token, appRole = "customer", userEmail = "", customerPhone = "", platform = "android" }) {
+    if (!supabase || !token || String(token).length < 16) return { ok: false };
+    const { data, error } = await supabase.rpc("nf_register_push_device", {
+        p_token: String(token).trim(),
+        p_app_role: String(appRole || "customer").trim().toLowerCase(),
+        p_user_email: String(userEmail || "").trim().toLowerCase(),
+        p_customer_phone: String(customerPhone || "").replace(/\D/g, ""),
+        p_platform: String(platform || "android").trim().toLowerCase(),
+        p_tenant_id: TENANT_ID
+    });
+    if (error) throw error;
+    return data;
 }
 
 export async function customerUploadOrderProofRpc({ orderId, token, proofUrl, paymentMethod = "" }) {

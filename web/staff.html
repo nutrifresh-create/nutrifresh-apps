@@ -234,6 +234,68 @@
                     </div>
                 </div>
 
+                <!-- KARTU ABSEN DZIKIR PAGI & PETANG + PENGINGAT OTOMATIS (v144) -->
+                <div class="nf-staff-card rounded-3xl p-4 sm:p-5 space-y-3 border border-emerald-200/90">
+                    <div class="flex items-center justify-between gap-2">
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1"><i class="fa-solid fa-hands-praying"></i> Amalan Harian Tim NutriFresh</span>
+                            <h3 class="text-sm font-black text-gray-900 mt-0.5">Absen Dzikir Pagi &amp; Petang</h3>
+                        </div>
+                        <button type="button" onclick="staffApp.toggleReminderPanel()" class="px-3 py-1.5 rounded-full bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-800 font-extrabold text-[10.5px] flex items-center gap-1 transition">
+                            <i class="fa-solid fa-bell text-teal-600"></i> <span>Atur Pengingat</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button type="button" id="btnDzikirPagi" onclick="staffApp.toggleDzikirToday('pagi')" class="p-3 rounded-2xl border-2 border-amber-200 bg-amber-50/70 hover:bg-amber-100/70 text-left transition flex flex-col justify-between gap-1">
+                            <div class="flex items-center justify-between w-full">
+                                <span class="text-xs font-black text-amber-950">☀️ Dzikir Pagi</span>
+                                <span id="dzikirPagiIcon" class="w-5 h-5 rounded-full bg-white border border-amber-300 flex items-center justify-center text-[10px] text-amber-600"><i class="fa-regular fa-circle"></i></span>
+                            </div>
+                            <span id="dzikirPagiSub" class="text-[10.5px] font-semibold text-amber-800">Ketuk jika sudah membaca</span>
+                        </button>
+                        <button type="button" id="btnDzikirPetang" onclick="staffApp.toggleDzikirToday('petang')" class="p-3 rounded-2xl border-2 border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100/70 text-left transition flex flex-col justify-between gap-1">
+                            <div class="flex items-center justify-between w-full">
+                                <span class="text-xs font-black text-indigo-950">🌆 Dzikir Petang</span>
+                                <span id="dzikirPetangIcon" class="w-5 h-5 rounded-full bg-white border border-indigo-300 flex items-center justify-center text-[10px] text-indigo-600"><i class="fa-regular fa-circle"></i></span>
+                            </div>
+                            <span id="dzikirPetangSub" class="text-[10.5px] font-semibold text-indigo-800">Ketuk jika sudah membaca</span>
+                        </button>
+                    </div>
+
+                    <!-- Pengaturan Pengingat Otomatis (Background Alarm HP: Berangkat Shift + Zikir Pagi/Petang) -->
+                    <div id="staffReminderSettingsBox" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2.5 text-[11px]">
+                        <div class="flex items-center justify-between">
+                            <label class="inline-flex items-center gap-2 font-extrabold text-gray-800 cursor-pointer">
+                                <input type="checkbox" id="chkStaffDzikirRemind" checked class="rounded text-teal-600">
+                                <span>Aktifkan Pengingat Zikir &amp; Shift (Walau HP Mati)</span>
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 mb-0.5">☀️ Jam Zikir Pagi</label>
+                                <input type="time" id="inpRemindPagi" value="06:00" class="w-full px-2 py-1.5 rounded-xl border bg-white font-mono font-bold text-xs outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 mb-0.5">🌆 Jam Zikir Petang</label>
+                                <input type="time" id="inpRemindPetang" value="16:30" class="w-full px-2 py-1.5 rounded-xl border bg-white font-mono font-bold text-xs outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 mb-0.5">⏰ Ingat Shift</label>
+                                <select id="inpRemindShiftLead" class="w-full px-2 py-1.5 rounded-xl border bg-white font-bold text-xs outline-none">
+                                    <option value="30">30 mnt sblm</option>
+                                    <option value="45" selected>45 mnt sblm</option>
+                                    <option value="60">60 mnt sblm</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-2 pt-0.5">
+                            <span id="staffRemindStatusText" class="text-[10px] text-teal-700 font-bold truncate">Pengingat otomatis aktif</span>
+                            <button type="button" onclick="staffApp.saveReminderPrefs()" class="px-3.5 py-1.5 rounded-full bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-[11px] flex-shrink-0">Simpan &amp; Tes</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Riwayat Absensi Pribadi -->
                 <div class="nf-staff-card rounded-3xl overflow-hidden">
                     <div class="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
@@ -488,11 +550,19 @@
             GoogleAuthProvider, getAuth, setPersistence, browserLocalPersistence,
             signOut, onAuthStateChanged, signInWithPopup,
             getMyStaffProfileRpc, clockInServerRpc, clockOutServerRpc,
-            uploadDataUrlToStorage, attachAttendancePhotoRpc, courierUpdateDeliveryRpc, staffSendOrderChatRpc,
+            uploadDataUrlToStorage, attachAttendancePhotoRpc, courierUpdateDeliveryRpc, staffSendOrderChatRpc, registerPushDeviceRpc,
             clearSensitiveLocalStorage, installGlobalErrorTracker
         } from "./supabase-adapter.js";
 
         installGlobalErrorTracker("staff.html");
+        window.__nfRegisterPushToken = (tok) => {
+            registerPushDeviceRpc({
+                token: tok,
+                appRole: "staff",
+                userEmail: staffApp.state.profile?.email || "",
+                platform: window.NfAndroidNative ? "android" : "web"
+            }).catch(() => {});
+        };
 
         const appId = "nutrifresh-demo-id";
         let db = null;
@@ -524,6 +594,7 @@
                 schedules: [],
                 loans: [],
                 leaveQuotas: [],
+                dzikirLogs: [],
                 onlineOrders: [],
                 courierFilter: 'active',
                 courierProofOrderId: '',
@@ -648,6 +719,8 @@
                     document.getElementById('staffLoginView').classList.add('hidden');
                     document.getElementById('staffMainView').classList.remove('hidden');
                     this.renderIdentity();
+                    if (window.__nfSyncFcmToken) window.__nfSyncFcmToken({});
+                    if (window.NfAndroidNative && typeof window.NfAndroidNative.requestNotificationPermission === 'function') { try { window.NfAndroidNative.requestNotificationPermission(); } catch (_) {} }
                     await this.loadAllData();
                     this.bindRealtime();
                     this.refreshGps();
@@ -689,7 +762,7 @@
                     this.renderIdentity();
                 }
 
-                const [attS, reqS, payS, annS, schS, loanS, qtaS, ordS] = await Promise.all([
+                const [attS, reqS, payS, annS, schS, loanS, qtaS, ordS, dzkS] = await Promise.all([
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'attendance'), orderBy('clockInTime', 'desc'), limit(250))), null),
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'office_hr_requests'), orderBy('date', 'desc'), limit(200))), null),
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'office_payroll'), limit(300))), null),
@@ -697,7 +770,8 @@
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_schedules'), orderBy('schedDate', 'desc'), limit(200))), null),
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_loans'), limit(100))), null),
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_leave_quotas'), limit(100))), null),
-                    safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'online_orders'), orderBy('createdAt', 'desc'), limit(100))), null)
+                    safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'online_orders'), orderBy('createdAt', 'desc'), limit(100))), null),
+                    safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_dzikir'), limit(200))), null)
                 ]);
 
                 if (attS) this.state.attendance = attS.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -708,6 +782,7 @@
                 if (loanS) this.state.loans = loanS.docs.map(d => ({ id: d.id, ...d.data() }));
                 if (qtaS) this.state.leaveQuotas = qtaS.docs.map(d => ({ id: d.id, ...d.data() }));
                 if (ordS) this.state.onlineOrders = ordS.docs.map(d => ({ id: d.id, ...d.data() }));
+                if (dzkS) this.state.dzikirLogs = dzkS.docs.map(d => ({ id: d.id, ...d.data() }));
 
                 this.renderAll();
             },
@@ -732,8 +807,31 @@
                     this.renderAnnouncements();
                 });
                 safeSnap(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_schedules'), orderBy('schedDate', 'desc'), limit(200)), (s) => {
+                    const prevMySch = new Set((this.state.schedules || []).filter(x => this.isMyRecord(x)).map(x => `${x.id}|${x.shiftName}`));
+                    const hadSch = !!this._schedHydrated;
+                    this._schedHydrated = true;
                     this.state.schedules = s.docs.map(d => ({ id: d.id, ...d.data() }));
                     this.renderScheduleList();
+                    this.syncStaffReminders();
+                    if (hadSch && window.nfNotify) {
+                        this.state.schedules.filter(x => this.isMyRecord(x)).forEach(sc => {
+                            const sig = `${sc.id}|${sc.shiftName}`;
+                            if (!prevMySch.has(sig)) {
+                                window.nfNotify.send({
+                                    title: `📅 Jadwal Shift Baru: ${sc.shiftName || 'Shift 1'}`,
+                                    body: `Tanggal ${sc.date || sc.schedDate || '-'} • Pengingat berangkat otomatis sudah dipasang!`,
+                                    tag: `sch-${sc.id}`,
+                                    sound: 'status',
+                                    onClick: () => this.switchTab('gaji')
+                                });
+                            }
+                        });
+                    }
+                });
+                safeSnap(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_dzikir'), limit(200)), (s) => {
+                    this.state.dzikirLogs = s.docs.map(d => ({ id: d.id, ...d.data() }));
+                    this.renderDzikirCard();
+                    this.renderAttendance();
                 });
                 safeSnap(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_loans'), limit(100)), (s) => {
                     this.state.loans = s.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -1089,10 +1187,197 @@
             renderAll() {
                 this.renderAnnouncements();
                 this.renderAttendance();
+                this.renderDzikirCard();
                 this.renderCourierOrders();
                 this.renderHrRequests();
                 this.renderScheduleList();
                 this.renderMyPayslip();
+                this.syncStaffReminders();
+            },
+
+            // =================================================================
+            // ABSEN DZIKIR PAGI & PETANG + PENGINGAT BERANGKAT SHIFT & DZIKIR (v144)
+            // =================================================================
+            getReminderPrefs() {
+                try {
+                    const saved = JSON.parse(localStorage.getItem('nf_staff_remind_prefs') || 'null');
+                    if (saved && typeof saved === 'object') {
+                        return {
+                            enabled: saved.enabled !== false,
+                            pagi: saved.pagi || '06:00',
+                            petang: saved.petang || '16:30',
+                            shiftLeadMin: Number(saved.shiftLeadMin) || 45
+                        };
+                    }
+                } catch (_) {}
+                return { enabled: true, pagi: '06:00', petang: '16:30', shiftLeadMin: 45 };
+            },
+            toggleReminderPanel() {
+                const box = document.getElementById('staffReminderSettingsBox');
+                if (!box) return;
+                const willOpen = box.classList.contains('hidden');
+                box.classList.toggle('hidden', !willOpen);
+                if (willOpen) {
+                    const pr = this.getReminderPrefs();
+                    const c = document.getElementById('chkStaffDzikirRemind');
+                    const ip = document.getElementById('inpRemindPagi');
+                    const ie = document.getElementById('inpRemindPetang');
+                    const il = document.getElementById('inpRemindShiftLead');
+                    if (c) c.checked = pr.enabled;
+                    if (ip) ip.value = pr.pagi;
+                    if (ie) ie.value = pr.petang;
+                    if (il) il.value = String(pr.shiftLeadMin);
+                }
+            },
+            async saveReminderPrefs() {
+                const enabled = !!document.getElementById('chkStaffDzikirRemind')?.checked;
+                const pagi = document.getElementById('inpRemindPagi')?.value || '06:00';
+                const petang = document.getElementById('inpRemindPetang')?.value || '16:30';
+                const shiftLeadMin = Number(document.getElementById('inpRemindShiftLead')?.value) || 45;
+                try {
+                    localStorage.setItem('nf_staff_remind_prefs', JSON.stringify({ enabled, pagi, petang, shiftLeadMin }));
+                } catch (_) {}
+                if (enabled && window.nfNotify) {
+                    await window.nfNotify.requestPermission();
+                }
+                const count = this.syncStaffReminders();
+                if (enabled && window.nfNotify) {
+                    await window.nfNotify.send({
+                        title: '🔔 Pengingat Shift & Dzikir Aktif!',
+                        body: `Dzikir Pagi ${pagi}, Petang ${petang}, dan ${count} jadwal shift mendatang sudah terjadwal di HP Anda.`,
+                        sound: 'status'
+                    });
+                } else {
+                    this.alert('Pengaturan pengingat berhasil disimpan.');
+                }
+            },
+            syncStaffReminders() {
+                const pr = this.getReminderPrefs();
+                const [pagiHour, pagiMin] = String(pr.pagi || '06:00').split(':').map(n => parseInt(n, 10) || 0);
+                const [petangHour, petangMin] = String(pr.petang || '16:30').split(':').map(n => parseInt(n, 10) || 0);
+                const leadMin = Number(pr.shiftLeadMin) || 45;
+                const s1 = this.state.settings?.shift1Start || '07:00';
+                const s2 = this.state.settings?.shift2Start || '14:00';
+
+                const today = this.todayStr();
+                const nowMs = Date.now();
+                const myUpcoming = (this.state.schedules || [])
+                    .filter(sc => this.isMyRecord(sc) && String(sc.date || sc.schedDate || '') >= today)
+                    .sort((a, b) => String(a.date || a.schedDate || '').localeCompare(String(b.date || b.schedDate || '')))
+                    .slice(0, 20);
+
+                const shiftAlarms = [];
+                if (pr.enabled) {
+                    myUpcoming.forEach(sc => {
+                        const dtStr = String(sc.date || sc.schedDate || '').trim();
+                        if (!/^\d{4}-\d{2}-\d{2}$/.test(dtStr)) return;
+                        const isS2 = String(sc.shiftName || '').toLowerCase().includes('2') || String(sc.shiftName || '').toLowerCase().includes('sore');
+                        const startClock = isS2 ? s2 : s1;
+                        const [sh, sm] = startClock.split(':').map(n => parseInt(n, 10) || 0);
+                        const [yy, mm, dd] = dtStr.split('-').map(Number);
+                        const shiftStart = new Date(yy, mm - 1, dd, sh, sm, 0, 0);
+                        const triggerAt = shiftStart.getTime() - (leadMin * 60 * 1000);
+                        if (triggerAt > nowMs + 10000) {
+                            shiftAlarms.push({
+                                triggerAt,
+                                title: `⏰ Persiapan Berangkat ${sc.shiftName || 'Shift'} (${startClock})`,
+                                body: `Shift Anda dimulai ${leadMin} menit lagi. Jangan lupa bismillah, dzikir & absen GPS di toko!`
+                            });
+                        }
+                    });
+                }
+
+                const plan = {
+                    dzikirEnabled: !!pr.enabled,
+                    pagiHour, pagiMin,
+                    petangHour, petangMin,
+                    shifts: shiftAlarms
+                };
+
+                // Kirim ke Android Native AlarmManager (berbunyi walau aplikasi ditutup total & layar HP mati!)
+                if (window.NfAndroidNative && typeof window.NfAndroidNative.syncStaffReminderPlan === 'function') {
+                    try { window.NfAndroidNative.syncStaffReminderPlan(JSON.stringify(plan)); } catch (_) {}
+                }
+
+                const stEl = document.getElementById('staffRemindStatusText');
+                if (stEl) {
+                    stEl.textContent = pr.enabled
+                        ? `Aktif: Pagi ${pr.pagi} • Petang ${pr.petang} • ${shiftAlarms.length} shift`
+                        : 'Pengingat sedang dimatikan';
+                }
+                return shiftAlarms.length;
+            },
+            getMyDzikirForDate(dateStr) {
+                return (this.state.dzikirLogs || []).find(d => d && d.dateStr === dateStr && this.isMyRecord(d)) || null;
+            },
+            renderDzikirCard() {
+                const today = this.todayStr();
+                const rec = this.getMyDzikirForDate(today);
+                const fmtT = (iso) => iso ? new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
+
+                const pagiDone = !!(rec && rec.pagiAt);
+                const petangDone = !!(rec && rec.petangAt);
+
+                const bP = document.getElementById('btnDzikirPagi');
+                const iP = document.getElementById('dzikirPagiIcon');
+                const sP = document.getElementById('dzikirPagiSub');
+                if (bP && iP && sP) {
+                    bP.className = pagiDone
+                        ? 'p-3 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-left transition flex flex-col justify-between gap-1 shadow-sm'
+                        : 'p-3 rounded-2xl border-2 border-amber-200 bg-amber-50/70 hover:bg-amber-100/70 text-left transition flex flex-col justify-between gap-1';
+                    iP.className = pagiDone
+                        ? 'w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]'
+                        : 'w-5 h-5 rounded-full bg-white border border-amber-300 flex items-center justify-center text-[10px] text-amber-600';
+                    iP.innerHTML = pagiDone ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-regular fa-circle"></i>';
+                    sP.className = pagiDone ? 'text-[10.5px] font-extrabold text-emerald-700' : 'text-[10.5px] font-semibold text-amber-800';
+                    sP.textContent = pagiDone ? `✓ Sudah (${fmtT(rec.pagiAt)} WIB)` : 'Ketuk jika sudah membaca';
+                }
+
+                const bE = document.getElementById('btnDzikirPetang');
+                const iE = document.getElementById('dzikirPetangIcon');
+                const sE = document.getElementById('dzikirPetangSub');
+                if (bE && iE && sE) {
+                    bE.className = petangDone
+                        ? 'p-3 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-left transition flex flex-col justify-between gap-1 shadow-sm'
+                        : 'p-3 rounded-2xl border-2 border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100/70 text-left transition flex flex-col justify-between gap-1';
+                    iE.className = petangDone
+                        ? 'w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]'
+                        : 'w-5 h-5 rounded-full bg-white border border-indigo-300 flex items-center justify-center text-[10px] text-indigo-600';
+                    iE.innerHTML = petangDone ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-regular fa-circle"></i>';
+                    sE.className = petangDone ? 'text-[10.5px] font-extrabold text-emerald-700' : 'text-[10.5px] font-semibold text-indigo-800';
+                    sE.textContent = petangDone ? `✓ Sudah (${fmtT(rec.petangAt)} WIB)` : 'Ketuk jika sudah membaca';
+                }
+            },
+            async toggleDzikirToday(kind) {
+                const p = this.state.profile;
+                if (!p) return;
+                const today = this.todayStr();
+                const safeEmp = String(p.id || p.name || 'STAFF').replace(/[^a-zA-Z0-9]/g, '');
+                const existing = this.getMyDzikirForDate(today);
+                const docId = existing ? existing.id : `DZK-${today}-${safeEmp}`;
+                const nowIso = new Date().toISOString();
+                const nextRec = {
+                    ...(existing || {}),
+                    id: docId,
+                    dateStr: today,
+                    employeeId: p.id,
+                    employeeName: p.name,
+                    pagiAt: kind === 'pagi' ? (existing?.pagiAt ? null : nowIso) : (existing?.pagiAt || null),
+                    petangAt: kind === 'petang' ? (existing?.petangAt ? null : nowIso) : (existing?.petangAt || null),
+                    updatedAt: nowIso
+                };
+
+                const idx = this.state.dzikirLogs.findIndex(x => x.id === docId);
+                if (idx > -1) this.state.dzikirLogs[idx] = nextRec;
+                else this.state.dzikirLogs.unshift(nextRec);
+                this.renderDzikirCard();
+                this.renderAttendance();
+
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'hr_dzikir', docId), nextRec, { merge: true });
+                } catch (e) {
+                    this.alert('Gagal menyimpan absen dzikir: ' + (e?.message || e));
+                }
             },
 
             // =================================================================
@@ -1420,12 +1705,17 @@
                         a.photoInUrl ? `<button type="button" onclick="staffApp.openPhotoModal('${this.esc(a.photoInUrl)}','Foto Masuk ${this.esc(a.dateStr)}')" class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold"><i class="fa-solid fa-camera mr-1"></i>Masuk</button>` : '',
                         a.photoOutUrl ? `<button type="button" onclick="staffApp.openPhotoModal('${this.esc(a.photoOutUrl)}','Foto Pulang ${this.esc(a.dateStr)}')" class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold"><i class="fa-solid fa-camera mr-1"></i>Pulang</button>` : ''
                     ].filter(Boolean).join(' ');
+                    const dz = this.getMyDzikirForDate(a.dateStr);
+                    const dzBadges = [
+                        dz?.pagiAt ? '<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[9.5px] font-extrabold">☀️ Dzikir Pagi ✓</span>' : '',
+                        dz?.petangAt ? '<span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200 text-[9.5px] font-extrabold">🌆 Dzikir Petang ✓</span>' : ''
+                    ].filter(Boolean).join(' ');
                     return `
                         <div class="px-4 py-3 flex items-center justify-between gap-2">
                             <div class="min-w-0">
                                 <div class="font-extrabold text-gray-900">${this.esc(a.dateStr)} <span class="text-gray-400 font-semibold">• ${this.esc(a.shiftName)}</span></div>
                                 <div class="text-[11px] text-gray-500 mt-0.5 font-mono">${tIn} – ${tOut} ${a.durationText && a.durationText !== '-' ? `(${this.esc(a.durationText)})` : ''}</div>
-                                ${photosHtml ? `<div class="mt-1 flex items-center gap-1">${photosHtml}</div>` : ''}
+                                ${(photosHtml || dzBadges) ? `<div class="mt-1 flex flex-wrap items-center gap-1">${photosHtml} ${dzBadges}</div>` : ''}
                             </div>
                             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black flex-shrink-0 ${isLate ? 'bg-red-100 text-red-700' : 'bg-green-100 text-nutri-dark'}">${this.esc(a.status || 'Hadir')}</span>
                         </div>`;
@@ -1523,8 +1813,9 @@
                 const lateCut = Math.round(telat * lateRate);
                 const netPay = Math.max(0, baseRp + allowRp + overtimeBonus - lateCut - kasbonRp);
                 const isPaid = !!(payRow?.isPaid || payRow?.is_paid);
+                const payStatus = payRow?.paymentStatus || payRow?.payment_status || (isPaid ? 'Dibayar' : 'Draft');
 
-                return { ym, name: p.name, role: p.role, branch: this.state.empRecord?.branch || 'Cabang 1', hadir, telat, lemburJam, baseRp, allowRp, overtimeBonus, lateCut, kasbonRp, netPay, isPaid };
+                return { ym, name: p.name, role: p.role, branch: this.state.empRecord?.branch || 'Cabang 1', hadir, telat, lemburJam, baseRp, allowRp, overtimeBonus, lateCut, kasbonRp, netPay, isPaid, payStatus };
             },
 
             renderMyPayslip() {
@@ -1537,7 +1828,7 @@
                             <div class="font-extrabold text-gray-900">${this.esc(d.name)}</div>
                             <div class="text-[11px] text-gray-500">Hadir ${d.hadir} Hari • Telat ${d.telat}x • Lembur ${d.lemburJam}j</div>
                         </div>
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black ${d.isPaid ? 'bg-green-100 text-nutri-dark' : 'bg-amber-100 text-amber-800'}">${d.isPaid ? '✓ DIBAYAR' : 'ESTIMASI / DRAFT'}</span>
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black ${d.isPaid ? 'bg-green-100 text-nutri-dark' : (d.payStatus === 'Diajukan' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800')}">${d.isPaid ? '✓ DIBAYAR' : (d.payStatus === 'Diajukan' ? '⏳ PROSES TRANSFER BENDAHARA' : 'ESTIMASI / DRAFT')}</span>
                     </div>
                     <div class="space-y-1.5 pt-1">
                         <div class="flex justify-between"><span class="text-gray-500">Gaji Pokok</span><span class="font-bold">${this.rp(d.baseRp)}</span></div>

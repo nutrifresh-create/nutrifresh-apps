@@ -747,31 +747,32 @@
     <div id="officeAppShell" class="flex-1 max-w-[1560px] w-full mx-auto flex flex-col md:flex-row gap-4 px-3 sm:px-5 pt-3 pb-24 md:pb-8 min-w-0">
 
         <!-- SIDEBAR KIRI KHUSUS PC / DESKTOP -->
-        <aside id="officeSidebar" class="hidden md:flex md:w-60 flex-shrink-0 flex-col gap-2 md:sticky md:top-[68px] md:max-h-[calc(100vh-84px)] overflow-y-auto no-scrollbar rounded-3xl p-3 bg-[#111827] border border-slate-800 shadow-lg self-start">
+        <aside id="officeSidebar" class="hidden md:flex md:w-64 flex-shrink-0 flex-col gap-1.5 md:sticky md:top-[68px] md:max-h-[calc(100vh-84px)] overflow-y-auto no-scrollbar rounded-3xl p-3 bg-[#111827] border border-slate-800 shadow-lg self-start">
             <div id="sideGrpKeuangan" class="px-2.5 pt-1 pb-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                <i class="fa-solid fa-coins text-[10px]"></i> <span>Keuangan</span>
+                <i class="fa-solid fa-coins text-[10px]"></i> <span>Keuangan &amp; Bendahara</span>
             </div>
-            <button type="button" id="sideBtn-ringkasan" onclick="officeApp.switchTab('ringkasan')" class="office-side-btn is-active w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-extrabold text-white transition text-left">
-                <i class="fa-solid fa-wallet w-4 text-center"></i> <span>Kas &amp; Beban</span>
+            <button type="button" id="sideBtn-ringkasan" onclick="officeApp.switchTab('ringkasan')" class="office-side-btn is-active w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl text-xs font-extrabold text-white transition text-left">
+                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-wallet w-4 text-center"></i> <span class="truncate">Kas, Beban &amp; ACC TF</span></span>
+                <span id="sidePendingFinanceBadge" class="hidden bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span>
             </button>
             <button type="button" id="sideBtn-kewajiban" onclick="officeApp.switchTab('kewajiban')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
                 <i class="fa-solid fa-file-invoice w-4 text-center"></i> <span>Hutang &amp; Piutang</span>
             </button>
             <button type="button" id="sideBtn-aset" onclick="officeApp.switchTab('aset')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
-                <i class="fa-solid fa-boxes-packing w-4 text-center"></i> <span>Aset &amp; Susut</span>
+                <i class="fa-solid fa-boxes-packing w-4 text-center"></i> <span>Aset &amp; Penyusutan</span>
             </button>
 
             <div id="sideDividerSep" class="my-1.5 border-t border-slate-800"></div>
 
             <div id="sideGrpHr" class="px-2.5 pt-0.5 pb-0.5 text-[10px] font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
-                <i class="fa-solid fa-users text-[10px]"></i> <span>HR &amp; SDM</span>
+                <i class="fa-solid fa-users text-[10px]"></i> <span>HR &amp; Operasional Tim</span>
             </div>
             <button type="button" id="sideBtn-hrd" onclick="officeApp.switchTab('hrd')" class="office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
                 <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-file-signature w-4 text-center"></i> <span class="truncate">Persetujuan HR</span></span>
                 <span id="sidePendingHrBadge" class="hidden bg-amber-500 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span>
             </button>
             <button type="button" id="sideBtn-absensi_foto" onclick="officeApp.switchTab('absensi_foto')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
-                <i class="fa-solid fa-camera w-4 text-center"></i> <span>Absensi &amp; Foto</span>
+                <i class="fa-solid fa-camera w-4 text-center"></i> <span>Absensi, Foto &amp; Dzikir</span>
             </button>
             <button type="button" id="sideBtn-jadwal_shift" onclick="officeApp.switchTab('jadwal_shift')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
                 <i class="fa-solid fa-calendar-days w-4 text-center"></i> <span>Jadwal Shift</span>
@@ -782,8 +783,15 @@
             <button type="button" id="sideBtn-pengumuman" onclick="officeApp.switchTab('pengumuman')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
                 <i class="fa-solid fa-bullhorn w-4 text-center"></i> <span>Pengumuman Tim</span>
             </button>
-            <button type="button" id="sideBtn-payroll" onclick="officeApp.switchTab('payroll')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
-                <i class="fa-solid fa-money-check-dollar w-4 text-center"></i> <span>Payroll</span>
+
+            <div class="my-1.5 border-t border-slate-800"></div>
+
+            <div class="px-2.5 pt-0.5 pb-0.5 text-[10px] font-black uppercase tracking-wider text-sky-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-sitemap text-[10px]"></i> <span>Payroll &amp; Pengaturan</span>
+            </div>
+            <button type="button" id="sideBtn-payroll" onclick="officeApp.switchTab('payroll')" class="office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
+                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-money-check-dollar w-4 text-center"></i> <span class="truncate">Payroll Gaji</span></span>
+                <span id="sidePendingPayrollBadge" class="hidden bg-sky-400 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span>
             </button>
             <button type="button" id="sideBtn-karyawan" onclick="officeApp.switchTab('karyawan')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
                 <i class="fa-solid fa-id-card w-4 text-center"></i> <span>Karyawan &amp; Akses</span>
@@ -886,6 +894,24 @@
                     </div>
                     <span id="miniAssetBookValue" class="text-sm sm:text-base font-black text-purple-900">Rp 0</span>
                 </div>
+            </div>
+
+            <!-- ANTREAN ACC & TRANSFER BENDAHARA (TERHUBUNG OTOMATIS DARI HR: GAJI, KASBON & PINJAMAN — v144) -->
+            <div id="bendaharaApprovalQueueCard" class="hidden bg-white rounded-3xl border-2 border-amber-300 shadow-sm overflow-hidden text-xs">
+                <div class="px-4 py-3.5 bg-gradient-to-r from-amber-50 via-orange-50 to-emerald-50 border-b border-amber-200 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-9 h-9 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-sm font-black shadow-sm flex-shrink-0"><i class="fa-solid fa-money-bill-transfer"></i></span>
+                        <div class="min-w-0">
+                            <h2 class="text-sm font-black text-amber-950 flex items-center gap-2 flex-wrap">
+                                <span>Antrean ACC &amp; Transfer Bendahara (Dari HR)</span>
+                                <span id="bendaharaQueueCountPill" class="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black">0 ajuan</span>
+                            </h2>
+                            <p class="text-[11px] text-amber-900 mt-0.5">Saat Bendahara / Owner klik <strong>ACC &amp; Transfer</strong>, pengeluaran otomatis masuk ke <strong>Buku Kas Perusahaan</strong> &amp; status Slip Gaji / Pinjaman langsung diperbarui.</p>
+                        </div>
+                    </div>
+                    <span id="bendaharaQueueTotalLabel" class="px-3 py-1.5 rounded-full bg-white border border-amber-300 text-amber-950 font-black text-xs shadow-sm">Total: Rp 0</span>
+                </div>
+                <div id="bendaharaQueueList" class="divide-y divide-gray-100"></div>
             </div>
 
             <div id="financeInputGrid" class="grid grid-cols-1 lg:grid-cols-3 gap-5 text-xs">
@@ -1101,8 +1127,12 @@
                             <input type="number" id="assetSalvageInput" min="0" step="1000" value="0" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
                         </div>
                     </div>
+                    <label class="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-900 cursor-pointer">
+                        <input type="checkbox" id="assetAutoCashbookChk" checked class="rounded text-nutri-green">
+                        <span>Catat otomatis sebagai Pengeluaran di Buku Kas Perusahaan</span>
+                    </label>
                     <button type="button" onclick="officeApp.addAsset()" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-xl transition">
-                        Simpan Aset & Hitung Penyusutan
+                        Simpan Aset &amp; Hitung Penyusutan
                     </button>
                 </div>
 
@@ -1172,7 +1202,7 @@
             <div class="bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm">
                 <div class="px-4 py-3.5 border-b bg-gray-50 flex flex-wrap items-center justify-between gap-2">
                     <div>
-                        <h2 class="text-sm font-black text-gray-900 flex items-center gap-1.5"><i class="fa-solid fa-camera text-nutri-green"></i> <span>Log Absensi GPS &amp; Foto Bukti (Periode Aktif)</span></h2>
+                        <h2 class="text-sm font-black text-gray-900 flex items-center gap-1.5"><i class="fa-solid fa-camera text-nutri-green"></i> <span>Log Absensi GPS, Foto Bukti &amp; Dzikir Pagi/Petang</span></h2>
                         <span id="offAttCountLabel" class="text-[11px] text-gray-500">0 catatan absensi</span>
                     </div>
                     <input type="text" id="offAttSearchInput" oninput="officeApp.renderOfficeAttendanceTable()" placeholder="Cari nama karyawan..." class="px-3.5 py-1.5 border rounded-full text-xs outline-none w-52">
@@ -1185,6 +1215,7 @@
                                 <th class="p-3 font-bold">Karyawan</th>
                                 <th class="p-3 font-bold">Masuk / Pulang</th>
                                 <th class="p-3 font-bold">Jarak &amp; Status</th>
+                                <th class="p-3 font-bold text-center">Dzikir Pagi / Petang</th>
                                 <th class="p-3 font-bold text-center">Foto Bukti</th>
                             </tr>
                         </thead>
@@ -1326,6 +1357,7 @@
                     <h2 class="text-sm font-black text-gray-900">Perhitungan Payroll Bulanan</h2>
                     <p class="text-[11px] text-gray-500 mt-0.5">
                         Gaji Bersih = Gaji Pokok + Tunjangan + (Jam Lembur × Tarif) − (Telat × Potongan) − Kasbon.
+                        <span class="block text-emerald-700 font-bold mt-0.5">Alur Terhubung: HR klik "Ajukan ke Bendahara" → Bendahara ACC &amp; Transfer → Otomatis masuk Pengeluaran Kas Perusahaan!</span>
                     </p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
@@ -1515,8 +1547,9 @@
     <!-- FLOATING BOTTOM DOCK KHUSUS HP (ALA POS & KATALOG — v140) -->
     <nav id="officeMobileDock" class="md:hidden fixed bottom-2.5 inset-x-2.5 z-40">
         <div class="bg-[#111827]/95 backdrop-blur-md border border-slate-700/80 rounded-full p-1.5 shadow-2xl flex items-center gap-1 overflow-x-auto no-scrollbar">
-            <button type="button" id="dockBtn-ringkasan" onclick="officeApp.switchTab('ringkasan')" class="office-dock-btn is-active flex-shrink-0 min-w-[66px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-extrabold text-white transition">
+            <button type="button" id="dockBtn-ringkasan" onclick="officeApp.switchTab('ringkasan')" class="office-dock-btn is-active relative flex-shrink-0 min-w-[66px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-extrabold text-white transition">
                 <i class="fa-solid fa-wallet text-sm mb-0.5"></i><span>Kas</span>
+                <span id="dockPendingFinanceBadge" class="hidden absolute top-0.5 right-2 bg-rose-500 text-white text-[8.5px] font-black min-w-[14px] h-3.5 px-1 rounded-full flex items-center justify-center">0</span>
             </button>
             <button type="button" id="dockBtn-kewajiban" onclick="officeApp.switchTab('kewajiban')" class="office-dock-btn flex-shrink-0 min-w-[68px] px-2.5 py-1.5 rounded-full flex flex-col items-center justify-center text-[10px] font-bold text-slate-300 transition">
                 <i class="fa-solid fa-file-invoice text-sm mb-0.5"></i><span>Hutang</span>
@@ -1560,10 +1593,18 @@
             logAuditEventRpc, bridgeSettleTempoSyncRpc,
             ensureXlsxLoaded, logClientErrorRpc, installGlobalErrorTracker,
             getBackupReminderState, downloadFullBackupJson,
-            getOfficeCashSummaryRpc, fetchCollectionRangeRpc, getActiveBranchId
+            getOfficeCashSummaryRpc, fetchCollectionRangeRpc, getActiveBranchId, registerPushDeviceRpc
         } from "./supabase-adapter.js";
 
         installGlobalErrorTracker("office.html");
+        window.__nfRegisterPushToken = (tok) => {
+            registerPushDeviceRpc({
+                token: tok,
+                appRole: "office",
+                userEmail: window.__officeCloud?.user?.email || "",
+                platform: window.NfAndroidNative ? "android" : "web"
+            }).catch(() => {});
+        };
 
         const appId = "nutrifresh-demo-id";
         const fbConfig = SUPABASE_CONFIG;
@@ -1588,7 +1629,7 @@
                 hrReqStatusFilter: 'ALL',
                 officeMenuAccess: {
                     owner: ['ringkasan', 'kewajiban', 'aset', 'hrd', 'absensi_foto', 'jadwal_shift', 'cuti_pinjaman', 'pengumuman', 'payroll', 'karyawan', 'export_excel'],
-                    bendahara: ['ringkasan', 'kewajiban', 'aset', 'export_excel'],
+                    bendahara: ['ringkasan', 'kewajiban', 'aset', 'payroll', 'export_excel'],
                     hr: ['hrd', 'absensi_foto', 'jadwal_shift', 'cuti_pinjaman', 'pengumuman', 'payroll', 'karyawan', 'export_excel']
                 },
                 customRoles: [
@@ -1602,6 +1643,7 @@
                 ],
                 payrollStaffCfg: {},
                 paidPayrollKeys: {},
+                payrollMeta: {},
                 empList: [],
                 attList: [],
                 txList: [],
@@ -1609,7 +1651,8 @@
                 announcements: [],
                 schedules: [],
                 loans: [],
-                leaveQuotas: []
+                leaveQuotas: [],
+                dzikirLogs: []
             },
 
             async runWithActionLock(lockKey, fn) {
@@ -2139,6 +2182,7 @@
                 if (!Array.isArray(list)) return;
                 const cfgMap = {};
                 const paidMap = {};
+                const metaMap = {};
                 list.forEach((row) => {
                     const key = row.id || `${row.ym}::${row.empName}`;
                     if (!key) return;
@@ -2146,10 +2190,23 @@
                         base: Number(row.base ?? row.base_salary ?? 1500000),
                         allowance: Number(row.allowance ?? 0)
                     };
-                    if (row.isPaid || row.is_paid) paidMap[key] = true;
+                    const isPaid = !!(row.isPaid || row.is_paid);
+                    if (isPaid) paidMap[key] = true;
+                    metaMap[key] = {
+                        ym: row.ym || key.split('::')[0] || '',
+                        empName: row.empName || row.emp_name || key.split('::')[1] || '',
+                        isPaid,
+                        paymentStatus: row.paymentStatus || row.payment_status || (isPaid ? 'Dibayar' : 'Draft'),
+                        netPay: Number(row.netPay) || 0,
+                        submittedBy: row.submittedBy || row.submitted_by || '',
+                        submittedAt: row.submittedAt || '',
+                        paidBy: row.paidBy || row.paid_by || '',
+                        transferRef: row.transferRef || row.transfer_ref || ''
+                    };
                 });
                 this.state.payrollStaffCfg = cfgMap;
                 this.state.paidPayrollKeys = paidMap;
+                this.state.payrollMeta = metaMap;
                 this.saveLocalCache();
                 this.scheduleRenderAll();
             },
@@ -2559,7 +2616,7 @@
 
             async settleDebtReceivable(id) {
                 return this.runWithActionLock('off_settle_debt', async () => {
-                if (document.getElementById('viewRoleSelect').value !== 'owner') return alert('Pelunasan memerlukan persetujuan Owner.');
+                if (!['owner', 'bendahara'].includes((document.getElementById('viewRoleSelect')?.value || '').toLowerCase())) return alert('Pelunasan memerlukan akses Bendahara atau Owner.');
                 const item = this.state.debts.find(d => d.id === id);
                 if (!item || item.status === 'Lunas') return;
                 const isFromPos = item.sourceType === 'pos_purchase' && item.sourceRef;
@@ -2624,23 +2681,41 @@
             },
 
             async addAsset() {
-                if (document.getElementById('viewRoleSelect').value !== 'owner') return alert('Pencatatan aset memerlukan akses Owner.');
+                const roleNow = (document.getElementById('viewRoleSelect')?.value || '').toLowerCase();
+                if (!['owner', 'bendahara'].includes(roleNow)) return alert('Pencatatan aset memerlukan akses Bendahara atau Owner.');
                 const name = document.getElementById('assetNameInput').value.trim();
                 const purchaseDate = document.getElementById('assetDateInput').value;
                 const lifeMonths = Math.max(1, Number(document.getElementById('assetLifeInput').value) || 12);
                 const cost = Number(document.getElementById('assetCostInput').value) || 0;
                 const salvage = Number(document.getElementById('assetSalvageInput').value) || 0;
+                const autoCb = !!document.getElementById('assetAutoCashbookChk')?.checked;
                 if (!name || !purchaseDate || cost <= 0) return alert('Lengkapi nama aset, tanggal beli, dan harga beli.');
                 const entry = {
                     id: 'AST-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(),
                     name, purchaseDate, lifeMonths, cost, salvage
                 };
                 this.state.assets.unshift(entry);
+                let cbEntry = null;
+                if (autoCb) {
+                    cbEntry = {
+                        id: 'ASTCB-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(),
+                        date: purchaseDate,
+                        kind: 'BEBAN_PERUSAHAAN',
+                        category: 'Pembelian Aset',
+                        note: `Beli Aset: ${name} (${lifeMonths} bln) — oleh ${this.state.currentUserName || roleNow}`,
+                        amount: cost
+                    };
+                    this.state.cashbook.unshift(cbEntry);
+                }
                 document.getElementById('assetNameInput').value = '';
                 document.getElementById('assetCostInput').value = '';
                 this.saveLocalCache();
                 this.renderAll();
-                if (window.__officeCloud) await window.__officeCloud.upsertRow('office_assets', entry);
+                if (window.__officeCloud) {
+                    await window.__officeCloud.upsertRow('office_assets', entry);
+                    if (cbEntry) await window.__officeCloud.upsertRow('office_cashbook', cbEntry);
+                }
+                if (autoCb) alert(`Aset "${name}" disimpan & pengeluaran ${this.formatRp(cost)} otomatis tercatat di Buku Kas Perusahaan!`);
             },
 
             async deleteAsset(id) {
@@ -2665,13 +2740,24 @@
             },
 
             async setHrStatus(id, status) {
-                if (document.getElementById('viewRoleSelect').value !== 'owner') return alert('Persetujuan dipegang oleh Owner.');
+                const roleNow = (document.getElementById('viewRoleSelect')?.value || '').toLowerCase();
+                if (!['owner', 'hr'].includes(roleNow)) return alert('Persetujuan pengajuan HR dipegang oleh HR atau Owner.');
                 const r = this.state.hrRequests.find(x => x.id === id);
                 if (!r) return;
                 r.status = status;
+                if (r.type === 'Kasbon') {
+                    if (status === 'Disetujui' && r.disbursementStatus !== 'Sudah Ditransfer') {
+                        r.disbursementStatus = 'Menunggu Transfer';
+                    } else if (status === 'Ditolak') {
+                        r.disbursementStatus = '';
+                    }
+                }
                 this.saveLocalCache();
                 this.renderAll();
                 if (window.__officeCloud) await window.__officeCloud.upsertRow('office_hr_requests', r);
+                if (r.type === 'Kasbon' && status === 'Disetujui') {
+                    alert(`Kasbon ${r.empName} (${this.formatRp(r.cashAmount)}) disetujui HR & otomatis masuk ke Antrean ACC & Transfer Bendahara!`);
+                }
             },
 
             savePayrollRates() {
@@ -2686,42 +2772,271 @@
                 const k = `${ym}::${empName}`;
                 if (!this.state.payrollStaffCfg[k]) this.state.payrollStaffCfg[k] = { base: 1500000, allowance: 0 };
                 this.state.payrollStaffCfg[k][field] = Number(val) || 0;
+                const prevMeta = (this.state.payrollMeta && this.state.payrollMeta[k]) || {};
                 const row = {
+                    ...prevMeta,
                     id: k,
                     ym,
                     empName,
                     base: Number(this.state.payrollStaffCfg[k].base) || 0,
                     allowance: Number(this.state.payrollStaffCfg[k].allowance) || 0,
-                    isPaid: !!this.state.paidPayrollKeys[k]
+                    isPaid: !!this.state.paidPayrollKeys[k],
+                    paymentStatus: prevMeta.paymentStatus || (this.state.paidPayrollKeys[k] ? 'Dibayar' : 'Draft')
                 };
                 this.saveLocalCache();
                 this.renderPayrollTable();
                 if (window.__officeCloud) await window.__officeCloud.upsertRow('office_payroll', row);
             },
 
-            async paySalary(empName, netPay) {
-                return this.runWithActionLock('off_pay_salary', async () => {
-                if (document.getElementById('viewRoleSelect').value !== 'owner') return alert('Pembayaran gaji memerlukan akses Owner.');
-                if (netPay <= 0) return alert('Nominal gaji bersih masih Rp 0.');
-                const ym = document.getElementById('activeMonthInput').value;
-                const k = `${ym}::${empName}`;
-                if (!confirm(`Bayar gaji ${empName} sebesar ${this.formatRp(netPay)}?`)) return;
-                this.state.paidPayrollKeys[k] = true;
-                const cfg = this.state.payrollStaffCfg[k] || { base: 1500000, allowance: 0 };
-                const payRow = { id: k, ym, empName, base: Number(cfg.base) || 0, allowance: Number(cfg.allowance) || 0, isPaid: true };
-                const cbEntry = {
-                    id: 'PAY-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(),
-                    date: `${ym}-28`, kind: 'BEBAN_PERUSAHAAN', category: 'Payroll & Gaji',
-                    note: `Gaji ${empName} (${ym})`, amount: netPay
-                };
-                this.state.cashbook.unshift(cbEntry);
-                this.saveLocalCache();
-                this.renderAll();
-                if (window.__officeCloud) {
-                    await window.__officeCloud.upsertRow('office_payroll', payRow);
-                    await window.__officeCloud.upsertRow('office_cashbook', cbEntry);
-                }
+            async submitPayrollToFinance(empName, netPay) {
+                return this.runWithActionLock('off_submit_payroll', async () => {
+                    const roleNow = (document.getElementById('viewRoleSelect')?.value || '').toLowerCase();
+                    if (!['owner', 'hr'].includes(roleNow)) return alert('Pengajuan transfer gaji dilakukan oleh HR atau Owner.');
+                    if (netPay <= 0) return alert('Nominal gaji bersih masih Rp 0.');
+                    const ym = document.getElementById('activeMonthInput').value;
+                    const k = `${ym}::${empName}`;
+                    if (!confirm(`Ajukan transfer gaji ${empName} (${ym}) sebesar ${this.formatRp(netPay)} ke Bendahara untuk di-ACC & transfer?`)) return;
+                    const cfg = this.state.payrollStaffCfg[k] || { base: 1500000, allowance: 0 };
+                    const actor = this.state.currentUserName || 'HR';
+                    const payRow = {
+                        id: k, ym, empName,
+                        base: Number(cfg.base) || 0,
+                        allowance: Number(cfg.allowance) || 0,
+                        isPaid: false,
+                        paymentStatus: 'Diajukan',
+                        netPay: Math.round(Number(netPay) || 0),
+                        submittedBy: actor,
+                        submittedAt: new Date().toISOString()
+                    };
+                    if (!this.state.payrollMeta) this.state.payrollMeta = {};
+                    this.state.payrollMeta[k] = payRow;
+                    this.saveLocalCache();
+                    this.renderAll();
+                    if (window.__officeCloud) await window.__officeCloud.upsertRow('office_payroll', payRow);
+                    alert(`Pengajuan gaji ${empName} (${this.formatRp(netPay)}) terkirim ke Antrean Bendahara!`);
                 });
+            },
+
+            async paySalary(empName, netPay, customYm = null) {
+                return this.runWithActionLock('off_pay_salary', async () => {
+                    const roleNow = (document.getElementById('viewRoleSelect')?.value || '').toLowerCase();
+                    if (!['owner', 'bendahara'].includes(roleNow)) return alert('ACC & Transfer gaji dilakukan oleh Bendahara atau Owner.');
+                    if (netPay <= 0) return alert('Nominal gaji bersih masih Rp 0.');
+                    const ym = customYm || document.getElementById('activeMonthInput').value;
+                    const k = `${ym}::${empName}`;
+                    const ref = prompt(`ACC & Transfer Gaji ${empName} (${ym})
+Nominal: ${this.formatRp(netPay)}
+
+Masukkan keterangan / no. referensi transfer (misal: TF BCA / Tunai):`, 'Transfer Bank');
+                    if (ref === null) return;
+                    const cleanRef = (ref || '').trim() || 'Transfer';
+                    const actor = this.state.currentUserName || (roleNow === 'bendahara' ? 'Bendahara' : 'Owner');
+                    const prevMeta = (this.state.payrollMeta && this.state.payrollMeta[k]) || {};
+                    this.state.paidPayrollKeys[k] = true;
+                    const cfg = this.state.payrollStaffCfg[k] || { base: 1500000, allowance: 0 };
+                    const payRow = {
+                        ...prevMeta,
+                        id: k, ym, empName,
+                        base: Number(cfg.base) || 0,
+                        allowance: Number(cfg.allowance) || 0,
+                        isPaid: true,
+                        paymentStatus: 'Dibayar',
+                        netPay: Math.round(Number(netPay) || 0),
+                        paidBy: actor,
+                        transferRef: cleanRef,
+                        paidAt: new Date().toISOString()
+                    };
+                    if (!this.state.payrollMeta) this.state.payrollMeta = {};
+                    this.state.payrollMeta[k] = payRow;
+
+                    const todayIso = new Date().toISOString().slice(0, 10);
+                    const cbEntry = {
+                        id: 'PAY-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(),
+                        date: todayIso,
+                        kind: 'BEBAN_PERUSAHAAN',
+                        category: 'Payroll & Gaji',
+                        note: `Gaji ${empName} (${ym}) • ${cleanRef} • ACC/TF: ${actor}${prevMeta.submittedBy ? ' (Ajuan HR: ' + prevMeta.submittedBy + ')' : ''}`,
+                        amount: Math.round(Number(netPay) || 0)
+                    };
+                    this.state.cashbook.unshift(cbEntry);
+                    this.saveLocalCache();
+                    this.renderAll();
+                    if (window.__officeCloud) {
+                        await window.__officeCloud.upsertRow('office_payroll', payRow);
+                        await window.__officeCloud.upsertRow('office_cashbook', cbEntry);
+                    }
+                    alert(`Gaji ${empName} sebesar ${this.formatRp(netPay)} telah di-ACC & ditransfer!
+Pengeluaran otomatis tercatat di Buku Kas Perusahaan & Slip Gaji Staff.`);
+                });
+            },
+
+            async disburseHrKasbon(reqId) {
+                return this.runWithActionLock('off_disb_kasbon', async () => {
+                    const roleNow = (document.getElementById('viewRoleSelect')?.value || '').toLowerCase();
+                    if (!['owner', 'bendahara'].includes(roleNow)) return alert('Pencairan / transfer kasbon dilakukan oleh Bendahara atau Owner.');
+                    const r = this.state.hrRequests.find(x => x.id === reqId);
+                    if (!r || r.disbursementStatus === 'Sudah Ditransfer') return;
+                    const amt = Math.round(Number(r.cashAmount) || 0);
+                    if (amt <= 0) return alert('Nominal kasbon tidak valid.');
+                    const ref = prompt(`ACC & Transfer Kasbon ${r.empName}
+Nominal: ${this.formatRp(amt)}
+
+Keterangan / No. Ref Transfer:`, 'Transfer Bank');
+                    if (ref === null) return;
+                    const cleanRef = (ref || '').trim() || 'Transfer';
+                    const actor = this.state.currentUserName || (roleNow === 'bendahara' ? 'Bendahara' : 'Owner');
+                    r.disbursementStatus = 'Sudah Ditransfer';
+                    r.disbursedBy = actor;
+                    r.transferRef = cleanRef;
+                    const cbEntry = {
+                        id: 'KSB-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(),
+                        date: new Date().toISOString().slice(0, 10),
+                        kind: 'BEBAN_PERUSAHAAN',
+                        category: 'Kasbon Karyawan',
+                        note: `Kasbon ${r.empName} (${r.note || '-'}) • ${cleanRef} • TF: ${actor}`,
+                        amount: amt
+                    };
+                    this.state.cashbook.unshift(cbEntry);
+                    this.saveLocalCache();
+                    this.renderAll();
+                    if (window.__officeCloud) {
+                        await window.__officeCloud.upsertRow('office_hr_requests', r);
+                        await window.__officeCloud.upsertRow('office_cashbook', cbEntry);
+                    }
+                    alert(`Kasbon ${r.empName} (${this.formatRp(amt)}) selesai ditransfer & otomatis tercatat ke Buku Kas Perusahaan!`);
+                });
+            },
+
+            async disburseLoan(loanId) {
+                return this.runWithActionLock('off_disb_loan', async () => {
+                    const roleNow = (document.getElementById('viewRoleSelect')?.value || '').toLowerCase();
+                    if (!['owner', 'bendahara'].includes(roleNow)) return alert('Pencairan pinjaman dilakukan oleh Bendahara atau Owner.');
+                    const l = this.state.loans.find(x => x.id === loanId);
+                    if (!l || l.status !== 'Menunggu Pencairan') return;
+                    const amt = Math.round(Number(l.totalAmount) || 0);
+                    const ref = prompt(`ACC & Cairkan Pinjaman ${l.employeeName}
+Nominal: ${this.formatRp(amt)}
+
+Keterangan / No. Ref Transfer:`, 'Transfer Bank');
+                    if (ref === null) return;
+                    const cleanRef = (ref || '').trim() || 'Transfer';
+                    const actor = this.state.currentUserName || (roleNow === 'bendahara' ? 'Bendahara' : 'Owner');
+                    l.status = 'Aktif';
+                    l.disbursedBy = actor;
+                    l.transferRef = cleanRef;
+                    const cbEntry = {
+                        id: 'LND-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(),
+                        date: new Date().toISOString().slice(0, 10),
+                        kind: 'BEBAN_PERUSAHAAN',
+                        category: 'Pinjaman Karyawan',
+                        note: `Pencairan Pinjaman ${l.employeeName} (${l.note || '-'}) • ${cleanRef} • TF: ${actor}`,
+                        amount: amt
+                    };
+                    this.state.cashbook.unshift(cbEntry);
+                    this.saveLocalCache();
+                    this.renderAll();
+                    if (window.__officeCloud) {
+                        await window.__officeCloud.upsertRow('hr_loans', l);
+                        await window.__officeCloud.upsertRow('office_cashbook', cbEntry);
+                    }
+                    alert(`Pinjaman ${l.employeeName} (${this.formatRp(amt)}) dicairkan & otomatis tercatat di Buku Kas Perusahaan!`);
+                });
+            },
+
+            renderBendaharaApprovalQueue() {
+                const card = document.getElementById('bendaharaApprovalQueueCard');
+                const listEl = document.getElementById('bendaharaQueueList');
+                const pill = document.getElementById('bendaharaQueueCountPill');
+                const totLbl = document.getElementById('bendaharaQueueTotalLabel');
+                if (!card || !listEl) return;
+
+                const roleNow = (document.getElementById('viewRoleSelect')?.value || 'owner').toLowerCase();
+                const canTransfer = ['owner', 'bendahara'].includes(roleNow);
+                const queue = [];
+
+                // 1. Gaji yang diajukan HR ('Diajukan')
+                Object.values(this.state.payrollMeta || {}).forEach(pm => {
+                    if (pm && !pm.isPaid && pm.paymentStatus === 'Diajukan') {
+                        queue.push({
+                            kind: 'payroll',
+                            badge: '💼 GAJI PAYROLL',
+                            badgeCls: 'bg-sky-100 text-sky-800',
+                            title: `Gaji ${pm.empName} (${pm.ym})`,
+                            sub: `Diajukan HR: ${pm.submittedBy || 'HR'}`,
+                            amount: Number(pm.netPay) || 0,
+                            actionHtml: canTransfer
+                                ? `<button type="button" onclick="officeApp.paySalary('${this.escapeHtml(pm.empName)}', ${Math.round(Number(pm.netPay) || 0)}, '${this.escapeHtml(pm.ym)}')" class="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-sm">💸 ACC &amp; Transfer</button>`
+                                : '<span class="text-[10px] font-bold text-amber-700">Menunggu Bendahara</span>'
+                        });
+                    }
+                });
+
+                // 2. Kasbon disetujui HR tapi belum ditransfer Bendahara
+                (this.state.hrRequests || []).forEach(r => {
+                    if (r && r.type === 'Kasbon' && r.status === 'Disetujui' && r.disbursementStatus !== 'Sudah Ditransfer') {
+                        queue.push({
+                            kind: 'kasbon',
+                            badge: '💵 KASBON HR',
+                            badgeCls: 'bg-amber-100 text-amber-900',
+                            title: `Kasbon ${r.empName} (${r.date || '-'})`,
+                            sub: r.note || 'Disetujui HR, menunggu pencairan Bendahara',
+                            amount: Number(r.cashAmount) || 0,
+                            actionHtml: canTransfer
+                                ? `<button type="button" onclick="officeApp.disburseHrKasbon('${this.escapeHtml(r.id)}')" class="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-sm">💸 ACC &amp; Transfer</button>`
+                                : '<span class="text-[10px] font-bold text-amber-700">Menunggu Bendahara</span>'
+                        });
+                    }
+                });
+
+                // 3. Pinjaman karyawan baru dari HR menunggu pencairan Bendahara
+                (this.state.loans || []).forEach(l => {
+                    if (l && l.status === 'Menunggu Pencairan') {
+                        queue.push({
+                            kind: 'loan',
+                            badge: '🏦 PINJAMAN',
+                            badgeCls: 'bg-purple-100 text-purple-900',
+                            title: `Pinjaman ${l.employeeName} (${l.date || '-'})`,
+                            sub: `${l.note || '-'} • Cicilan ${this.formatRp(l.monthlyInstallment || 0)}/bln`,
+                            amount: Number(l.totalAmount) || 0,
+                            actionHtml: canTransfer
+                                ? `<button type="button" onclick="officeApp.disburseLoan('${this.escapeHtml(l.id)}')" class="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-sm">💸 ACC &amp; Cairkan</button>`
+                                : '<span class="text-[10px] font-bold text-amber-700">Menunggu Bendahara</span>'
+                        });
+                    }
+                });
+
+                const count = queue.length;
+                const totalRp = queue.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+                const payPending = queue.filter(x => x.kind === 'payroll').length;
+
+                ['sidePendingFinanceBadge', 'dockPendingFinanceBadge'].forEach(bid => {
+                    const b = document.getElementById(bid);
+                    if (b) { b.textContent = String(count); b.classList.toggle('hidden', count <= 0); }
+                });
+                const payB = document.getElementById('sidePendingPayrollBadge');
+                if (payB) { payB.textContent = String(payPending); payB.classList.toggle('hidden', payPending <= 0); }
+
+                if (count === 0) {
+                    card.classList.add('hidden');
+                    return;
+                }
+                card.classList.remove('hidden');
+                if (pill) pill.textContent = `${count} menunggu transfer`;
+                if (totLbl) totLbl.textContent = `Total: ${this.formatRp(totalRp)}`;
+                listEl.innerHTML = queue.map(q => `
+                    <div class="p-3.5 flex flex-wrap items-center justify-between gap-2.5 hover:bg-amber-50/40">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="px-2 py-0.5 rounded-full text-[9.5px] font-black ${q.badgeCls}">${q.badge}</span>
+                                <span class="font-extrabold text-gray-900">${this.escapeHtml(q.title)}</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 mt-0.5 truncate">${this.escapeHtml(q.sub)}</p>
+                        </div>
+                        <div class="flex items-center gap-2.5 flex-shrink-0">
+                            <span class="font-black text-sm text-nutri-brown">${this.formatRp(q.amount)}</span>
+                            ${q.actionHtml}
+                        </div>
+                    </div>`).join('');
             },
 
             scheduleRenderAll() {
@@ -2838,7 +3153,7 @@
                     ? `<tr><td colspan="6" class="p-6 text-center text-gray-400">${curHrFilter === 'ALL' ? 'Belum ada pengajuan dari NutriFresh Staff.' : 'Tidak ada pengajuan berstatus ' + this.escapeHtml(curHrFilter) + '.'}</td></tr>`
                     : filteredHrList.map(r => {
                         const cls = r.status === 'Disetujui' ? 'bg-green-100 text-nutri-dark' : (r.status === 'Ditolak' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800');
-                        return `<tr class="hover:bg-gray-50"><td class="p-3 font-extrabold text-gray-900">${this.escapeHtml(r.empName)}</td><td class="p-3"><span class="font-bold">${this.escapeHtml(r.type)}</span><span class="block text-[11px] text-gray-500 font-mono">${this.escapeHtml(r.date)}</span></td><td class="p-3 font-bold text-gray-800">${this.escapeHtml(r.durationLabel)}</td><td class="p-3 text-gray-600">${this.escapeHtml(r.note)}</td><td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-black ${cls}">${this.escapeHtml(r.status)}</span></td><td class="p-3 text-center space-x-1 whitespace-nowrap">${canApproveHr ? `<button type="button" onclick="officeApp.setHrStatus('${this.escapeHtml(r.id)}', 'Disetujui')" class="px-2.5 py-1 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-bold text-[11px]">Setujui</button><button type="button" onclick="officeApp.setHrStatus('${this.escapeHtml(r.id)}', 'Ditolak')" class="px-2.5 py-1 rounded-full bg-red-50 hover:bg-red-100 text-red-600 font-bold text-[11px]">Tolak</button>` : '<span class="text-[10px] text-slate-400 font-semibold">Khusus Owner/HR</span>'}</td></tr>`;
+                        return `<tr class="hover:bg-gray-50"><td class="p-3 font-extrabold text-gray-900">${this.escapeHtml(r.empName)}</td><td class="p-3"><span class="font-bold">${this.escapeHtml(r.type)}</span><span class="block text-[11px] text-gray-500 font-mono">${this.escapeHtml(r.date)}</span></td><td class="p-3 font-bold text-gray-800">${this.escapeHtml(r.durationLabel)}</td><td class="p-3 text-gray-600">${this.escapeHtml(r.note)}</td><td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-black ${cls}">${this.escapeHtml(r.status)}</span>${r.type === 'Kasbon' && r.status === 'Disetujui' ? `<span class="block mt-1 text-[9.5px] font-extrabold ${r.disbursementStatus === 'Sudah Ditransfer' ? 'text-emerald-700' : 'text-amber-700'}">${r.disbursementStatus === 'Sudah Ditransfer' ? '✓ TF Bendahara' : '⏳ Tunggu TF Bendahara'}</span>` : ''}</td><td class="p-3 text-center space-x-1 whitespace-nowrap">${canApproveHr ? `<button type="button" onclick="officeApp.setHrStatus('${this.escapeHtml(r.id)}', 'Disetujui')" class="px-2.5 py-1 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-bold text-[11px]">Setujui</button><button type="button" onclick="officeApp.setHrStatus('${this.escapeHtml(r.id)}', 'Ditolak')" class="px-2.5 py-1 rounded-full bg-red-50 hover:bg-red-100 text-red-600 font-bold text-[11px]">Tolak</button>` : '<span class="text-[10px] text-slate-400 font-semibold">Khusus Owner/HR</span>'}</td></tr>`;
                     }).join('');
 
                 if (this.state.activeTab === 'absensi_foto') this.renderOfficeAttendanceTable();
@@ -2848,6 +3163,7 @@
                 this.renderOfficeMenuAccessMatrix();
                 this.renderOfficeRolesList();
                 this.syncRoleSelectFromOffice();
+                this.renderBendaharaApprovalQueue();
                 this.renderPayrollTable();
                 this.renderMasterEmployeeTable();
                 this.populateHrPlusEmployeeSelects();
@@ -2885,10 +3201,32 @@
                     const lateCut = Math.round(telat * (Number(this.state.lateDeductionRate) || 0));
                     const netPay = Math.max(0, (Number(cfg.base) || 0) + (Number(cfg.allowance) || 0) + overtimeBonus - lateCut - kasbonRp);
                     const isPaid = !!this.state.paidPayrollKeys[cfgKey];
+                    const meta = (this.state.payrollMeta && this.state.payrollMeta[cfgKey]) || {};
+                    const pStatus = isPaid ? 'Dibayar' : (meta.paymentStatus || 'Draft');
+                    const roleNow = (document.getElementById('viewRoleSelect')?.value || 'owner').toLowerCase();
+                    const isHrRole = roleNow === 'hr';
+                    const canTransferRole = ['owner', 'bendahara'].includes(roleNow);
 
-                    return `<tr class="hover:bg-gray-50"><td class="p-3 font-extrabold text-gray-900">${this.escapeHtml(name)}</td><td class="p-3 text-center"><span class="font-bold block">${hadir} Hari</span><span class="text-[10px] font-bold text-red-600">Telat: ${telat}x</span></td><td class="p-3 text-center"><span class="font-bold text-nutri-dark block">Lembur: ${lemburJam}j</span><span class="text-[10px] font-bold text-red-600">Kasbon: ${this.formatRp(kasbonRp)}</span></td><td class="p-3"><input type="number" step="50000" value="${cfg.base}" onchange="officeApp.updateStaffSalaryCfg('${this.escapeHtml(name)}', 'base', this.value)" class="w-24 px-2 py-1 border rounded-xl font-bold text-right outline-none"></td><td class="p-3"><input type="number" step="10000" value="${cfg.allowance}" onchange="officeApp.updateStaffSalaryCfg('${this.escapeHtml(name)}', 'allowance', this.value)" class="w-24 px-2 py-1 border rounded-xl font-bold text-right outline-none"></td><td class="p-3 text-right font-black text-nutri-brown whitespace-nowrap">${this.formatRp(netPay)}</td><td class="p-3 text-center whitespace-nowrap space-x-1.5">
-                        <button type="button" onclick="officeApp.openPayslipModal('${this.escapeHtml(name)}')" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-lime-300 border border-slate-700 font-extrabold text-[11px] transition">Slip Gaji</button>
-                        ${isPaid ? '<span class="px-2.5 py-1 rounded-xl bg-green-100 text-nutri-dark font-extrabold text-[11px]">✓ Dibayar</span>' : `<button type="button" onclick="officeApp.paySalary('${this.escapeHtml(name)}', ${netPay})" class="px-3 py-1.5 rounded-xl bg-nutri-dark hover:bg-nutri-green text-white font-extrabold text-[11px] transition">Bayar Gaji</button>`}
+                    let actionCellHtml = '';
+                    if (isPaid) {
+                        actionCellHtml = `<span class="px-2.5 py-1 rounded-full bg-green-100 text-nutri-dark font-extrabold text-[10.5px]" title="${this.escapeHtml(meta.transferRef || '')}">✓ Dibayar${meta.paidBy ? ' (' + this.escapeHtml(meta.paidBy) + ')' : ''}</span>`;
+                    } else if (pStatus === 'Diajukan') {
+                        actionCellHtml = canTransferRole
+                            ? `<button type="button" onclick="officeApp.paySalary('${this.escapeHtml(name)}', ${netPay})" class="px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-sm transition">💸 ACC &amp; Transfer</button>`
+                            : `<span class="px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 font-extrabold text-[10.5px]">⏳ Menunggu Bendahara</span>`;
+                    } else {
+                        if (isHrRole) {
+                            actionCellHtml = `<button type="button" onclick="officeApp.submitPayrollToFinance('${this.escapeHtml(name)}', ${netPay})" class="px-3 py-1.5 rounded-full bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-[11px] shadow-sm transition">📤 Ajukan ke Bendahara</button>`;
+                        } else if (roleNow === 'owner') {
+                            actionCellHtml = `<button type="button" onclick="officeApp.submitPayrollToFinance('${this.escapeHtml(name)}', ${netPay})" class="px-2.5 py-1.5 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 font-extrabold text-[10.5px] transition">Ajukan</button> <button type="button" onclick="officeApp.paySalary('${this.escapeHtml(name)}', ${netPay})" class="px-3 py-1.5 rounded-full bg-nutri-dark hover:bg-nutri-green text-white font-extrabold text-[11px] transition">ACC &amp; TF</button>`;
+                        } else {
+                            actionCellHtml = `<span class="text-[10.5px] text-gray-400 font-bold">Menunggu HR Ajukan</span>`;
+                        }
+                    }
+
+                    return `<tr class="hover:bg-gray-50"><td class="p-3 font-extrabold text-gray-900">${this.escapeHtml(name)}</td><td class="p-3 text-center"><span class="font-bold block">${hadir} Hari</span><span class="text-[10px] font-bold text-red-600">Telat: ${telat}x</span></td><td class="p-3 text-center"><span class="font-bold text-nutri-dark block">Lembur: ${lemburJam}j</span><span class="text-[10px] font-bold text-red-600">Kasbon: ${this.formatRp(kasbonRp)}</span></td><td class="p-3"><input type="number" step="50000" value="${cfg.base}" ${roleNow === 'bendahara' ? 'readonly' : ''} onchange="officeApp.updateStaffSalaryCfg('${this.escapeHtml(name)}', 'base', this.value)" class="w-24 px-2 py-1 border rounded-xl font-bold text-right outline-none"></td><td class="p-3"><input type="number" step="10000" value="${cfg.allowance}" ${roleNow === 'bendahara' ? 'readonly' : ''} onchange="officeApp.updateStaffSalaryCfg('${this.escapeHtml(name)}', 'allowance', this.value)" class="w-24 px-2 py-1 border rounded-xl font-bold text-right outline-none"></td><td class="p-3 text-right font-black text-nutri-brown whitespace-nowrap">${this.formatRp(netPay)}</td><td class="p-3 text-center whitespace-nowrap space-x-1">
+                        <button type="button" onclick="officeApp.openPayslipModal('${this.escapeHtml(name)}')" class="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-lime-300 border border-slate-700 font-extrabold text-[10.5px] transition">Slip</button>
+                        ${actionCellHtml}
                     </td></tr>`;
                 }).join('');
             },
@@ -3312,7 +3650,7 @@
                 if (q) list = list.filter(a => String(a.employeeName || '').toLowerCase().includes(q) || String(a.dateStr || '').includes(q));
                 if (cnt) cnt.textContent = `${list.length} catatan absensi (${ym || 'Semua'})`;
                 if (list.length === 0) {
-                    tb.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-gray-400">Belum ada catatan absensi pada bulan ini.</td></tr>';
+                    tb.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-400">Belum ada catatan absensi pada bulan ini.</td></tr>';
                     return;
                 }
                 tb.innerHTML = list.map(a => {
@@ -3329,6 +3667,16 @@
                             <td class="p-3 font-extrabold text-gray-900">${this.escapeHtml(a.employeeName || '-')}</td>
                             <td class="p-3 font-mono text-gray-700">${tIn} – ${tOut}<div class="text-[10px] text-gray-400">${this.escapeHtml(a.durationText || '-')}</div></td>
                             <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-black ${isLate ? 'bg-red-100 text-red-700' : 'bg-green-100 text-nutri-dark'}">${this.escapeHtml(a.status || 'Hadir')}</span><div class="text-[10px] text-gray-500 mt-0.5">${a.distanceMeters ?? '-'} m${a.note && a.note !== '-' ? ' • ' + this.escapeHtml(a.note) : ''}</div></td>
+                            <td class="p-3 text-center whitespace-nowrap">${(() => {
+                                const dz = (this.state.dzikirLogs || []).find(d => d && d.dateStr === a.dateStr && (
+                                    (d.employeeId && a.employeeId && d.employeeId === a.employeeId) ||
+                                    String(d.employeeName || '').trim().toLowerCase() === String(a.employeeName || '').trim().toLowerCase()
+                                ));
+                                const fT = (iso) => iso ? new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
+                                const pB = dz?.pagiAt ? `<span class="inline-block px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[9.5px] font-black">☀️ ${fT(dz.pagiAt)}</span>` : '<span class="inline-block px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 text-[9.5px] font-bold">☀️ —</span>';
+                                const eB = dz?.petangAt ? `<span class="inline-block px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-900 text-[9.5px] font-black">🌆 ${fT(dz.petangAt)}</span>` : '<span class="inline-block px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 text-[9.5px] font-bold">🌆 —</span>';
+                                return pB + ' ' + eB;
+                            })()}</td>
                             <td class="p-3 text-center whitespace-nowrap space-x-1">${btns || '<span class="text-[10px] text-gray-400">Tanpa foto</span>'}</td>
                         </tr>`;
                 }).join('');
@@ -3451,14 +3799,15 @@
                     employeeId, employeeName,
                     date: new Date().toISOString().slice(0, 10),
                     totalAmount, paidAmount: 0, monthlyInstallment,
-                    status: 'Aktif', note
+                    status: 'Menunggu Pencairan', note
                 };
                 this.state.loans.unshift(entry);
                 document.getElementById('loanTotalInput').value = '';
                 document.getElementById('loanInstallmentInput').value = '';
                 document.getElementById('loanNoteInput').value = '';
-                this.renderLoansTable();
+                this.renderAll();
                 if (window.__officeCloud) await window.__officeCloud.upsertRow('hr_loans', entry);
+                alert(`Pinjaman ${employeeName} (${this.formatRp(totalAmount)}) dicatat & masuk ke Antrean ACC/Pencairan Bendahara!`);
             },
 
             async payLoanInstallment(id) {
@@ -3472,8 +3821,26 @@
                 if (amt <= 0) return alert('Nominal cicilan harus lebih dari 0.');
                 l.paidAmount = Math.min(Number(l.totalAmount) || 0, (Number(l.paidAmount) || 0) + amt);
                 if (l.paidAmount >= (Number(l.totalAmount) || 0)) l.status = 'Lunas';
-                this.renderLoansTable();
-                if (window.__officeCloud) await window.__officeCloud.upsertRow('hr_loans', l);
+                const recCash = confirm(`Cicilan ${this.formatRp(amt)} berhasil dicatat.
+Catat juga sebagai Kas Masuk (Pengembalian Pinjaman) di Buku Kas Perusahaan?`);
+                let cbEntry = null;
+                if (recCash) {
+                    cbEntry = {
+                        id: 'LNP-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(),
+                        date: new Date().toISOString().slice(0, 10),
+                        kind: 'SETORAN_TOKO',
+                        category: 'Cicilan Pinjaman Karyawan',
+                        note: `Cicilan Pinjaman ${l.employeeName} (${l.note || '-'})`,
+                        amount: Math.round(amt)
+                    };
+                    this.state.cashbook.unshift(cbEntry);
+                }
+                this.saveLocalCache();
+                this.renderAll();
+                if (window.__officeCloud) {
+                    await window.__officeCloud.upsertRow('hr_loans', l);
+                    if (cbEntry) await window.__officeCloud.upsertRow('office_cashbook', cbEntry);
+                }
             },
 
             async saveLeaveQuota() {
@@ -3512,7 +3879,7 @@
                             <td class="p-3 text-right font-bold">${this.formatRp(tot)}</td>
                             <td class="p-3 text-right font-bold text-nutri-dark">${this.formatRp(paid)}</td>
                             <td class="p-3 text-right font-black ${done ? 'text-nutri-dark' : 'text-red-600'}">${this.formatRp(rem)}</td>
-                            <td class="p-3 text-center whitespace-nowrap">${done ? '<span class="px-2 py-0.5 rounded-full bg-green-100 text-nutri-dark text-[10px] font-black">LUNAS</span>' : `<button type="button" onclick="officeApp.payLoanInstallment('${this.escapeHtml(l.id)}')" class="px-2.5 py-1 rounded-full bg-nutri-green text-white font-bold text-[10px]">+ Cicilan</button>`}</td>
+                            <td class="p-3 text-center whitespace-nowrap">${l.status === 'Menunggu Pencairan' ? (['owner','bendahara'].includes((document.getElementById('viewRoleSelect')?.value||'').toLowerCase()) ? `<button type="button" onclick="officeApp.disburseLoan('${this.escapeHtml(l.id)}')" class="px-2.5 py-1 rounded-full bg-emerald-600 text-white font-extrabold text-[10px]">💸 ACC &amp; Cairkan</button>` : '<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black">⏳ Tunggu Bendahara</span>') : (done ? '<span class="px-2 py-0.5 rounded-full bg-green-100 text-nutri-dark text-[10px] font-black">LUNAS</span>' : `<button type="button" onclick="officeApp.payLoanInstallment('${this.escapeHtml(l.id)}')" class="px-2.5 py-1 rounded-full bg-nutri-green text-white font-bold text-[10px]">+ Cicilan</button>`)}</td>
                         </tr>`;
                 }).join('');
             },
@@ -3647,6 +4014,7 @@
                 officeApp.syncBranchFilterDropdown();
                 await officeApp.syncRoleFromFirebaseAuth(u, this.db, appId, hint);
                 officeApp.refreshServerCashSummary();
+                if (window.__nfSyncFcmToken) window.__nfSyncFcmToken({});
 
                 if (!this._listenersBound && this.db) {
                     this._listenersBound = true;
@@ -3685,9 +4053,14 @@
                     onSnapshot(query(collection(this.db, "artifacts", appId, "public", "data", "hr_loans"), limit(150)), (snap) => {
                         officeApp.state.loans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                         officeApp.renderLoansTable();
+                        officeApp.renderBendaharaApprovalQueue();
                     }, () => {});
                     onSnapshot(query(collection(this.db, "artifacts", appId, "public", "data", "hr_leave_quotas"), limit(150)), (snap) => {
                         officeApp.state.leaveQuotas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    }, () => {});
+                    onSnapshot(query(collection(this.db, "artifacts", appId, "public", "data", "hr_dzikir"), limit(300)), (snap) => {
+                        officeApp.state.dzikirLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        if (officeApp.state.activeTab === 'absensi_foto') officeApp.renderOfficeAttendanceTable();
                     }, () => {});
                 }
             },
@@ -3887,7 +4260,7 @@
     </div>
 
     <script>
-        window.__NF_APP_VERSION = 'v141';
+        window.__NF_APP_VERSION = 'v144';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 

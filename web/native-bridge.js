@@ -927,4 +927,31 @@
         }
     };
 
+
+    // =========================================================================
+    // BACKGROUND PUSH TOKEN SYNC (FCM ANDROID -> SUPABASE nf_push_devices v144)
+    // =========================================================================
+    window.__nfLastFcmToken = "";
+    window.__nfSyncFcmToken = function(extraMeta) {
+        try {
+            var tok = window.__nfLastFcmToken || "";
+            if (!tok && window.NfAndroidNative && typeof window.NfAndroidNative.getFcmToken === "function") {
+                tok = String(window.NfAndroidNative.getFcmToken() || "").trim();
+            }
+            if (tok && tok.length >= 16) {
+                window.__nfLastFcmToken = tok;
+                if (typeof window.__nfRegisterPushToken === "function") {
+                    window.__nfRegisterPushToken(tok, extraMeta || {});
+                }
+            }
+        } catch (_) {}
+    };
+    window.__nfOnFcmToken = function(tok) {
+        if (tok && String(tok).length >= 16) {
+            window.__nfLastFcmToken = String(tok).trim();
+            window.__nfSyncFcmToken({});
+        }
+    };
+    setTimeout(function() { window.__nfSyncFcmToken({}); }, 2500);
+    setTimeout(function() { window.__nfSyncFcmToken({}); }, 7000);
 })();

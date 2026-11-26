@@ -3564,10 +3564,18 @@
             getActiveBranchId, setActiveBranchId, fetchCollectionRangeRpc,
             getStorageMaintenanceStatsRpc, cleanupOldPaymentProofsRpc,
             staffResetMemberPinRpc, posGetMemberDetailsRpc,
-            posSettleMemberTxRpc, posVoidMemberTxRpc, staffSendOrderChatRpc
+            posSettleMemberTxRpc, posVoidMemberTxRpc, staffSendOrderChatRpc, registerPushDeviceRpc
         } from "./supabase-adapter.js";
 
         installGlobalErrorTracker("pos.html");
+        window.__nfRegisterPushToken = (tok) => {
+            registerPushDeviceRpc({
+                token: tok,
+                appRole: "pos",
+                userEmail: appObj.state.staffAccount?.email || "",
+                platform: window.NfAndroidNative ? "android" : "web"
+            }).catch(() => {});
+        };
 
         // Helper opsional bagi Owner untuk migrasi foto Base64 lama ke Supabase Storage
         window.migrateNutriImagesToStorage = migrateLegacyImagesToStorage;
@@ -5617,7 +5625,12 @@
                 } catch (e) {}
                 this.state.onlineOrders = Array.from(map.values()).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
                 this.updateOnlineOrdersBadge();
-                if (!document.getElementById('onlineOrdersModal')?.classList.contains('hidden')) const _posAct = document.activeElement; if (!(_posAct && _posAct.id && _posAct.id.startsWith('posOrdChatInp-'))) { this.renderOnlineOrdersList(); }
+                if (!document.getElementById('onlineOrdersModal')?.classList.contains('hidden')) {
+                    const _posAct = document.activeElement;
+                    if (!(_posAct && _posAct.id && _posAct.id.startsWith('posOrdChatInp-'))) {
+                        this.renderOnlineOrdersList();
+                    }
+                }
             },
             updateOnlineOrdersBadge() {
                 const pendingCnt = (this.state.onlineOrders || []).filter(o => !['Selesai', 'Dibatalkan'].includes(o.orderStatus)).length;
@@ -11709,7 +11722,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v143';
+        window.__NF_APP_VERSION = 'v144';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;

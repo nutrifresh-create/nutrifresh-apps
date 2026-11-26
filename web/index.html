@@ -3515,10 +3515,20 @@
             ensureQrCodeLoaded,
             memberRegisterPinRpc, memberLoginPinRpc, memberGoogleSyncRpc,
             memberGetPortalRpc, memberUpdateProfileRpc, memberRedeemRewardRpc,
-            installGlobalErrorTracker, logClientErrorRpc, submitParcelOrderRpc, submitOnlineOrderRpc, getPublicReceiptRpc, customerGetOrdersRpc, customerUploadOrderProofRpc, customerApproveOrderRpc, customerSendOrderChatRpc, uploadDataUrlToStorage
+            installGlobalErrorTracker, logClientErrorRpc, submitParcelOrderRpc, submitOnlineOrderRpc, getPublicReceiptRpc, customerGetOrdersRpc, customerUploadOrderProofRpc, customerApproveOrderRpc, customerSendOrderChatRpc, uploadDataUrlToStorage, registerPushDeviceRpc
         } from "./supabase-adapter.js";
 
         installGlobalErrorTracker("index.html");
+        window.__nfRegisterPushToken = (tok, meta = {}) => {
+            const memPhone = meta.phone || appObj.state.customerMember?.phone || document.getElementById('custPhone')?.value || "";
+            registerPushDeviceRpc({
+                token: tok,
+                appRole: "customer",
+                userEmail: appObj.state.customerMember?.email || "",
+                customerPhone: memPhone,
+                platform: window.NfAndroidNative ? "android" : "web"
+            }).catch(() => {});
+        };
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'nutrifresh-demo-id';
         const envConfig = isSupabaseConfigured() ? SUPABASE_CONFIG : {};
@@ -4764,14 +4774,14 @@
                 if (this.state.myOrdersPollTimer) clearInterval(this.state.myOrdersPollTimer);
                 this.state.myOrdersPollTimer = setInterval(() => {
                     if (document.hidden) return;
-                    const hasRefs = this.getSavedCustomerOrderRefs().length > 0;
+                    const hasRefs = this.getSavedCustomerOrderRefs().length > 0 || !!(this.state.customerMember && this.state.customerMember.phone);
                     const hasActive = (this.state.myOrdersList || []).some(o => !['Selesai', 'Dibatalkan'].includes(o.orderStatus));
                     if (hasRefs && (hasActive || !document.getElementById('customerOrdersModal')?.classList.contains('hidden'))) {
                         this.refreshCustomerOrders(false);
                     }
                 }, 8000);
                 document.addEventListener('visibilitychange', () => {
-                    if (!document.hidden && this.getSavedCustomerOrderRefs().length > 0) {
+                    if (!document.hidden && (this.getSavedCustomerOrderRefs().length > 0 || (this.state.customerMember && this.state.customerMember.phone))) {
                         this.refreshCustomerOrders(false);
                     }
                 });
@@ -4848,9 +4858,10 @@
                 const ic = document.getElementById('custOrdersRefreshIcon');
                 if (showSpin && ic) ic.classList.add('fa-spin');
                 try {
-                    if (refs.length > 0 && !this.state.isOfflineMode) {
+                    const memberPhone = this.normalizeWaPhone(this.state.customerMember?.phone || document.getElementById('custPhone')?.value || '');
+                    if ((refs.length > 0 || memberPhone.length >= 10) && !this.state.isOfflineMode) {
                         const prevMap = new Map((this.state.myOrdersList || []).map(o => [o.id, o.orderStatus]));
-                        const res = await customerGetOrdersRpc(refs);
+                        const res = await customerGetOrdersRpc(refs, memberPhone);
                         if (res && res.paymentInfo) {
                             this.state.myOrdersPaymentInfo = { ...this.state.myOrdersPaymentInfo, ...res.paymentInfo };
                         }
@@ -5397,6 +5408,7 @@
                         orderStatus: 'Menunggu Timbang', items: cartSnapshot, createdAt: new Date().toISOString()
                     };
                     this.saveCustomerOrderRef(newOrderObj.id, newOrderObj.receiptToken, newOrderObj);
+                    if (window.__nfSyncFcmToken) window.__nfSyncFcmToken({ phone });
 
                     this.state.customerCart = [];
                     this.state.selectedCartVoucher = null;
@@ -5858,6 +5870,10 @@
                 this.hideWebEntryChoiceModal();
                 this.updateCustomerHeader();
                 this.renderMemberPortalUI();
+                this.refreshCustomerOrders(false);
+                if (window.__nfSyncFcmToken && this.state.customerMember?.phone) {
+                    window.__nfSyncFcmToken({ phone: this.state.customerMember.phone });
+                }
             },
             async completeGoogleMemberLogin(fbUser, isExplicitLogin = false) {
                 if (!fbUser || !fbUser.email) return;
@@ -6958,7 +6974,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v143';
+        window.__NF_APP_VERSION = 'v144';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 
