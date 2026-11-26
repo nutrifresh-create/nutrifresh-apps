@@ -2371,6 +2371,17 @@
                                     <button type="button" onclick="app.saveProfileSettings(false)" class="bg-nutri-green hover:bg-nutri-dark text-white px-5 py-2.5 rounded-xl text-xs font-extrabold shadow transition flex items-center"><i class="fa-solid fa-floppy-disk mr-1.5"></i> Simpan Profil & Alamat Toko</button>
                                     <span id="saveProfileNotif" class="text-green-600 text-xs font-bold ml-3 hidden"><i class="fa-solid fa-check"></i> Tersimpan!</span>
                                 </div>
+                                <!-- Status Izin Perangkat & Anti-Delay Notifikasi (v145) -->
+                                <div class="pt-3 mt-2 border-t border-gray-200/80 flex flex-wrap items-center justify-between gap-2">
+                                    <div>
+                                        <h4 class="font-extrabold text-gray-800 flex items-center"><i class="fa-solid fa-shield-halved text-nutri-green mr-1.5"></i> Izin Perangkat &amp; Anti-Delay Notifikasi</h4>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">Pastikan Notifikasi Order, Tanpa Batas Baterai &amp; Kamera Scanner aktif lancar.</p>
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button" onclick="window.nfUpdater && window.nfUpdater.check(true)" class="nf-android-only hidden bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold px-3.5 py-2 rounded-full text-xs transition"><i class="fa-solid fa-cloud-arrow-down mr-1"></i> Cek Update APK</button>
+                                        <button type="button" onclick="window.nfPermissions && window.nfPermissions.open('pos')" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-4 py-2 rounded-full text-xs shadow-sm transition">Cek &amp; Atur Izin</button>
+                                    </div>
+                                </div>
                                 <!-- Pengaturan Tema Tampilan Perangkat Ini (v126) -->
                                 <div class="pt-4 mt-2 border-t border-gray-200/80 space-y-2.5">
                                     <div>
@@ -5939,6 +5950,15 @@
                 }
             },
             async requestPosNotifications(showFeedback = true) {
+                if (window.nfPermissions && showFeedback) {
+                    const st = await window.nfPermissions.getStates('pos');
+                    const missing = Object.keys(st.items || {}).some(k => st.items[k].status !== 'granted' && st.items[k].status !== 'unsupported');
+                    if (missing) {
+                        await window.nfPermissions.open('pos');
+                        this.syncPosNotifyBellUI();
+                        return;
+                    }
+                }
                 if (!window.nfNotify) return;
                 const cur = window.nfNotify.getStatus();
                 if (cur === 'granted') {
@@ -10362,7 +10382,8 @@ Kirim PIN sementara ini ke WhatsApp pelanggan sekarang?`, () => {
                     document.querySelectorAll('a[href="office.html"]').forEach(aEl => aEl.classList.toggle('hidden', this.isStoreTerminalDevice()));
                     this.updateStoreTerminalLoginUI();
                 } else if (v === 'admin') {
-                    document.getElementById('adminTopHeader').classList.remove('hidden'); document.getElementById('adminView').classList.remove('hidden');
+                    document.getElementById('adminTopHeader').classList.remove('hidden');
+                    if (window.nfPermissions) { setTimeout(() => window.nfPermissions.maybePrompt('pos', { trigger: 'login' }), 1100); } document.getElementById('adminView').classList.remove('hidden');
                     document.getElementById('activeCashierName').textContent = this.state.currentCashier;
                     document.getElementById('activeStaffRoleLabel').textContent = this.state.staffAccount?.role || 'Petugas';
                     document.getElementById('activeStaffEmailDisplay').textContent = this.state.staffAccount?.email || '-';
@@ -11722,7 +11743,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v144';
+        window.__NF_APP_VERSION = 'v146';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;

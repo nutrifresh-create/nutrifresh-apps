@@ -485,6 +485,20 @@
                     </div>
                 </div>
 
+                <!-- Status Izin Perangkat & Anti-Delay Notifikasi (v145) -->
+                <div class="nf-staff-card rounded-3xl p-4 sm:p-5 space-y-2.5 text-xs border border-teal-200">
+                    <div class="flex items-center justify-between gap-2">
+                        <div>
+                            <h3 class="font-extrabold text-gray-900 flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-teal-600"></i> Izin HP &amp; Anti-Delay Notifikasi</h3>
+                            <p class="text-[11px] text-gray-500 mt-0.5">Cek status Notifikasi, Tanpa Batas Baterai, Lokasi GPS &amp; Kamera.</p>
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                            <button type="button" onclick="window.nfUpdater && window.nfUpdater.check(true)" class="nf-android-only hidden px-3 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-extrabold text-[11px] transition"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>Update</button>
+                            <button type="button" onclick="window.nfPermissions && window.nfPermissions.open('staff')" class="px-3.5 py-2 rounded-full bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-[11px] shadow-sm transition">Cek Izin</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Panduan Pasang di iPhone (tampil jika browser Safari non-standalone) -->
                 <div id="iosStaffInstallBox" class="hidden nf-staff-card rounded-3xl p-4 bg-blue-50 border border-blue-200 text-xs space-y-1.5">
                     <div class="font-extrabold text-blue-900"><i class="fa-brands fa-apple mr-1"></i> Pasang NutriFresh Staff di Layar Utama iPhone</div>
@@ -720,7 +734,7 @@
                     document.getElementById('staffMainView').classList.remove('hidden');
                     this.renderIdentity();
                     if (window.__nfSyncFcmToken) window.__nfSyncFcmToken({});
-                    if (window.NfAndroidNative && typeof window.NfAndroidNative.requestNotificationPermission === 'function') { try { window.NfAndroidNative.requestNotificationPermission(); } catch (_) {} }
+                    if (window.nfPermissions) { setTimeout(() => window.nfPermissions.maybePrompt('staff', { trigger: 'login' }), 900); }
                     await this.loadAllData();
                     this.bindRealtime();
                     this.refreshGps();

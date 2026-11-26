@@ -692,6 +692,14 @@
         // 1. Dynamic overlays (Camera Scanner, Native Printer Picker)
         const camClose = document.getElementById("nfCamClose");
         if (camClose) { camClose.click(); return true; }
+        const updModal = document.getElementById("nfAppUpdateModal");
+        if (updModal) {
+            if (updModal.dataset.locked === "1") return true;
+            updModal.remove();
+            return true;
+        }
+        const permModal = document.getElementById("nfPermChecklistModal");
+        if (permModal) { permModal.remove(); return true; }
         const prModal = document.getElementById("nfNativePrinterModal");
         if (prModal) { prModal.remove(); return true; }
 
@@ -868,9 +876,13 @@
         },
         async requestPermission() {
             unlockAudioCtx();
-            if (isAndroidNative() && typeof window.NfAndroidNative.requestNotificationPermission === "function") {
+            if (isAndroidNative() && (typeof window.NfAndroidNative.requestNotificationPermissionSmart === "function" || typeof window.NfAndroidNative.requestNotificationPermission === "function")) {
                 try {
-                    window.NfAndroidNative.requestNotificationPermission();
+                    if (typeof window.NfAndroidNative.requestNotificationPermissionSmart === "function") {
+                        window.NfAndroidNative.requestNotificationPermissionSmart();
+                    } else {
+                        window.NfAndroidNative.requestNotificationPermission();
+                    }
                     const deadline = Date.now() + 8000;
                     while (Date.now() < deadline) {
                         await new Promise((r) => setTimeout(r, 300));
@@ -954,4 +966,798 @@
     };
     setTimeout(function() { window.__nfSyncFcmToken({}); }, 2500);
     setTimeout(function() { window.__nfSyncFcmToken({}); }, 7000);
+
+    // =========================================================================
+    // UNIVERSAL SMART PERMISSION CHECKLIST ENGINE (ANDROID APK + iPHONE + WEB v145)
+    // - Hybrid Strategy:
+    //   * Staff / POS / Office: Auto-checks 1x after login if any required permission missing
+    //   * Customer: Silent for browsing guests; auto-prompts after Member login or first checkout
+    // - Android APK: 1-tap Battery Unrestricted + Smart Notif Settings if permanently denied
+    // - iPhone / Web: Pre-prompt protection + clear 2-step recovery guide if denied
+    // =========================================================================
+    const PERM_ROLE_PRESETS = {
+        customer: {
+            title: "Aktifkan Notifikasi Pesanan",
+            subtitle: "Agar HP langsung berbunyi saat buah selesai ditimbang, ada chat kasir/kurir, dan saat kurir berangkat.",
+            accent: "#558b2f",
+            items: ["notif", "battery"],
+            dismissDays: 7
+        },
+        staff: {
+            title: "Kelengkapan Izin NutriFresh Staff",
+            subtitle: "Aktifkan izin berikut agar Absensi GPS, Foto Bukti, Alarm Shift/Dzikir & Antaran Kurir lancar tanpa delay.",
+            accent: "#0f766e",
+            items: ["notif", "battery", "location", "camera"],
+            dismissDays: 1
+        },
+        pos: {
+            title: "Kelengkapan Izin NutriFresh POS",
+            subtitle: "Aktifkan agar bel order online berbunyi instan tanpa delay dan kamera scanner barcode lancar.",
+            accent: "#558b2f",
+            items: ["notif", "battery", "camera"],
+            dismissDays: 1
+        },
+        office: {
+            title: "Kelengkapan Izin NutriFresh Office",
+            subtitle: "Aktifkan agar ajuan gaji, kasbon, pinjaman & pengajuan HR langsung berbunyi di HP Anda.",
+            accent: "#0ea5e9",
+            items: ["notif", "battery"],
+            dismissDays: 1
+        }
+    };
+
+    const PERM_ITEM_META = {
+        notif: {
+            icon: "fa-solid fa-bell",
+            label: "Notifikasi Langsung",
+            descByRole: {
+                customer: "Kabar otomatis saat timbangan selesai, chat toko & kurir berangkat.",
+                staff: "Pengingat jadwal shift, zikir pagi/petang, pengumuman & antaran kurir.",
+                pos: "Bel instan saat pesanan online, ACC timbangan & bukti bayar masuk.",
+                office: "Kabar instan saat HR ajukan transfer gaji, kasbon & pinjaman."
+            }
+        },
+        battery: {
+            icon: "fa-solid fa-bolt",
+            label: "Jalan Lancar Tanpa Delay (Baterai)",
+            descByRole: {
+                customer: "Matikan pembatasan baterai agar notifikasi tetap masuk saat layar HP mati.",
+                staff: "Wajib agar alarm shift, dzikir & push antaran tidak ditunda HP saat layar mati.",
+                pos: "Agar bel order masuk tetap instan walau tablet sedang tidak dibuka.",
+                office: "Agar notifikasi ajuan transfer HR tetap masuk tepat waktu saat layar mati."
+            }
+        },
+        location: {
+            icon: "fa-solid fa-location-dot",
+            label: "Lokasi GPS (Absensi Toko)",
+            descByRole: {
+                staff: "Diperlukan untuk verifikasi radius toko saat Absen Masuk & Pulang."
+            }
+        },
+        camera: {
+            icon: "fa-solid fa-camera",
+            label: "Kamera (Scan / Foto Bukti)",
+            descByRole: {
+                staff: "Untuk foto bukti kehadiran & foto serah terima antaran kurir.",
+                pos: "Untuk scan barcode PLU timbangan, QR Kartu Member & foto bukti."
+            }
+        }
+    };
+
+    function isIosDevice() {
+        const ua = navigator.userAgent || "";
+        return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    }
+
+    function isStandaloneMode() {
+        return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+            window.navigator.standalone === true ||
+            document.referrer.includes("android-app://");
+    }
+
+    async function readPermissionStates(roleKey) {
+        const preset = PERM_ROLE_PRESETS[roleKey] || PERM_ROLE_PRESETS.customer;
+        const android = isAndroidNative();
+        const ios = isIosDevice();
+        const standalone = isStandaloneMode();
+        const states = {
+            platform: android ? "android_apk" : (ios ? "ios" : "web"),
+            isIosSafariBrowser: ios && !standalone && !android,
+            items: {}
+        };
+
+        // Read Android native snapshot if available
+        let nativeObj = null;
+        if (android) {
+            try {
+                if (typeof window.NfAndroidNative.getPermissionStatusJson === "function") {
+                    nativeObj = JSON.parse(window.NfAndroidNative.getPermissionStatusJson() || "{}");
+                }
+            } catch (_) {}
+        }
+
+        for (const key of preset.items) {
+            // Battery unrestricted is ONLY relevant & available on Android APK
+            if (key === "battery") {
+                if (!android) continue;
+                const ok = nativeObj ? !!nativeObj.batteryUnrestricted : (
+                    typeof window.NfAndroidNative.isIgnoringBatteryOptimizations === "function"
+                        ? !!window.NfAndroidNative.isIgnoringBatteryOptimizations()
+                        : false
+                );
+                states.items.battery = { status: ok ? "granted" : "prompt" };
+                continue;
+            }
+
+            if (key === "notif") {
+                if (android) {
+                    const ok = nativeObj ? !!nativeObj.notif : (
+                        typeof window.NfAndroidNative.hasNotificationPermission === "function"
+                            ? !!window.NfAndroidNative.hasNotificationPermission()
+                            : true
+                    );
+                    const forever = nativeObj ? !!nativeObj.notifDeniedForever : (
+                        typeof window.NfAndroidNative.isNotificationPermanentlyDenied === "function"
+                            ? !!window.NfAndroidNative.isNotificationPermanentlyDenied()
+                            : false
+                    );
+                    states.items.notif = { status: ok ? "granted" : (forever ? "denied" : "prompt") };
+                } else if (states.isIosSafariBrowser) {
+                    states.items.notif = { status: "ios_need_pwa" };
+                } else if (typeof window.Notification === "undefined") {
+                    states.items.notif = { status: "unsupported" };
+                } else {
+                    const perm = window.Notification.permission || "default";
+                    states.items.notif = { status: perm === "granted" ? "granted" : (perm === "denied" ? "denied" : "prompt") };
+                }
+                continue;
+            }
+
+            if (key === "location") {
+                if (android) {
+                    const ok = nativeObj ? !!nativeObj.location : (
+                        typeof window.NfAndroidNative.hasLocationPermission === "function"
+                            ? !!window.NfAndroidNative.hasLocationPermission()
+                            : false
+                    );
+                    states.items.location = { status: ok ? "granted" : "prompt" };
+                } else {
+                    let st = "prompt";
+                    try {
+                        if (navigator.permissions && navigator.permissions.query) {
+                            const res = await navigator.permissions.query({ name: "geolocation" });
+                            st = res.state === "granted" ? "granted" : (res.state === "denied" ? "denied" : "prompt");
+                        }
+                    } catch (_) {}
+                    states.items.location = { status: st };
+                }
+                continue;
+            }
+
+            if (key === "camera") {
+                if (android) {
+                    const ok = nativeObj ? !!nativeObj.camera : (
+                        typeof window.NfAndroidNative.hasCameraPermission === "function"
+                            ? !!window.NfAndroidNative.hasCameraPermission()
+                            : false
+                    );
+                    states.items.camera = { status: ok ? "granted" : "prompt" };
+                } else {
+                    let st = "prompt";
+                    try {
+                        if (navigator.permissions && navigator.permissions.query) {
+                            const res = await navigator.permissions.query({ name: "camera" });
+                            st = res.state === "granted" ? "granted" : (res.state === "denied" ? "denied" : "prompt");
+                        }
+                    } catch (_) {}
+                    states.items.camera = { status: st };
+                }
+            }
+        }
+        return states;
+    }
+
+    function getWebRecoveryGuideHtml(key) {
+        const ios = isIosDevice();
+        if (ios && !isStandaloneMode()) {
+            return `<strong>Cara aktifkan di iPhone:</strong><br>1. Ketuk ikon <strong>Bagikan (Share)</strong> di bawah Safari → pilih <strong>Tambah ke Layar Utama</strong>.<br>2. Buka NutriFresh dari ikon di Layar Utama, lalu ketuk tombol <strong>Aktifkan</strong> di sini.`;
+        }
+        if (ios) {
+            return `<strong>Izin sempat ditolak di iPhone:</strong><br>Buka <strong>Pengaturan iPhone → Pemberitahuan → NutriFresh</strong> (atau Safari) → geser ke <strong>Izinkan</strong>, lalu kembali ke aplikasi.`;
+        }
+        const labelMap = { notif: "Notifikasi", location: "Lokasi", camera: "Kamera" };
+        const nm = labelMap[key] || "Izin";
+        return `<strong>Izin ${nm} sempat ditolak browser:</strong><br>1. Ketuk ikon <strong>Pengaturan / Gembok</strong> di samping alamat website paling atas.<br>2. Pilih <strong>Izin (Permissions) → ${nm} → Izinkan</strong>, lalu muat ulang halaman.`;
+    }
+
+    let __activePermRole = null;
+    let __activePermTimer = null;
+
+    async function triggerSinglePermission(roleKey, itemKey) {
+        const android = isAndroidNative();
+
+        if (itemKey === "battery" && android) {
+            if (typeof window.NfAndroidNative.requestIgnoreBatteryOptimizations === "function") {
+                window.NfAndroidNative.requestIgnoreBatteryOptimizations();
+            } else if (typeof window.NfAndroidNative.openAppInfoSettings === "function") {
+                window.NfAndroidNative.openAppInfoSettings();
+            }
+            return;
+        }
+
+        if (itemKey === "notif") {
+            if (android) {
+                if (typeof window.NfAndroidNative.requestNotificationPermissionSmart === "function") {
+                    window.NfAndroidNative.requestNotificationPermissionSmart();
+                } else if (typeof window.NfAndroidNative.requestNotificationPermission === "function") {
+                    window.NfAndroidNative.requestNotificationPermission();
+                }
+                setTimeout(() => {
+                    if (window.__nfSyncFcmToken) window.__nfSyncFcmToken({});
+                    refreshPermModalIfOpen();
+                }, 900);
+                return;
+            }
+            if (isIosDevice() && !isStandaloneMode()) {
+                return;
+            }
+            if (typeof window.Notification !== "undefined" && window.Notification.permission !== "denied") {
+                try {
+                    const res = await window.Notification.requestPermission();
+                    if (res === "granted" && window.nfPlayChime) window.nfPlayChime("status");
+                } catch (_) {}
+            }
+            refreshPermModalIfOpen();
+            return;
+        }
+
+        if (itemKey === "location") {
+            if (android && typeof window.NfAndroidNative.requestLocationPermission === "function") {
+                const before = typeof window.NfAndroidNative.hasLocationPermission === "function" && window.NfAndroidNative.hasLocationPermission();
+                window.NfAndroidNative.requestLocationPermission();
+                setTimeout(() => {
+                    const after = typeof window.NfAndroidNative.hasLocationPermission === "function" && window.NfAndroidNative.hasLocationPermission();
+                    if (!before && !after && typeof window.NfAndroidNative.openAppInfoSettings === "function") {
+                        // Biarkan user tekan sekali lagi jika baru tampil dialog; bila sudah 2x ditolak bisa pakai tombol Info Aplikasi
+                    }
+                    refreshPermModalIfOpen();
+                }, 900);
+                return;
+            }
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    () => refreshPermModalIfOpen(),
+                    () => refreshPermModalIfOpen(),
+                    { timeout: 8000 }
+                );
+            }
+            return;
+        }
+
+        if (itemKey === "camera") {
+            if (android && typeof window.NfAndroidNative.requestCameraPermission === "function") {
+                window.NfAndroidNative.requestCameraPermission();
+                setTimeout(() => refreshPermModalIfOpen(), 900);
+                return;
+            }
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                    stream.getTracks().forEach((t) => t.stop());
+                } catch (_) {}
+                refreshPermModalIfOpen();
+            }
+        }
+    }
+
+    async function renderPermChecklistModal(roleKey) {
+        const preset = PERM_ROLE_PRESETS[roleKey] || PERM_ROLE_PRESETS.customer;
+        const states = await readPermissionStates(roleKey);
+        const keys = Object.keys(states.items);
+        const android = isAndroidNative();
+        const isDark = document.documentElement.getAttribute("data-theme") === "dark" ||
+            document.body.classList.contains("nf-office-page");
+
+        let modal = document.getElementById("nfPermChecklistModal");
+        if (!modal) {
+            modal = document.createElement("div");
+            modal.id = "nfPermChecklistModal";
+            modal.style.cssText = "position:fixed;inset:0;z-index:100030;background:rgba(15,23,42,.66);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;padding:12px;font-family:Inter,system-ui,sans-serif;";
+            if (window.innerWidth >= 640) modal.style.alignItems = "center";
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal) closePermChecklistModal(roleKey, true);
+            });
+            document.body.appendChild(modal);
+        }
+
+        const totalCount = keys.length;
+        const grantedCount = keys.filter((k) => states.items[k].status === "granted").length;
+        const allGranted = totalCount > 0 && grantedCount === totalCount;
+
+        if (allGranted) {
+            try { localStorage.setItem(`nf_perm_all_ok_${roleKey}`, "1"); } catch (_) {}
+            if (window.__nfSyncFcmToken) window.__nfSyncFcmToken({});
+        }
+
+        const cardBg = isDark ? "#111827" : "#ffffff";
+        const cardBorder = isDark ? "rgba(255,255,255,.14)" : "#e2e8f0";
+        const textMain = isDark ? "#f8fafc" : "#0f172a";
+        const textSub = isDark ? "#94a3b8" : "#64748b";
+        const rowBg = isDark ? "rgba(30,41,59,.78)" : "#f8fafc";
+        const rowOkBg = isDark ? "rgba(16,185,129,.14)" : "#f0fdf4";
+        const rowOkBorder = isDark ? "rgba(52,211,153,.35)" : "#bbf7d0";
+
+        const rowsHtml = keys.map((k) => {
+            const meta = PERM_ITEM_META[k];
+            const st = states.items[k].status;
+            const isOk = st === "granted";
+            const isDenied = st === "denied";
+            const isIosPwa = st === "ios_need_pwa";
+            const desc = (meta.descByRole && (meta.descByRole[roleKey] || meta.descByRole.customer || meta.descByRole.staff)) || "";
+
+            let btnHtml = "";
+            if (isOk) {
+                btnHtml = `<span style="padding:5px 11px;border-radius:999px;background:#16a34a;color:#fff;font-size:11px;font-weight:800;white-space:nowrap;">✓ Aktif</span>`;
+            } else if (isIosPwa) {
+                btnHtml = `<span style="padding:5px 10px;border-radius:999px;background:#fef3c7;color:#92400e;font-size:10.5px;font-weight:800;white-space:nowrap;">Pasang Dulu</span>`;
+            } else if (isDenied && android) {
+                btnHtml = `<button type="button" data-perm-act="${k}" style="padding:7px 12px;border-radius:999px;border:none;background:#ea580c;color:#fff;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;">Buka Setelan</button>`;
+            } else if (isDenied) {
+                btnHtml = `<span style="padding:5px 10px;border-radius:999px;background:#fee2e2;color:#b91c1c;font-size:10.5px;font-weight:800;white-space:nowrap;">Ditolak</span>`;
+            } else {
+                btnHtml = `<button type="button" data-perm-act="${k}" style="padding:7px 14px;border-radius:999px;border:none;background:${preset.accent};color:#fff;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;box-shadow:0 4px 10px -4px rgba(0,0,0,.35);">Aktifkan</button>`;
+            }
+
+            const recoveryHtml = (!isOk && ((isDenied && !android) || isIosPwa))
+                ? `<div style="margin-top:8px;padding:8px 10px;border-radius:12px;background:${isDark ? 'rgba(245,158,11,.15)' : '#fffbeb'};border:1px solid ${isDark ? 'rgba(251,191,36,.35)' : '#fde68a'};color:${isDark ? '#fde68a' : '#78350f'};font-size:10.5px;line-height:1.45;">${getWebRecoveryGuideHtml(k)}</div>`
+                : "";
+
+            return `
+                <div style="padding:11px 12px;border-radius:18px;border:1px solid ${isOk ? rowOkBorder : cardBorder};background:${isOk ? rowOkBg : rowBg};">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                        <div style="display:flex;align-items:flex-start;gap:10px;min-width:0;flex:1;">
+                            <div style="width:34px;height:34px;border-radius:12px;background:${isOk ? '#16a34a' : preset.accent}20;color:${isOk ? '#16a34a' : preset.accent};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">
+                                <i class="${meta.icon}"></i>
+                            </div>
+                            <div style="min-width:0;">
+                                <div style="font-size:12.5px;font-weight:800;color:${textMain};line-height:1.25;">${escapeHtml(meta.label)}</div>
+                                <div style="font-size:11px;color:${textSub};margin-top:2px;line-height:1.35;">${escapeHtml(desc)}</div>
+                            </div>
+                        </div>
+                        <div style="flex-shrink:0;">${btnHtml}</div>
+                    </div>
+                    ${recoveryHtml}
+                </div>`;
+        }).join("");
+
+        let installedVerLabel = "";
+        if (android && typeof window.NfAndroidNative.getAppVersionJson === "function") {
+            try {
+                const vi = JSON.parse(window.NfAndroidNative.getAppVersionJson() || "{}");
+                if (vi.versionName) installedVerLabel = `v${vi.versionName}`;
+            } catch (_) {}
+        }
+        const autostartTipHtml = android
+            ? `<div style="margin-top:10px;padding:9px 11px;border-radius:14px;background:${isDark ? 'rgba(56,189,248,.12)' : '#eff6ff'};border:1px solid ${isDark ? 'rgba(56,189,248,.3)' : '#bfdbfe'};display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                   <span style="font-size:10.5px;color:${isDark ? '#bae6fd' : '#1e3a8a'};line-height:1.35;"><strong>HP Xiaomi / Oppo / Vivo / Realme?</strong> Aktifkan <em>Mulai Otomatis (Autostart)</em> agar notifikasi super cepat saat layar mati.</span>
+                   <button type="button" id="nfPermOpenAppInfo" style="padding:6px 10px;border-radius:999px;border:1px solid ${isDark ? 'rgba(147,197,253,.4)' : '#93c5fd'};background:${isDark ? 'rgba(30,58,138,.5)' : '#fff'};color:${isDark ? '#dbeafe' : '#1d4ed8'};font-size:10.5px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;">Info App</button>
+               </div>
+               <div style="margin-top:6px;padding:8px 11px;border-radius:14px;background:${isDark ? 'rgba(132,204,22,.12)' : '#f4f9f1'};border:1px solid ${isDark ? 'rgba(163,230,53,.28)' : '#cde5be'};display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                   <span style="font-size:10.5px;color:${isDark ? '#d9f99d' : '#365314'};line-height:1.35;"><strong>Versi APK ${escapeHtml(installedVerLabel || 'Aktif')}</strong> • Update langsung dari dalam aplikasi.</span>
+                   <button type="button" id="nfPermCheckApkUpd" style="padding:6px 10px;border-radius:999px;border:none;background:#558b2f;color:#fff;font-size:10.5px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;">Cek Update</button>
+               </div>`
+            : "";
+
+        modal.innerHTML = `
+            <div style="width:100%;max-width:430px;background:${cardBg};border:1px solid ${cardBorder};border-radius:26px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.45);max-height:90vh;display:flex;flex-direction:column;">
+                <div style="background:linear-gradient(135deg,${preset.accent},#1e293b);padding:16px 18px;color:#fff;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+                    <div>
+                        <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;opacity:.88;">${allGranted ? '✅ Semua Siap' : `Langkah Cepat (${grantedCount}/${totalCount} Aktif)`}</div>
+                        <div style="font-size:15.5px;font-weight:900;margin-top:2px;line-height:1.25;">${escapeHtml(preset.title)}</div>
+                        <div style="font-size:11px;opacity:.92;margin-top:4px;line-height:1.35;">${escapeHtml(preset.subtitle)}</div>
+                    </div>
+                    <button type="button" id="nfPermCloseX" aria-label="Tutup" style="width:30px;height:30px;border-radius:999px;border:none;background:rgba(255,255,255,.2);color:#fff;font-weight:900;cursor:pointer;flex-shrink:0;">✕</button>
+                </div>
+                <div style="padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:9px;">
+                    ${rowsHtml}
+                    ${autostartTipHtml}
+                </div>
+                <div style="padding:12px 14px 14px;border-top:1px solid ${cardBorder};display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                    <button type="button" id="nfPermRecheckBtn" style="padding:9px 13px;border-radius:999px;border:1px solid ${cardBorder};background:transparent;color:${textSub};font-size:11.5px;font-weight:800;cursor:pointer;"><i class="fa-solid fa-rotate" style="margin-right:5px;"></i>Cek Ulang</button>
+                    <button type="button" id="nfPermDoneBtn" style="flex:1;padding:10px 16px;border-radius:999px;border:none;background:${allGranted ? '#16a34a' : (isDark ? '#334155' : '#e2e8f0')};color:${allGranted ? '#fff' : textMain};font-size:12px;font-weight:900;cursor:pointer;">${allGranted ? '✓ Selesai & Lanjutkan' : 'Nanti Saja'}</button>
+                </div>
+            </div>`;
+
+        modal.querySelector("#nfPermCloseX").onclick = () => closePermChecklistModal(roleKey, !allGranted);
+        modal.querySelector("#nfPermDoneBtn").onclick = () => closePermChecklistModal(roleKey, !allGranted);
+        modal.querySelector("#nfPermRecheckBtn").onclick = () => renderPermChecklistModal(roleKey);
+        const appInfoBtn = modal.querySelector("#nfPermOpenAppInfo");
+        if (appInfoBtn) {
+            appInfoBtn.onclick = () => {
+                if (android && typeof window.NfAndroidNative.openAppInfoSettings === "function") {
+                    window.NfAndroidNative.openAppInfoSettings();
+                }
+            };
+        }
+        const updCheckBtn = modal.querySelector("#nfPermCheckApkUpd");
+        if (updCheckBtn) {
+            updCheckBtn.onclick = () => {
+                closePermChecklistModal(roleKey, false);
+                if (window.nfUpdater) window.nfUpdater.check(true);
+            };
+        }
+        modal.querySelectorAll("button[data-perm-act]").forEach((btn) => {
+            btn.onclick = () => triggerSinglePermission(roleKey, btn.getAttribute("data-perm-act"));
+        });
+    }
+
+    function closePermChecklistModal(roleKey, recordDismiss = false) {
+        const el = document.getElementById("nfPermChecklistModal");
+        if (el) el.remove();
+        __activePermRole = null;
+        if (recordDismiss && roleKey) {
+            try {
+                localStorage.setItem(`nf_perm_dismissed_at_${roleKey}`, String(Date.now()));
+                sessionStorage.setItem(`nf_perm_session_done_${roleKey}`, "1");
+            } catch (_) {}
+        }
+    }
+
+    function refreshPermModalIfOpen() {
+        if (__activePermRole && document.getElementById("nfPermChecklistModal")) {
+            clearTimeout(__activePermTimer);
+            __activePermTimer = setTimeout(() => {
+                if (__activePermRole && document.getElementById("nfPermChecklistModal")) {
+                    renderPermChecklistModal(__activePermRole);
+                }
+            }, 300);
+        }
+    }
+
+    // Otomatis refresh status ceklis begitu user kembali dari pop-up Android / halaman Settings HP
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) refreshPermModalIfOpen();
+    });
+    window.addEventListener("focus", () => {
+        refreshPermModalIfOpen();
+    });
+
+    window.nfPermissions = {
+        getStates: readPermissionStates,
+        async open(roleKey = "customer") {
+            __activePermRole = roleKey;
+            await renderPermChecklistModal(roleKey);
+        },
+        async maybePrompt(roleKey = "customer", opts = {}) {
+            try {
+                if (isTauri()) return false; // Laptop Windows .exe tidak perlu ceklis izin HP Android/iOS
+                const preset = PERM_ROLE_PRESETS[roleKey] || PERM_ROLE_PRESETS.customer;
+                const force = !!opts.force;
+                const trigger = opts.trigger || "login";
+
+                if (!force) {
+                    // Jangan munculkan 2x dalam 1 sesi jika user sudah menekan "Nanti Saja"
+                    if (sessionStorage.getItem(`nf_perm_session_done_${roleKey}`) === "1" && trigger !== "checkout") {
+                        return false;
+                    }
+                    const lastDismiss = Number(localStorage.getItem(`nf_perm_dismissed_at_${roleKey}`) || "0");
+                    const cooldownMs = (preset.dismissDays || 1) * 24 * 60 * 60 * 1000;
+                    if (lastDismiss && (Date.now() - lastDismiss) < cooldownMs && trigger !== "checkout") {
+                        return false;
+                    }
+                }
+
+                const states = await readPermissionStates(roleKey);
+                const keys = Object.keys(states.items);
+                if (keys.length === 0) return false;
+                const missing = keys.filter((k) => {
+                    const s = states.items[k].status;
+                    return s !== "granted" && s !== "unsupported";
+                });
+                if (missing.length === 0) {
+                    if (window.__nfSyncFcmToken) window.__nfSyncFcmToken({});
+                    return false;
+                }
+
+                __activePermRole = roleKey;
+                await renderPermChecklistModal(roleKey);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+    };
+
+    // =========================================================================
+    // UNIVERSAL IN-APP APK SELF-UPDATER ENGINE (ANDROID APK v146)
+    // - Auto-checks GitHub Releases (latest-apks/update-<role>.json) natively (Zero CORS!)
+    // - Downloads signed APK inside the app with live progress bar & launches Android installer
+    // - Auto-resumes installer right after user enables "Install unknown apps" permission
+    // =========================================================================
+    let __nfUpdateManualMode = false;
+    let __nfUpdateRemoteData = null;
+    let __nfUpdateAwaitingInstallPerm = false;
+    let __nfUpdateDownloadingFlag = false;
+
+    function getLocalApkVersionInfo() {
+        if (!isAndroidNative() || typeof window.NfAndroidNative.getAppVersionJson !== "function") {
+            return null;
+        }
+        try {
+            return JSON.parse(window.NfAndroidNative.getAppVersionJson() || "{}");
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function showUpdateNoticeToast(msg) {
+        if (typeof showNfBackToast === "function") {
+            showNfBackToast(msg);
+        } else {
+            alert(msg);
+        }
+    }
+
+    function renderAppUpdateModal(localInfo, remoteInfo) {
+        __nfUpdateRemoteData = remoteInfo;
+        __nfUpdateDownloadingFlag = false;
+        __nfUpdateAwaitingInstallPerm = false;
+
+        const isDark = document.documentElement.getAttribute("data-theme") === "dark" ||
+            document.body.classList.contains("nf-office-page");
+        const isForce = !!remoteInfo.force;
+
+        document.getElementById("nfAppUpdateModal")?.remove();
+        const modal = document.createElement("div");
+        modal.id = "nfAppUpdateModal";
+        modal.dataset.locked = isForce ? "1" : "0";
+        modal.style.cssText = "position:fixed;inset:0;z-index:100040;background:rgba(15,23,42,.72);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:Inter,system-ui,sans-serif;";
+        if (!isForce) {
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal && !__nfUpdateDownloadingFlag) {
+                    dismissAppUpdateModal(remoteInfo.versionCode);
+                }
+            });
+        }
+
+        const cardBg = isDark ? "#111827" : "#ffffff";
+        const cardBorder = isDark ? "rgba(255,255,255,.16)" : "#e2e8f0";
+        const textMain = isDark ? "#f8fafc" : "#0f172a";
+        const textSub = isDark ? "#94a3b8" : "#475569";
+        const noteBg = isDark ? "rgba(30,41,59,.85)" : "#f8fafc";
+
+        modal.innerHTML = `
+            <div style="width:100%;max-width:390px;background:${cardBg};border:1px solid ${cardBorder};border-radius:28px;overflow:hidden;box-shadow:0 26px 64px rgba(0,0,0,.48);">
+                <div style="background:linear-gradient(135deg,#558b2f,#0f766e);padding:18px 20px;color:#fff;position:relative;">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <div style="width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                        </div>
+                        <div style="min-width:0;">
+                            <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;opacity:.9;">${isForce ? 'Pembaruan Wajib' : 'Pembaruan Tersedia'}</div>
+                            <div style="font-size:16px;font-weight:900;line-height:1.25;margin-top:1px;">Versi Baru NutriFresh Siap!</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:12px;display:inline-flex;align-items:center;gap:8px;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,.22);font-size:11px;font-weight:800;">
+                        <span>v${escapeHtml(localInfo?.versionName || '1.0')}</span>
+                        <i class="fa-solid fa-arrow-right" style="font-size:10px;opacity:.85;"></i>
+                        <span style="color:#d9f99d;">v${escapeHtml(remoteInfo.versionName || '')}</span>
+                    </div>
+                </div>
+                <div style="padding:16px 18px;space-y:12px;">
+                    <div style="padding:11px 13px;border-radius:16px;background:${noteBg};border:1px solid ${cardBorder};">
+                        <div style="font-size:10.5px;font-weight:900;color:#558b2f;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Yang Baru di Versi Ini:</div>
+                        <div style="font-size:12px;color:${textMain};line-height:1.45;white-space:pre-line;">${escapeHtml(remoteInfo.notes || 'Pembaruan fitur terbaru, notifikasi lebih cepat, dan perbaikan stabilitas.')}</div>
+                    </div>
+                    <div style="margin-top:10px;font-size:11px;color:${textSub};line-height:1.4;">
+                        <i class="fa-solid fa-shield-halved" style="color:#16a34a;margin-right:4px;"></i>
+                        Update langsung menimpa aplikasi — <strong>tidak perlu uninstall</strong>, akun &amp; data Anda tetap aman.
+                    </div>
+                    <div id="nfUpdProgressWrap" style="display:none;margin-top:13px;">
+                        <div style="height:8px;border-radius:999px;background:${isDark ? '#1e293b' : '#e2e8f0'};overflow:hidden;">
+                            <div id="nfUpdProgressBar" style="width:4%;height:100%;border-radius:999px;background:linear-gradient(90deg,#7cb342,#10b981);transition:width .25s ease;"></div>
+                        </div>
+                        <div id="nfUpdStatusText" style="margin-top:6px;font-size:11px;font-weight:800;color:${textMain};text-align:center;">Menyiapkan unduhan...</div>
+                    </div>
+                    <div id="nfUpdPermHint" style="display:none;margin-top:10px;padding:9px 11px;border-radius:14px;background:${isDark ? 'rgba(245,158,11,.16)' : '#fffbeb'};border:1px solid ${isDark ? 'rgba(251,191,36,.38)' : '#fde68a'};color:${isDark ? '#fde68a' : '#78350f'};font-size:11px;line-height:1.4;">
+                        <strong>Izin 1 Kali Saja:</strong> Aktifkan saklar <em>"Izinkan dari sumber ini"</em> di layar pengaturan Android, lalu tekan tombol <strong>Kembali</strong> — pembaruan akan lanjut otomatis!
+                    </div>
+                </div>
+                <div style="padding:0 18px 18px;display:flex;flex-direction:column;gap:8px;">
+                    <button type="button" id="nfUpdPrimaryBtn" style="width:100%;padding:12px 16px;border-radius:999px;border:none;background:linear-gradient(135deg,#7cb342,#558b2f);color:#fff;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 8px 20px -6px rgba(85,139,47,.55);">
+                        <i class="fa-solid fa-download" style="margin-right:6px;"></i> Perbarui Sekarang
+                    </button>
+                    <button type="button" id="nfUpdBrowserFallbackBtn" style="display:none;width:100%;padding:10px 14px;border-radius:999px;border:1px solid ${cardBorder};background:transparent;color:${textMain};font-size:11.5px;font-weight:800;cursor:pointer;">
+                        <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i> Unduh lewat Browser
+                    </button>
+                    ${isForce ? '' : `<button type="button" id="nfUpdLaterBtn" style="width:100%;padding:9px 14px;border-radius:999px;border:none;background:transparent;color:${textSub};font-size:11.5px;font-weight:800;cursor:pointer;">Nanti Saja</button>`}
+                </div>
+            </div>`;
+
+        document.body.appendChild(modal);
+
+        const primaryBtn = modal.querySelector("#nfUpdPrimaryBtn");
+        const laterBtn = modal.querySelector("#nfUpdLaterBtn");
+        const browserBtn = modal.querySelector("#nfUpdBrowserFallbackBtn");
+
+        primaryBtn.onclick = () => {
+            if (__nfUpdateAwaitingInstallPerm) {
+                if (typeof window.NfAndroidNative.openInstallUnknownAppsSettings === "function") {
+                    window.NfAndroidNative.openInstallUnknownAppsSettings();
+                }
+                return;
+            }
+            if (__nfUpdateDownloadingFlag) return;
+            __nfUpdateDownloadingFlag = true;
+            modal.dataset.locked = "1";
+            primaryBtn.disabled = true;
+            primaryBtn.style.opacity = "0.65";
+            primaryBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Mengunduh Pembaruan...`;
+            if (laterBtn) laterBtn.style.display = "none";
+            const progWrap = modal.querySelector("#nfUpdProgressWrap");
+            if (progWrap) progWrap.style.display = "block";
+            window.NfAndroidNative.downloadAndInstallUpdate(remoteInfo.apkUrl || "");
+        };
+
+        if (laterBtn) {
+            laterBtn.onclick = () => dismissAppUpdateModal(remoteInfo.versionCode);
+        }
+        if (browserBtn) {
+            browserBtn.onclick = () => openExternalNative(remoteInfo.apkUrl || "");
+        }
+    }
+
+    function dismissAppUpdateModal(versionCode) {
+        const el = document.getElementById("nfAppUpdateModal");
+        if (el) el.remove();
+        __nfUpdateDownloadingFlag = false;
+        __nfUpdateAwaitingInstallPerm = false;
+        if (versionCode) {
+            try {
+                localStorage.setItem("nf_upd_dismissed_ver", String(versionCode));
+                localStorage.setItem("nf_upd_dismissed_at", String(Date.now()));
+            } catch (_) {}
+        }
+    }
+
+    window.__nfOnUpdateCheckResult = function (rawJsonStr) {
+        const wasManual = __nfUpdateManualMode;
+        __nfUpdateManualMode = false;
+        try {
+            const parsed = JSON.parse(rawJsonStr || "{}");
+            if (!parsed.ok || !parsed.remote) {
+                if (wasManual) {
+                    showUpdateNoticeToast(parsed.error || "Belum ada rilis update terbaru.");
+                }
+                return;
+            }
+            const remote = parsed.remote;
+            const local = getLocalApkVersionInfo() || { versionCode: 0, versionName: "1.0" };
+            const remoteCode = Number(remote.versionCode) || 0;
+            const localCode = Number(local.versionCode) || 0;
+
+            if (remoteCode > localCode && remote.apkUrl) {
+                if (!wasManual && !remote.force) {
+                    const lastVer = Number(localStorage.getItem("nf_upd_dismissed_ver") || "0");
+                    const lastAt = Number(localStorage.getItem("nf_upd_dismissed_at") || "0");
+                    if (lastVer === remoteCode && lastAt && (Date.now() - lastAt) < 12 * 60 * 60 * 1000) {
+                        return;
+                    }
+                }
+                renderAppUpdateModal(local, remote);
+            } else if (wasManual) {
+                showUpdateNoticeToast(`Aplikasi sudah versi terbaru (v${local.versionName || '1.46'}) ✓`);
+            }
+        } catch (_) {
+            if (wasManual) showUpdateNoticeToast("Gagal membaca info versi terbaru.");
+        }
+    };
+
+    window.__nfOnUpdateProgress = function (percent, status, message) {
+        const modal = document.getElementById("nfAppUpdateModal");
+        if (!modal) return;
+        const bar = modal.querySelector("#nfUpdProgressBar");
+        const txt = modal.querySelector("#nfUpdStatusText");
+        const primaryBtn = modal.querySelector("#nfUpdPrimaryBtn");
+        const permHint = modal.querySelector("#nfUpdPermHint");
+        const browserBtn = modal.querySelector("#nfUpdBrowserFallbackBtn");
+        const laterBtn = modal.querySelector("#nfUpdLaterBtn");
+
+        if (bar && typeof percent === "number") bar.style.width = Math.max(4, Math.min(100, percent)) + "%";
+        if (txt && message) txt.textContent = message;
+
+        if (status === "NEED_PERMISSION") {
+            __nfUpdateDownloadingFlag = false;
+            __nfUpdateAwaitingInstallPerm = true;
+            if (permHint) permHint.style.display = "block";
+            if (primaryBtn) {
+                primaryBtn.disabled = false;
+                primaryBtn.style.opacity = "1";
+                primaryBtn.style.background = "linear-gradient(135deg,#f59e0b,#ea580c)";
+                primaryBtn.innerHTML = `<i class="fa-solid fa-unlock-keyhole" style="margin-right:6px;"></i> Izinkan Pasang Aplikasi`;
+            }
+        } else if (status === "INSTALLING") {
+            __nfUpdateDownloadingFlag = false;
+            __nfUpdateAwaitingInstallPerm = false;
+            if (permHint) permHint.style.display = "none";
+            if (primaryBtn) {
+                primaryBtn.disabled = false;
+                primaryBtn.style.opacity = "1";
+                primaryBtn.innerHTML = `<i class="fa-solid fa-rotate-right" style="margin-right:6px;"></i> Buka Pemasang Lagi`;
+                primaryBtn.onclick = () => {
+                    if (typeof window.NfAndroidNative.installDownloadedUpdate === "function") {
+                        window.NfAndroidNative.installDownloadedUpdate();
+                    }
+                };
+            }
+            if (laterBtn && !(__nfUpdateRemoteData && __nfUpdateRemoteData.force)) {
+                laterBtn.style.display = "block";
+                modal.dataset.locked = "0";
+            }
+        } else if (status === "ERROR") {
+            __nfUpdateDownloadingFlag = false;
+            __nfUpdateAwaitingInstallPerm = false;
+            modal.dataset.locked = (__nfUpdateRemoteData && __nfUpdateRemoteData.force) ? "1" : "0";
+            if (primaryBtn) {
+                primaryBtn.disabled = false;
+                primaryBtn.style.opacity = "1";
+                primaryBtn.innerHTML = `<i class="fa-solid fa-rotate-right" style="margin-right:6px;"></i> Coba Unduh Lagi`;
+            }
+            if (browserBtn) browserBtn.style.display = "block";
+            if (laterBtn && !(__nfUpdateRemoteData && __nfUpdateRemoteData.force)) {
+                laterBtn.style.display = "block";
+            }
+        }
+    };
+
+    function resumePendingApkInstallIfAllowed() {
+        if (!__nfUpdateAwaitingInstallPerm || !isAndroidNative()) return;
+        try {
+            if (typeof window.NfAndroidNative.canInstallUnknownApps === "function" && window.NfAndroidNative.canInstallUnknownApps()) {
+                __nfUpdateAwaitingInstallPerm = false;
+                if (typeof window.NfAndroidNative.installDownloadedUpdate === "function") {
+                    window.NfAndroidNative.installDownloadedUpdate();
+                }
+            }
+        } catch (_) {}
+    }
+
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) resumePendingApkInstallIfAllowed();
+    });
+    window.addEventListener("focus", () => {
+        resumePendingApkInstallIfAllowed();
+    });
+
+    window.nfUpdater = {
+        getLocalInfo: getLocalApkVersionInfo,
+        check(manual = false) {
+            if (!isAndroidNative() || typeof window.NfAndroidNative.checkAppUpdateAsync !== "function") {
+                if (manual) showUpdateNoticeToast("Update otomatis APK khusus untuk aplikasi Android (.apk).");
+                return false;
+            }
+            __nfUpdateManualMode = !!manual;
+            if (manual) showUpdateNoticeToast("Memeriksa versi terbaru...");
+            window.NfAndroidNative.checkAppUpdateAsync("");
+            return true;
+        }
+    };
+
+    // Tampilkan elemen tombol khusus Android APK (.nf-android-only) & jalankan cek update otomatis 4.5 detik setelah buka APK
+    function revealAndroidOnlyElements() {
+        if (!isAndroidNative()) return;
+        document.querySelectorAll(".nf-android-only").forEach((el) => {
+            el.classList.remove("hidden");
+        });
+    }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", revealAndroidOnlyElements);
+    } else {
+        revealAndroidOnlyElements();
+    }
+    if (isAndroidNative()) {
+        setTimeout(() => {
+            if (window.nfUpdater) window.nfUpdater.check(false);
+        }, 4500);
+    }
 })();

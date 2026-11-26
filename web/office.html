@@ -727,6 +727,9 @@
                 <button type="button" onclick="officeApp.goToStore()" class="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] border border-slate-700 transition flex items-center whitespace-nowrap">
                     <i class="fa-solid fa-store mr-1 text-lime-400"></i> <span>Toko</span>
                 </button>
+                <button type="button" id="btnOfficePermCheck" onclick="window.nfPermissions && window.nfPermissions.open('office')" title="Cek Izin Notifikasi & Anti-Delay" class="px-2.5 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-extrabold text-[11px] border border-amber-400/40 transition flex items-center whitespace-nowrap">
+                    <i class="fa-solid fa-bell text-amber-300 sm:mr-1"></i><span class="hidden sm:inline">Notif</span>
+                </button>
                 <button type="button" id="btnOfficeThemeToggle" onclick="window.toggleNutriTheme()" title="Ganti Tema Natural / Dark / Glass" class="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] border border-slate-700 transition flex items-center whitespace-nowrap">
                     <i class="fa-solid fa-leaf text-lime-300 sm:mr-1"></i><span class="hidden sm:inline">Natural</span>
                 </button>
@@ -4015,6 +4018,7 @@ Catat juga sebagai Kas Masuk (Pengembalian Pinjaman) di Buku Kas Perusahaan?`);
                 await officeApp.syncRoleFromFirebaseAuth(u, this.db, appId, hint);
                 officeApp.refreshServerCashSummary();
                 if (window.__nfSyncFcmToken) window.__nfSyncFcmToken({});
+                if (window.nfPermissions) { setTimeout(() => window.nfPermissions.maybePrompt('office', { trigger: 'login' }), 1100); }
 
                 if (!this._listenersBound && this.db) {
                     this._listenersBound = true;
@@ -4260,7 +4264,7 @@ Catat juga sebagai Kas Masuk (Pengembalian Pinjaman) di Buku Kas Perusahaan?`);
     </div>
 
     <script>
-        window.__NF_APP_VERSION = 'v144';
+        window.__NF_APP_VERSION = 'v146';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 

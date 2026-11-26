@@ -1,9 +1,8 @@
-// Supabase Edge Function: send-push (NutriFresh v144)
-// Menerima Database Webhook INSERT dari tabel public.nf_push_outbox
-// Mengirim Push Notification sungguhan ke HP (walau layar mati/aplikasi ditutup)
-// via Firebase FCM HTTP v1 dan/atau Bot Telegram Grup Toko!
-
+// Supabase Edge Function: send-push (NutriFresh v145 — Fast Parallel + Token Cache + Max Priority)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+let cachedAccessToken = "";
+let cachedTokenExpMs = 0;
 
 function base64UrlEncode(input: Uint8Array | string): string {
   const bytes = typeof input === "string" ? new TextEncoder().encode(input) : input;
@@ -21,6 +20,9 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
 }
 
 async function getGoogleAccessToken(sa: { client_email: string; private_key: string }): Promise<string> {
+  if (cachedAccessToken && Date.now() < cachedTokenExpMs) {
+    return cachedAccessToken;
+  }
   const now = Math.floor(Date.now() / 1000);
   const header = base64UrlEncode(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const claim = base64UrlEncode(JSON.stringify({
@@ -50,12 +52,20 @@ async function getGoogleAccessToken(sa: { client_email: string; private_key: str
   if (!res.ok || !json.access_token) {
     throw new Error("Google OAuth2 failed: " + JSON.stringify(json));
   }
-  return json.access_token;
+  cachedAccessToken = json.access_token;
+  cachedTokenExpMs = Date.now() + 50 * 60 * 1000;
+  return cachedAccessToken;
 }
 
 Deno.serve(async (req: Request) => {
   try {
     const payload = await req.json();
+    if (payload?.ping === true) {
+      return new Response(JSON.stringify({ ok: true, pong: true }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const rec = payload?.record || payload;
     if (!rec || !rec.title) {
       return new Response(JSON.stringify({ ok: false, reason: "empty payload" }), { status: 400 });
@@ -73,80 +83,118 @@ Deno.serve(async (req: Request) => {
     const title = String(rec.title || "NutriFresh");
     const body = String(rec.body || "");
 
-    const results: Record<string, unknown> = { fcmSent: 0, telegramSent: false };
+    const sb = (supabaseUrl && serviceKey)
+      ? createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
+      : null;
 
-    // 1. JALUR CEPAT: BOT TELEGRAM GRUP TOKO (KHUSUS POS, KURIR/STAFF & OFFICE)
-    if (tgToken && tgChatId && ["pos", "staff", "office"].includes(targetRole)) {
-      const roleTag = targetRole === "pos" ? "🖥️ POS KASIR" : (targetRole === "staff" ? "🛵 KURIR / STAFF" : "💼 OFFICE");
-      const tgText = `<b>[${roleTag}] ${title}</b>\n${body}`;
-      const tgRes = await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: tgChatId, text: tgText, parse_mode: "HTML" }),
-      });
-      results.telegramSent = tgRes.ok;
-    }
+    const results: Record<string, unknown> = {
+      recId: rec.id ?? null,
+      matchedTokens: 0,
+      fcmSent: 0,
+      telegramSent: false,
+      updateError: null,
+    };
 
-    // 2. JALUR UTAMA: FIREBASE FCM HTTP v1 (ANDROID APK PELANGGAN, POS, KURIR, OFFICE)
-    if (fcmSaRaw && supabaseUrl && serviceKey) {
-      const sb = createClient(supabaseUrl, serviceKey);
+    const highChannelId =
+      targetRole === "customer" ? "nutrifresh_alerts" :
+      targetRole === "staff" ? "nutrifresh_staff_alerts" :
+      undefined;
+
+    const tgTask = (async () => {
+      if (tgToken && tgChatId && ["pos", "staff", "office"].includes(targetRole)) {
+        const roleTag = targetRole === "pos" ? "🖥️ POS KASIR" : (targetRole === "staff" ? "🛵 KURIR / STAFF" : "💼 OFFICE");
+        const tgText = `<b>[${roleTag}] ${title}</b>\n${body}`;
+        const tgRes = await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: tgChatId, text: tgText, parse_mode: "HTML" }),
+        });
+        results.telegramSent = tgRes.ok;
+      }
+    })();
+
+    const fcmTask = (async () => {
+      if (!fcmSaRaw || !sb) return;
       let q = sb.from("nf_push_devices").select("token").eq("tenant_id", rec.tenant_id || "nutrifresh");
       if (targetRole) q = q.eq("app_role", targetRole);
       if (targetRole === "customer" && targetPhone) q = q.eq("customer_phone", targetPhone);
       if (targetEmail && targetRole !== "customer") q = q.eq("user_email", targetEmail);
-      const { data: devs } = await q.limit(100);
+
+      const { data: devs, error: devErr } = await q.limit(100);
+      if (devErr) results.devError = devErr.message;
       const tokens = Array.from(new Set((devs || []).map((d: { token: string }) => d.token).filter(Boolean)));
+      results.matchedTokens = tokens.length;
+      if (tokens.length === 0) return;
 
-      if (tokens.length > 0) {
-        const sa = JSON.parse(fcmSaRaw);
-        const accessToken = await getGoogleAccessToken(sa);
-        const fcmUrl = `https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`;
-        let sentCount = 0;
+      const sa = JSON.parse(fcmSaRaw);
+      const accessToken = await getGoogleAccessToken(sa);
+      const fcmUrl = `https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`;
 
-        for (const token of tokens) {
-          const r = await fetch(fcmUrl, {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              message: {
-                token,
-                notification: { title, body },
-                android: {
-                  priority: "HIGH",
-                  notification: {
-                    sound: "default",
-                    default_vibrate_timings: true,
-                  },
-                },
-                data: {
-                  title,
-                  body,
-                  target_role: targetRole,
-                  ref_id: String(rec.ref_id || ""),
-                },
+      const androidNotif: Record<string, unknown> = {
+        sound: "default",
+        default_vibrate_timings: true,
+        notification_priority: "PRIORITY_MAX",
+        visibility: "PUBLIC",
+      };
+      if (highChannelId) androidNotif.channel_id = highChannelId;
+
+      const deadTokens: string[] = [];
+      let sentCount = 0;
+
+      await Promise.allSettled(tokens.map(async (token) => {
+        const r = await fetch(fcmUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: {
+              token,
+              notification: { title, body },
+              android: {
+                priority: "HIGH",
+                ttl: "3600s",
+                direct_boot_ok: true,
+                notification: androidNotif,
               },
-            }),
-          });
-          if (r.ok) {
-            sentCount++;
-          } else {
-            const errTxt = await r.text();
-            if (errTxt.includes("UNREGISTERED") || errTxt.includes("INVALID_ARGUMENT")) {
-              await sb.from("nf_push_devices").delete().eq("token", token);
-            }
+              data: {
+                title,
+                body,
+                target_role: targetRole,
+                ref_id: String(rec.ref_id || ""),
+              },
+            },
+          }),
+        });
+        if (r.ok) {
+          sentCount++;
+        } else {
+          const errTxt = await r.text();
+          results.fcmLastError = errTxt.slice(0, 200);
+          if (errTxt.includes("UNREGISTERED") || errTxt.includes("INVALID_ARGUMENT")) {
+            deadTokens.push(token);
           }
         }
-        results.fcmSent = sentCount;
-      }
-    }
+      }));
 
-    if (rec.id && supabaseUrl && serviceKey) {
-      const sb = createClient(supabaseUrl, serviceKey);
-      await sb.from("nf_push_outbox").update({ sent_at: new Date().toISOString() }).eq("id", rec.id);
-    }
+      results.fcmSent = sentCount;
+      if (deadTokens.length > 0) {
+        await sb.from("nf_push_devices").delete().in("token", deadTokens);
+      }
+    })();
+
+    const markSentTask = (async () => {
+      if (rec.id !== undefined && rec.id !== null && sb) {
+        const { error: updErr } = await sb
+          .from("nf_push_outbox")
+          .update({ sent_at: new Date().toISOString() })
+          .eq("id", rec.id);
+        if (updErr) results.updateError = updErr.message;
+      }
+    })();
+
+    await Promise.all([tgTask, fcmTask, markSentTask]);
 
     return new Response(JSON.stringify({ ok: true, ...results }), {
       headers: { "Content-Type": "application/json" },
