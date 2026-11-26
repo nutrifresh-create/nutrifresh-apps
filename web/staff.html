@@ -1605,10 +1605,40 @@
                 reader.readAsDataURL(file);
                 ev.target.value = '';
             },
+            dispatchOrderPushNow(payload) {
+                try {
+                    const url = (SUPABASE_CONFIG && SUPABASE_CONFIG.url) ? `${SUPABASE_CONFIG.url}/functions/v1/send-push` : '';
+                    const key = (SUPABASE_CONFIG && (SUPABASE_CONFIG.anonKey || SUPABASE_CONFIG.key)) || '';
+                    if (!url || !payload) return;
+                    const hdrs = { 'Content-Type': 'application/json' };
+                    if (key) { hdrs['apikey'] = key; hdrs['Authorization'] = `Bearer ${key}`; }
+                    fetch(url, {
+                        method: 'POST',
+                        headers: hdrs,
+                        body: JSON.stringify({ action: 'dispatch_order_push', ...payload })
+                    }).catch(() => {});
+                } catch (_) {}
+            },
             async courierStartDelivery(orderId) {
                 const cname = this.state.profile?.name || 'Kurir NutriFresh';
                 try {
                     await courierUpdateDeliveryRpc({ orderId, newStatus: 'Diantar Kurir', courierName: cname });
+                    const ord = (this.state.onlineOrders || []).find(o => o.id === orderId);
+                    this.dispatchOrderPushNow({
+                        order_id: orderId,
+                        target_roles: ['customer'],
+                        target_phone: ord?.customerPhone || '',
+                        event_type: 'order_status',
+                        title: `🛵 Pesanan Sedang Diantar! #${ord?.orderCode || orderId}`,
+                        body: `Kurir ${cname} sedang menuju alamat Anda.`
+                    });
+                    this.dispatchOrderPushNow({
+                        order_id: orderId,
+                        target_roles: ['pos'],
+                        event_type: 'order_status',
+                        title: `🛵 Kurir Berangkat Antar #${ord?.orderCode || orderId}`,
+                        body: `${cname} sedang mengantar pesanan ${ord?.customerName || 'Pelanggan'}.`
+                    });
                     await this.loadAllData();
                     this.alert('Status diperbarui: Diantar Kurir! Pelanggan & POS otomatis mendapat kabar.');
                 } catch (err) {
@@ -1626,6 +1656,22 @@
                     }
                     const nextSt = isCod ? 'Terkirim • Tunggu Setor COD' : 'Terkirim • Lunas';
                     await courierUpdateDeliveryRpc({ orderId, newStatus: nextSt, courierName: cname, proofUrl });
+                    const ord = (this.state.onlineOrders || []).find(o => o.id === orderId);
+                    this.dispatchOrderPushNow({
+                        order_id: orderId,
+                        target_roles: ['customer'],
+                        target_phone: ord?.customerPhone || '',
+                        event_type: 'order_status',
+                        title: `📦 Pesanan Telah Diterima! #${ord?.orderCode || orderId}`,
+                        body: `Diantar oleh ${cname}. Terima kasih sudah berbelanja di NutriFresh!`
+                    });
+                    this.dispatchOrderPushNow({
+                        order_id: orderId,
+                        target_roles: ['pos'],
+                        event_type: 'order_status',
+                        title: isCod ? `💵 Antaran COD Selesai #${ord?.orderCode || orderId}` : `✅ Antaran Lunas Selesai #${ord?.orderCode || orderId}`,
+                        body: isCod ? `${cname} telah menyerahkan pesanan. Menunggu setor uang COD ke kasir.` : `${cname} telah menyerahkan pesanan lunas ke pembeli.`
+                    });
                     delete this.state.courierProofDataByOrder[orderId];
                     await this.loadAllData();
                     this.alert(isCod ? 'Antaran selesai! Kasir POS langsung dikabari — silakan setor uang COD ke kasir.' : 'Antaran selesai! Kasir POS & pelanggan langsung mendapat kabar.');
@@ -1639,11 +1685,23 @@
                 if (!msg || !orderId) return;
                 if (inp) inp.disabled = true;
                 try {
+                    const cName = this.state.profile?.name || 'Kurir NutriFresh';
                     await staffSendOrderChatRpc({
                         orderId,
                         message: msg,
-                        senderName: this.state.profile?.name || 'Kurir NutriFresh',
+                        senderName: cName,
                         senderRole: 'courier'
+                    });
+                    const ord = (this.state.onlineOrders || []).find(o => o.id === orderId);
+                    this.dispatchOrderPushNow({
+                        order_id: orderId,
+                        target_roles: ['customer'],
+                        target_phone: ord?.customerPhone || '',
+                        event_type: 'chat',
+                        sender_name: cName,
+                        chat_text: msg,
+                        title: `💬 Pesan dari Kurir ${cName} (#${ord?.orderCode || orderId})`,
+                        body: msg
                     });
                     if (inp) inp.value = '';
                     await this.loadAllData();

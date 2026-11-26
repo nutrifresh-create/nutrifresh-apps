@@ -850,56 +850,39 @@
             </button>
         </div>
 
-        <!-- 1. KAS & BEBAN -->
-        <section id="panel-ringkasan" class="office-panel hidden space-y-5">
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div class="bg-white rounded-3xl border border-gray-200/80 p-4 shadow-sm border-l-4 border-l-blue-600">
-                    <span class="text-[10px] sm:text-[11px] font-extrabold text-gray-500 uppercase block">Kas Utama Perusahaan</span>
-                    <p id="cardMainCash" class="text-lg sm:text-2xl font-black text-blue-700 mt-1">Rp 0</p>
-                    <span id="cardStoreTransferSub" class="text-[10px] sm:text-[11px] text-gray-500 block mt-1">Setoran Toko Bln Ini: Rp 0</span>
+        <!-- 1. KAS, LABA RUGI & NERACA MINI (TERHUBUNG OTOMATIS DENGAN POS — v149) -->
+        <section id="panel-ringkasan" class="office-panel hidden space-y-4">
+            <!-- 3 KARTU RINGKASAN EKSEKUTIF OWNER & BENDAHARA -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div class="bg-gradient-to-br from-nutri-dark to-emerald-800 text-white rounded-3xl p-4 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[10px] sm:text-[11px] font-extrabold text-green-100 uppercase">Laba Bersih Usaha (Bulan Ini)</span>
+                        <span id="cardNetMarginBadge" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/15 text-lime-200">0%</span>
+                    </div>
+                    <p id="cardNetProfitReal" class="text-xl sm:text-2xl font-black mt-1">Rp 0</p>
+                    <span id="cardNetProfitSub" class="text-[10.5px] text-green-100 block mt-1">Omset POS − HPP − Susut − Semua Beban</span>
                 </div>
-                <div class="bg-white rounded-3xl border border-gray-200/80 p-4 shadow-sm border-l-4 border-l-nutri-green">
-                    <span class="text-[10px] sm:text-[11px] font-extrabold text-gray-500 uppercase block">Kas Cadangan / Darurat</span>
-                    <p id="cardReserveCash" class="text-lg sm:text-2xl font-black text-nutri-dark mt-1">Rp 0</p>
-                    <span class="text-[10px] sm:text-[11px] text-gray-500 block mt-1">Terpisah dari kas operasional</span>
+
+                <div class="bg-white rounded-3xl border border-gray-200/80 p-4 shadow-sm border-l-4 border-l-blue-600 flex flex-col justify-between">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[10px] sm:text-[11px] font-extrabold text-gray-500 uppercase">Total Kas Perusahaan</span>
+                        <span id="cardPosSyncBadge" class="text-[9.5px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">🔗 POS Live</span>
+                    </div>
+                    <p id="cardMainCash" class="text-xl sm:text-2xl font-black text-blue-700 mt-1">Rp 0</p>
+                    <div class="flex flex-wrap items-center justify-between gap-1 text-[10.5px] text-gray-500 mt-1">
+                        <span>Cadangan: <strong id="cardReserveCash" class="text-nutri-dark">Rp 0</strong></span>
+                        <span id="cardStoreTransferSub">Setoran Bln Ini: Rp 0</span>
+                    </div>
                 </div>
-                <div class="bg-white rounded-3xl border border-gray-200/80 p-4 shadow-sm border-l-4 border-l-red-500">
-                    <span class="text-[10px] sm:text-[11px] font-extrabold text-gray-500 uppercase block">Total Beban + Susut</span>
-                    <p id="cardTotalOutflow" class="text-lg sm:text-2xl font-black text-red-600 mt-1">Rp 0</p>
-                    <span id="cardDepreciationSub" class="text-[10px] sm:text-[11px] text-gray-500 block mt-1">Termasuk Susut Aset: Rp 0</span>
-                </div>
-                <div class="bg-gradient-to-br from-nutri-dark to-emerald-800 text-white rounded-3xl p-4 shadow-sm">
-                    <span class="text-[10px] sm:text-[11px] font-extrabold text-green-100 uppercase block">Surplus / Defisit Kas</span>
-                    <p id="cardNetSurplus" class="text-lg sm:text-2xl font-black mt-1">Rp 0</p>
-                    <span class="text-[10px] sm:text-[11px] text-green-100 block mt-1">Setoran Masuk − Beban & Susut</span>
+
+                <div class="bg-white rounded-3xl border border-gray-200/80 p-4 shadow-sm border-l-4 border-l-purple-500 flex flex-col justify-between">
+                    <span class="text-[10px] sm:text-[11px] font-extrabold text-gray-500 uppercase block">Kekayaan Bersih Usaha</span>
+                    <p id="cardNetWorthDisplay" class="text-xl sm:text-2xl font-black text-purple-900 mt-1">Rp 0</p>
+                    <span id="cardNetWorthSub" class="text-[10.5px] text-gray-500 block mt-1">Kas + Stok Buah + Aset + Piutang − Hutang</span>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs">
-                <div class="bg-[#f4f9f1] border border-green-200 rounded-2xl p-3.5 flex items-center justify-between">
-                    <div>
-                        <span class="font-bold text-nutri-dark block">Piutang Belum Tertagih</span>
-                        <span class="text-[11px] text-gray-600">Tagihan akan masuk</span>
-                    </div>
-                    <span id="miniReceivableTotal" class="text-sm sm:text-base font-black text-nutri-dark">Rp 0</span>
-                </div>
-                <div class="bg-amber-50/80 border border-amber-200 rounded-2xl p-3.5 flex items-center justify-between">
-                    <div>
-                        <span class="font-bold text-amber-900 block">Hutang Tempo Belum Lunas</span>
-                        <span class="text-[11px] text-amber-800">Kewajiban supplier</span>
-                    </div>
-                    <span id="miniPayableTotal" class="text-sm sm:text-base font-black text-red-600">Rp 0</span>
-                </div>
-                <div class="bg-purple-50/70 border border-purple-200 rounded-2xl p-3.5 flex items-center justify-between">
-                    <div>
-                        <span class="font-bold text-purple-900 block">Nilai Buku Aset Bersih</span>
-                        <span class="text-[11px] text-purple-700">Harga beli − susut</span>
-                    </div>
-                    <span id="miniAssetBookValue" class="text-sm sm:text-base font-black text-purple-900">Rp 0</span>
-                </div>
-            </div>
-
-            <!-- ANTREAN ACC & TRANSFER BENDAHARA (TERHUBUNG OTOMATIS DARI HR: GAJI, KASBON & PINJAMAN — v144) -->
+            <!-- ANTREAN ACC & TRANSFER BENDAHARA (TERHUBUNG OTOMATIS DARI HR: GAJI, KASBON & PINJAMAN) -->
             <div id="bendaharaApprovalQueueCard" class="hidden bg-white rounded-3xl border-2 border-amber-300 shadow-sm overflow-hidden text-xs">
                 <div class="px-4 py-3.5 bg-gradient-to-r from-amber-50 via-orange-50 to-emerald-50 border-b border-amber-200 flex flex-wrap items-center justify-between gap-2">
                     <div class="flex items-center gap-2.5 min-w-0">
@@ -917,123 +900,259 @@
                 <div id="bendaharaQueueList" class="divide-y divide-gray-100"></div>
             </div>
 
-            <div id="financeInputGrid" class="grid grid-cols-1 lg:grid-cols-3 gap-5 text-xs">
-                <div class="bg-white rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-3">
-                    <h2 class="text-sm font-black text-gray-900 border-b pb-2 flex items-center">
-                        <i class="fa-solid fa-store text-nutri-green mr-2"></i> 1. Setoran Toko ke Perusahaan
-                    </h2>
-                    <div class="grid grid-cols-2 gap-2.5">
+            <!-- 2 LAPORAN UTAMA ALA TOKO BUAH MODERN (TRANSPARAN & ANTI-PUSING) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 text-xs">
+                <!-- KARTU A: LAPORAN LABA RUGI BERJENJANG (POS + OFFICE) -->
+                <div class="lg:col-span-7 bg-white rounded-3xl border border-gray-200/80 p-4 sm:p-5 shadow-sm space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5">
                         <div>
-                            <label class="block font-bold text-gray-700 mb-1">Tanggal</label>
-                            <input type="date" id="trfDate" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none">
+                            <h2 class="text-sm font-black text-gray-900 flex items-center gap-1.5">
+                                <i class="fa-solid fa-chart-line text-nutri-green"></i>
+                                <span>Laporan Laba Rugi Toko Buah</span>
+                            </h2>
+                            <p id="plPeriodSubtitle" class="text-[10.5px] text-gray-500 mt-0.5">Gabungan otomatis penjualan POS &amp; beban kantor bulan aktif</p>
                         </div>
-                        <div>
-                            <label class="block font-bold text-gray-700 mb-1">Unit Toko</label>
-                            <input type="text" id="trfStoreName" value="NutriFresh Cilacap" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none">
+                        <span id="plTxCountBadge" class="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 font-extrabold text-[10.5px]">0 nota POS</span>
+                    </div>
+
+                    <div class="space-y-2">
+                        <!-- Omset POS -->
+                        <div class="p-3 rounded-2xl bg-gray-50 border border-gray-200/80 space-y-1.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="font-extrabold text-gray-800">(+) Omset Penjualan POS</span>
+                                <span id="plOmsetTotal" class="font-black text-sm text-nutri-dark">Rp 0</span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-1.5 text-[10px]">
+                                <span class="px-2 py-0.5 rounded-full bg-green-100 text-nutri-dark font-bold">💵 Tunai: <strong id="plOmsetTunai">Rp 0</strong></span>
+                                <span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 font-bold">📱 QRIS: <strong id="plOmsetQris">Rp 0</strong></span>
+                                <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold">🏦 Transfer/EDC: <strong id="plOmsetTransfer">Rp 0</strong></span>
+                            </div>
                         </div>
+
+                        <div class="flex items-center justify-between px-3 py-1.5">
+                            <span class="text-gray-600">(−) Modal Buah Terjual (HPP POS)</span>
+                            <span id="plHppTotal" class="font-bold text-red-600">- Rp 0</span>
+                        </div>
+
+                        <div class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-amber-50/70 border border-amber-200/70">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="font-bold text-amber-900">(−) Buah Rusak / Busuk &amp; Susut</span>
+                                <span id="plWasteRatioBadge" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-green-100 text-nutri-dark">0.0% • Sehat</span>
+                            </div>
+                            <span id="plWasteTotal" class="font-extrabold text-red-600 whitespace-nowrap">- Rp 0</span>
+                        </div>
+
+                        <div class="flex items-center justify-between px-3 py-2 border-t border-b border-gray-200/80 bg-gray-50/70 rounded-xl">
+                            <span class="font-extrabold text-gray-900">(=) Laba Kotor Toko (Setelah Susut)</span>
+                            <span id="plGrossProfit" class="font-black text-sm text-blue-700">Rp 0</span>
+                        </div>
+
+                        <div class="flex items-center justify-between px-3 py-1">
+                            <span class="text-gray-600">(−) Komisi Aplikasi &amp; Kas Keluar Laci POS</span>
+                            <span id="plPosOpsExp" class="font-bold text-red-600">- Rp 0</span>
+                        </div>
+
+                        <div class="flex items-center justify-between px-3 py-1">
+                            <span class="text-gray-600">(−) Beban Kantor &amp; Gaji (Office)</span>
+                            <span id="plOfficeExp" class="font-bold text-red-600">- Rp 0</span>
+                        </div>
+
+                        <div class="flex items-center justify-between px-3 py-1">
+                            <span class="text-gray-600">(−) Penyusutan Aset Bulanan</span>
+                            <span id="plDepExp" class="font-bold text-red-600">- Rp 0</span>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 rounded-2xl bg-[#f4f9f1] border border-green-300">
+                            <div>
+                                <span class="font-black text-sm text-nutri-dark block">(=) LABA BERSIH USAHA</span>
+                                <span id="cardDepreciationSub" class="text-[10px] text-gray-600 block">Beli Aset &amp; Prive tidak memotong Laba (bebas dobel hitung)</span>
+                            </div>
+                            <span id="plNetProfitRow" class="font-black text-base sm:text-lg text-nutri-dark">Rp 0</span>
+                        </div>
+                        <span id="cardTotalOutflow" class="hidden">Rp 0</span>
+                        <span id="cardNetSurplus" class="hidden">Rp 0</span>
                     </div>
-                    <div>
-                        <label class="block font-bold text-gray-700 mb-1">Nominal Setoran (Rp) *</label>
-                        <input type="number" id="trfAmount" min="0" step="1000" placeholder="2000000" class="w-full px-3 py-2 border-2 border-green-200 rounded-xl font-black text-sm text-nutri-dark outline-none">
-                    </div>
-                    <div>
-                        <label class="block font-bold text-gray-700 mb-1">Catatan Setoran</label>
-                        <input type="text" id="trfNote" placeholder="Setoran kas shift pagi & sore" class="w-full px-3 py-2 border rounded-xl bg-gray-50 outline-none">
-                    </div>
-                    <button type="button" onclick="officeApp.addTransaction('SETORAN_TOKO')" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-xl transition">
-                        Catat Setoran Toko
-                    </button>
                 </div>
 
-                <div class="bg-white rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-3">
-                    <h2 class="text-sm font-black text-gray-900 border-b pb-2 flex items-center">
-                        <i class="fa-solid fa-file-invoice-dollar text-red-500 mr-2"></i> 2. Beban Rutin & Operasional
-                    </h2>
-                    <div class="grid grid-cols-2 gap-2.5">
-                        <div>
-                            <label class="block font-bold text-gray-700 mb-1">Tanggal</label>
-                            <input type="date" id="expDate" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none">
+                <!-- KARTU B: POSISI HARTA & UANG (NERACA MINI + PENJELASAN ARUS KAS) -->
+                <div class="lg:col-span-5 bg-white rounded-3xl border border-gray-200/80 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3">
+                    <div class="space-y-3">
+                        <div class="border-b pb-2.5">
+                            <h2 class="text-sm font-black text-gray-900 flex items-center gap-1.5">
+                                <i class="fa-solid fa-scale-balanced text-blue-500"></i>
+                                <span>Posisi Harta &amp; Uang (Neraca Mini)</span>
+                            </h2>
+                            <p class="text-[10.5px] text-gray-500 mt-0.5">Menjawab cepat: "Uang &amp; aset usaha NutriFresh ada di mana saja?"</p>
                         </div>
-                        <div>
-                            <label class="block font-bold text-gray-700 mb-1">Pos Beban</label>
-                            <select id="expCategory" class="w-full px-3 py-2 border rounded-xl bg-white font-bold outline-none">
-                                <option value="Sewa Toko / Ruko">Sewa Toko / Ruko</option>
-                                <option value="Listrik & Air">Listrik & Air</option>
-                                <option value="Internet & Sistem">Internet & Sistem</option>
-                                <option value="Operasional & Perawatan">Operasional & Perawatan</option>
-                                <option value="Pajak & Legalitas">Pajak & Legalitas</option>
-                                <option value="Biaya Umum Lainnya">Biaya Umum Lainnya</option>
-                            </select>
+
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-gray-50">
+                                <span class="font-bold text-gray-700">💵 Kas Utama + Kas Cadangan</span>
+                                <span id="balTotalCash" class="font-black text-blue-700">Rp 0</span>
+                            </div>
+                            <div class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-gray-50">
+                                <div>
+                                    <span class="font-bold text-gray-700 block">🍎 Modal Stok Buah di Rak POS</span>
+                                    <span id="balStockRevHint" class="text-[10px] text-gray-500">Potensi jual: Rp 0</span>
+                                </div>
+                                <span id="balStockCost" class="font-black text-nutri-dark">Rp 0</span>
+                            </div>
+                            <div class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-gray-50">
+                                <span class="font-bold text-gray-700">🧊 Nilai Buku Aset Tetap</span>
+                                <span id="miniAssetBookValue" class="font-black text-purple-900">Rp 0</span>
+                            </div>
+                            <div class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-gray-50">
+                                <span class="font-bold text-gray-700">📄 Piutang Belum Tertagih</span>
+                                <span id="miniReceivableTotal" class="font-black text-nutri-dark">Rp 0</span>
+                            </div>
+                            <div class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-red-50/70 border border-red-200/70">
+                                <span class="font-bold text-red-700">(−) Hutang Tempo Supplier</span>
+                                <span id="miniPayableTotal" class="font-black text-red-600">- Rp 0</span>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Ringkasan Mutasi Non-Laba (Beli Aset, Modal, Prive) agar Bendahara mudah menjelaskan ke Owner -->
+                    <div class="space-y-2 pt-2 border-t border-gray-200/80">
+                        <div class="p-3 rounded-2xl bg-gray-50 border border-gray-200/80 space-y-1 text-[11px]">
+                            <div class="font-extrabold text-gray-800 flex items-center gap-1"><i class="fa-solid fa-circle-info text-blue-500"></i> Arus Kas Non-Laba (Bulan Ini)</div>
+                            <div class="flex justify-between text-gray-600"><span>Beli Aset (Investasi):</span><strong id="cfCapexMonth" class="text-purple-700">Rp 0</strong></div>
+                            <div class="flex justify-between text-gray-600"><span>Suntik Modal Owner:</span><strong id="cfModalMonth" class="text-nutri-dark">Rp 0</strong></div>
+                            <div class="flex justify-between text-gray-600"><span>Prive / Tarik Untung Owner:</span><strong id="cfPriveMonth" class="text-amber-700">Rp 0</strong></div>
+                        </div>
+                        <div id="expenseBreakdownBox" class="space-y-1.5"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOMBOL AKSI CEPAT BENDAHARA (FORM LIPAT AGAR LAYAR LEGA & TIDAK PENUH TABEL) -->
+            <div id="financeInputGrid" class="bg-white rounded-3xl border border-gray-200/80 p-4 shadow-sm space-y-3 text-xs">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="font-black text-gray-900 text-xs sm:text-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-pen-to-square text-nutri-green"></i>
+                        <span>Catat Transaksi Kas Perusahaan</span>
+                    </span>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" id="finDrawerBtn-in" onclick="officeApp.toggleFinanceDrawer('in')" class="px-3.5 py-2 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] shadow-sm transition">+ Setoran / Modal</button>
+                        <button type="button" id="finDrawerBtn-out" onclick="officeApp.toggleFinanceDrawer('out')" class="px-3.5 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white font-extrabold text-[11px] shadow-sm transition">− Beban / Prive</button>
+                        <button type="button" id="finDrawerBtn-res" onclick="officeApp.toggleFinanceDrawer('res')" class="px-3.5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[11px] shadow-sm transition">⇄ Kas Cadangan</button>
+                    </div>
+                </div>
+
+                <!-- Form 1: Setoran Toko / Suntik Modal Owner -->
+                <div id="finDrawer-in" class="hidden pt-3 border-t border-gray-200/80 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 items-end">
                     <div>
-                        <label class="block font-bold text-gray-700 mb-1">Nominal Beban (Rp) *</label>
-                        <input type="number" id="expAmount" min="0" step="1000" placeholder="1500000" class="w-full px-3 py-2 border-2 border-red-200 rounded-xl font-black text-sm text-red-700 outline-none">
+                        <label class="block font-bold text-gray-700 mb-1">Tanggal</label>
+                        <input type="date" id="trfDate" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">Sumber Dana</label>
+                        <select id="trfInType" class="w-full px-3 py-2 border rounded-xl bg-white font-bold outline-none">
+                            <option value="SETORAN">🏪 Setoran Kas Toko</option>
+                            <option value="MODAL">💼 Modal Awal / Suntik Owner</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">Unit / Keterangan</label>
+                        <input type="text" id="trfNote" placeholder="Setoran shift / Modal awal" class="w-full px-3 py-2 border rounded-xl bg-gray-50 outline-none">
+                        <input type="hidden" id="trfStoreName" value="NutriFresh Cilacap">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">Nominal (Rp) *</label>
+                        <input type="number" id="trfAmount" min="0" step="1000" placeholder="2000000" class="w-full px-3 py-2 border-2 border-green-200 rounded-xl font-black text-sm text-nutri-dark outline-none">
+                    </div>
+                    <button type="button" onclick="officeApp.addTransaction('SETORAN_TOKO')" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-full transition">Simpan Kas Masuk</button>
+                </div>
+
+                <!-- Form 2: Beban Rutin / Prive Owner -->
+                <div id="finDrawer-out" class="hidden pt-3 border-t border-gray-200/80 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 items-end">
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">Tanggal</label>
+                        <input type="date" id="expDate" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">Pos Pengeluaran</label>
+                        <select id="expCategory" class="w-full px-3 py-2 border rounded-xl bg-white font-bold outline-none">
+                            <option value="Sewa Toko / Ruko">🏠 Sewa Toko / Ruko</option>
+                            <option value="Listrik & Air">⚡ Listrik &amp; Air</option>
+                            <option value="Internet & Sistem">📶 Internet &amp; Sistem</option>
+                            <option value="Operasional & Perawatan">🔧 Operasional &amp; Perawatan</option>
+                            <option value="Pajak & Legalitas">📑 Pajak &amp; Legalitas</option>
+                            <option value="Biaya Umum Lainnya">📦 Biaya Umum Lainnya</option>
+                            <option value="Prive / Tarik Untung Owner">👑 Prive / Tarik Untung Owner (Non-Beban)</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block font-bold text-gray-700 mb-1">Keterangan Jelas *</label>
-                        <input type="text" id="expNote" placeholder="Sewa bulanan / Token PLN / WiFi" class="w-full px-3 py-2 border rounded-xl bg-gray-50 outline-none">
-                    </div>
-                    <button type="button" onclick="officeApp.addTransaction('BEBAN_PERUSAHAAN')" class="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold py-2.5 rounded-xl transition">
-                        Catat Beban Perusahaan
-                    </button>
-                </div>
-
-                <div class="bg-white rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-3">
-                    <h2 class="text-sm font-black text-gray-900 border-b pb-2 flex items-center">
-                        <i class="fa-solid fa-vault text-blue-600 mr-2"></i> 3. Mutasi Kas Cadangan
-                    </h2>
-                    <div class="grid grid-cols-2 gap-2.5">
-                        <div>
-                            <label class="block font-bold text-gray-700 mb-1">Tanggal</label>
-                            <input type="date" id="resDate" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none">
-                        </div>
-                        <div>
-                            <label class="block font-bold text-gray-700 mb-1">Arah Mutasi</label>
-                            <select id="resDirection" class="w-full px-3 py-2 border rounded-xl bg-white font-bold outline-none">
-                                <option value="KE_CADANGAN">Kas Utama → Kas Cadangan</option>
-                                <option value="DARI_CADANGAN">Kas Cadangan → Kas Utama</option>
-                            </select>
-                        </div>
+                        <input type="text" id="expNote" placeholder="Token PLN / WiFi / Prive" class="w-full px-3 py-2 border rounded-xl bg-gray-50 outline-none">
                     </div>
                     <div>
-                        <label class="block font-bold text-gray-700 mb-1">Nominal Mutasi (Rp) *</label>
-                        <input type="number" id="resAmount" min="0" step="1000" placeholder="500000" class="w-full px-3 py-2 border-2 border-blue-200 rounded-xl font-black text-sm text-blue-900 outline-none">
+                        <label class="block font-bold text-gray-700 mb-1">Nominal (Rp) *</label>
+                        <input type="number" id="expAmount" min="0" step="1000" placeholder="500000" class="w-full px-3 py-2 border-2 border-red-200 rounded-xl font-black text-sm text-red-700 outline-none">
+                    </div>
+                    <button type="button" onclick="officeApp.addTransaction('BEBAN_PERUSAHAAN')" class="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold py-2.5 rounded-full transition">Simpan Pengeluaran</button>
+                </div>
+
+                <!-- Form 3: Mutasi Kas Cadangan -->
+                <div id="finDrawer-res" class="hidden pt-3 border-t border-gray-200/80 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 items-end">
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">Tanggal</label>
+                        <input type="date" id="resDate" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">Arah Mutasi</label>
+                        <select id="resDirection" class="w-full px-3 py-2 border rounded-xl bg-white font-bold outline-none">
+                            <option value="KE_CADANGAN">Kas Utama → Kas Cadangan</option>
+                            <option value="DARI_CADANGAN">Kas Cadangan → Kas Utama</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block font-bold text-gray-700 mb-1">Tujuan / Keterangan</label>
                         <input type="text" id="resNote" placeholder="Dana cadangan darurat" class="w-full px-3 py-2 border rounded-xl bg-gray-50 outline-none">
                     </div>
-                    <button type="button" onclick="officeApp.addReserveMutation()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-2.5 rounded-xl transition">
-                        Simpan Mutasi Cadangan
-                    </button>
+                    <div>
+                        <label class="block font-bold text-gray-700 mb-1">Nominal (Rp) *</label>
+                        <input type="number" id="resAmount" min="0" step="1000" placeholder="500000" class="w-full px-3 py-2 border-2 border-blue-200 rounded-xl font-black text-sm text-blue-900 outline-none">
+                    </div>
+                    <button type="button" onclick="officeApp.addReserveMutation()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-2.5 rounded-full transition">Simpan Mutasi</button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 text-xs">
-                <div class="lg:col-span-4 bg-white rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-3">
-                    <h3 class="text-sm font-black text-gray-900">Rincian Beban per Pos (Bulan Aktif)</h3>
-                    <div id="expenseBreakdownBox" class="space-y-2"></div>
-                </div>
-                <div class="lg:col-span-8 bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm">
-                    <div class="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
-                        <h3 class="text-xs sm:text-sm font-black text-gray-900">Buku Kas Perusahaan</h3>
+            <!-- BUKU KAS PERUSAHAAN TRANSPARAN (BULAN INI / SEMUA WAKTU + PENCARIAN) -->
+            <div class="bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-sm text-xs">
+                <div class="px-4 py-3 border-b bg-gray-50 flex flex-wrap items-center justify-between gap-2.5">
+                    <div>
+                        <h3 class="text-xs sm:text-sm font-black text-gray-900 flex items-center gap-1.5">
+                            <i class="fa-solid fa-book-open text-blue-500"></i>
+                            <span>Buku Kas Perusahaan (Transparan Penuh)</span>
+                        </h3>
                         <span id="cashbookCountLabel" class="text-[11px] font-bold text-gray-500">0 catatan</span>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-100 text-gray-600 uppercase text-[11px]">
-                                    <th class="p-3 font-bold">Tanggal</th>
-                                    <th class="p-3 font-bold">Jenis & Pos</th>
-                                    <th class="p-3 font-bold">Keterangan</th>
-                                    <th class="p-3 font-bold text-right">Nominal</th>
-                                    <th class="p-3 font-bold text-center">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="cashbookTableBody" class="divide-y divide-gray-100"></tbody>
-                        </table>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <div class="inline-flex items-center p-0.5 rounded-full bg-gray-200/80 border border-gray-300/60">
+                            <button type="button" id="cbScopeBtn-month" onclick="officeApp.setCashbookScope('month')" class="px-3 py-1 rounded-full text-[11px] font-extrabold bg-nutri-green text-white transition">Bulan Ini</button>
+                            <button type="button" id="cbScopeBtn-all" onclick="officeApp.setCashbookScope('all')" class="px-3 py-1 rounded-full text-[11px] font-bold text-gray-600 transition">Semua Waktu</button>
+                        </div>
+                        <input type="text" id="cashbookSearchInput" oninput="officeApp.renderAll()" placeholder="Cari catatan / aset / gaji..." class="px-3 py-1.5 border rounded-full text-[11px] outline-none w-44">
                     </div>
+                </div>
+                <div id="cashbookOtherMonthsNotice" class="hidden px-4 py-2 bg-amber-50 border-b border-amber-200 text-[11px] text-amber-900 flex flex-wrap items-center justify-between gap-2">
+                    <span id="cashbookOtherMonthsText">Ada catatan kas di bulan lain yang memengaruhi Saldo Kas Utama.</span>
+                    <button type="button" onclick="officeApp.setCashbookScope('all')" class="px-3 py-1 rounded-full bg-amber-500 text-white font-extrabold text-[10.5px]">Lihat Semua Waktu →</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 uppercase text-[11px]">
+                                <th class="p-3 font-bold">Tanggal</th>
+                                <th class="p-3 font-bold">Jenis &amp; Pos</th>
+                                <th class="p-3 font-bold">Keterangan</th>
+                                <th class="p-3 font-bold text-right">Nominal</th>
+                                <th class="p-3 font-bold text-center">Batalkan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cashbookTableBody" class="divide-y divide-gray-100"></tbody>
+                    </table>
                 </div>
             </div>
         </section>
@@ -1650,6 +1769,12 @@
                 empList: [],
                 attList: [],
                 txList: [],
+                posTransactions: [],
+                posWasteLogs: [],
+                posExpenses: [],
+                posInventory: [],
+                cashbookScope: 'month',
+                activeFinanceDrawer: '',
                 hrSubTab: 'pengajuan',
                 announcements: [],
                 schedules: [],
@@ -1723,8 +1848,24 @@
                             this.state.cashbook = Array.from(map.values()).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
                             this.scheduleRenderAll();
                         }
+                        const [txRange, wRange, eRange] = await Promise.all([
+                            fetchCollectionRangeRpc('transactions', { dateField: 'date', startVal: `${ym}-01`, endVal: `${ym}-31T23:59:59`, branchId: this.state.branchFilter, maxRows: 3000 }).catch(() => []),
+                            fetchCollectionRangeRpc('waste_logs', { dateField: 'date', startVal: `${ym}-01`, endVal: `${ym}-31T23:59:59`, branchId: this.state.branchFilter, maxRows: 1500 }).catch(() => []),
+                            fetchCollectionRangeRpc('expenses', { dateField: 'date', startVal: `${ym}-01`, endVal: `${ym}-31T23:59:59`, branchId: this.state.branchFilter, maxRows: 1500 }).catch(() => [])
+                        ]);
+                        const mergeById = (cur, inc) => {
+                            if (!Array.isArray(inc) || inc.length === 0) return cur;
+                            const m = new Map();
+                            (cur || []).forEach(x => { if (x && x.id) m.set(x.id, x); });
+                            inc.forEach(x => { if (x && x.id) m.set(x.id, x); });
+                            return Array.from(m.values());
+                        };
+                        if (txRange.length) this.state.posTransactions = mergeById(this.state.posTransactions, txRange);
+                        if (wRange.length) this.state.posWasteLogs = mergeById(this.state.posWasteLogs, wRange);
+                        if (eRange.length) this.state.posExpenses = mergeById(this.state.posExpenses, eRange);
+                        this.scheduleRenderAll();
                     } catch (err) {
-                        console.warn('[Office] Tarik kasbook bulan aktif:', err?.message || err);
+                        console.warn('[Office] Tarik data bulan aktif:', err?.message || err);
                     }
                 }
             },
@@ -2518,32 +2659,72 @@
                 }).join('');
             },
 
+            toggleFinanceDrawer(which) {
+                const next = (this.state.activeFinanceDrawer === which) ? '' : which;
+                this.state.activeFinanceDrawer = next;
+                ['in', 'out', 'res'].forEach(k => {
+                    document.getElementById(`finDrawer-${k}`)?.classList.toggle('hidden', k !== next);
+                });
+            },
+            setCashbookScope(scope) {
+                this.state.cashbookScope = (scope === 'all') ? 'all' : 'month';
+                const bm = document.getElementById('cbScopeBtn-month');
+                const ba = document.getElementById('cbScopeBtn-all');
+                if (bm) bm.className = this.state.cashbookScope === 'month' ? 'px-3 py-1 rounded-full text-[11px] font-extrabold bg-nutri-green text-white transition' : 'px-3 py-1 rounded-full text-[11px] font-bold text-gray-600 transition';
+                if (ba) ba.className = this.state.cashbookScope === 'all' ? 'px-3 py-1 rounded-full text-[11px] font-extrabold bg-nutri-green text-white transition' : 'px-3 py-1 rounded-full text-[11px] font-bold text-gray-600 transition';
+                this.renderAll();
+            },
+            classifyCashbookGroup(row) {
+                if (!row) return 'OPERASIONAL';
+                if (row.entryGroup) return row.entryGroup;
+                const cat = String(row.category || '').toLowerCase();
+                if (cat.includes('pembelian aset') || String(row.id || '').startsWith('ASTCB-')) return 'CAPEX_ASET';
+                if (cat.includes('modal awal') || cat.includes('suntik owner') || cat.includes('modal owner')) return 'MODAL_OWNER';
+                if (cat.includes('prive') || cat.includes('tarik untung')) return 'PRIVE_OWNER';
+                return 'OPERASIONAL';
+            },
             async addTransaction(kind) {
                 return this.runWithActionLock('off_add_tx', async () => {
                 const date = (kind === 'SETORAN_TOKO' ? document.getElementById('trfDate') : document.getElementById('expDate')).value;
                 const amount = Number((kind === 'SETORAN_TOKO' ? document.getElementById('trfAmount') : document.getElementById('expAmount')).value) || 0;
                 const note = (kind === 'SETORAN_TOKO' ? document.getElementById('trfNote') : document.getElementById('expNote')).value.trim();
-                const category = kind === 'SETORAN_TOKO'
-                    ? `Setoran (${document.getElementById('trfStoreName').value.trim() || 'Toko'})`
-                    : document.getElementById('expCategory').value;
+
+                let category = '';
+                let entryGroup = 'OPERASIONAL';
+                if (kind === 'SETORAN_TOKO') {
+                    const inType = document.getElementById('trfInType')?.value || 'SETORAN';
+                    if (inType === 'MODAL') {
+                        category = 'Modal Awal / Suntik Owner';
+                        entryGroup = 'MODAL_OWNER';
+                    } else {
+                        category = `Setoran (${document.getElementById('trfStoreName')?.value.trim() || 'Toko'})`;
+                    }
+                } else {
+                    category = document.getElementById('expCategory').value;
+                    if (String(category).toLowerCase().includes('prive')) entryGroup = 'PRIVE_OWNER';
+                }
 
                 if (!date || amount <= 0) return alert('Isi tanggal dan nominal lebih dari 0.');
-                if (kind === 'BEBAN_PERUSAHAAN' && !note) return alert('Isi keterangan beban secara jelas.');
+                if (kind === 'BEBAN_PERUSAHAAN' && !note) return alert('Isi keterangan pengeluaran secara jelas.');
 
                 const activeBr = (this.state.branchFilter && this.state.branchFilter !== 'ALL') ? this.state.branchFilter : getActiveBranchId();
                 const entry = {
                     id: 'CB-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(),
                     branchId: activeBr,
-                    date, kind, category,
-                    note: note || (kind === 'SETORAN_TOKO' ? 'Setoran kas toko' : category),
+                    date, kind, category, entryGroup,
+                    note: note || (entryGroup === 'MODAL_OWNER' ? 'Suntik modal awal Owner' : (kind === 'SETORAN_TOKO' ? 'Setoran kas toko' : category)),
                     amount
                 };
                 this.state.cashbook.unshift(entry);
                 if (kind === 'SETORAN_TOKO') { document.getElementById('trfAmount').value = ''; document.getElementById('trfNote').value = ''; }
                 else { document.getElementById('expAmount').value = ''; document.getElementById('expNote').value = ''; }
+                this.toggleFinanceDrawer('');
                 this.saveLocalCache();
                 this.renderAll();
-                if (window.__officeCloud) await window.__officeCloud.upsertRow('office_cashbook', entry);
+                if (window.__officeCloud) {
+                    await window.__officeCloud.upsertRow('office_cashbook', entry);
+                    this.refreshServerCashSummary();
+                }
                 });
             },
 
@@ -2583,6 +2764,7 @@
                 this.renderAll();
                 if (window.__officeCloud) {
                     await window.__officeCloud.upsertRow('office_cashbook', row);
+                    this.refreshServerCashSummary();
                     await logAuditEventRpc({
                         action: 'VOID_OFFICE_CASHBOOK',
                         entityType: 'office_cashbook',
@@ -2693,41 +2875,78 @@
                 const salvage = Number(document.getElementById('assetSalvageInput').value) || 0;
                 const autoCb = !!document.getElementById('assetAutoCashbookChk')?.checked;
                 if (!name || !purchaseDate || cost <= 0) return alert('Lengkapi nama aset, tanggal beli, dan harga beli.');
-                const entry = {
-                    id: 'AST-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(),
-                    name, purchaseDate, lifeMonths, cost, salvage
-                };
-                this.state.assets.unshift(entry);
+                const activeBr = (this.state.branchFilter && this.state.branchFilter !== 'ALL') ? this.state.branchFilter : getActiveBranchId();
+                const astId = 'AST-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase();
                 let cbEntry = null;
                 if (autoCb) {
                     cbEntry = {
                         id: 'ASTCB-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(),
+                        branchId: activeBr,
                         date: purchaseDate,
                         kind: 'BEBAN_PERUSAHAAN',
+                        entryGroup: 'CAPEX_ASET',
+                        assetId: astId,
                         category: 'Pembelian Aset',
                         note: `Beli Aset: ${name} (${lifeMonths} bln) — oleh ${this.state.currentUserName || roleNow}`,
                         amount: cost
                     };
                     this.state.cashbook.unshift(cbEntry);
                 }
+                const entry = {
+                    id: astId,
+                    branchId: activeBr,
+                    cashbookId: cbEntry ? cbEntry.id : '',
+                    name, purchaseDate, lifeMonths, cost, salvage
+                };
+                this.state.assets.unshift(entry);
                 document.getElementById('assetNameInput').value = '';
                 document.getElementById('assetCostInput').value = '';
                 this.saveLocalCache();
                 this.renderAll();
                 if (window.__officeCloud) {
                     await window.__officeCloud.upsertRow('office_assets', entry);
-                    if (cbEntry) await window.__officeCloud.upsertRow('office_cashbook', cbEntry);
+                    if (cbEntry) {
+                        await window.__officeCloud.upsertRow('office_cashbook', cbEntry);
+                        this.refreshServerCashSummary();
+                    }
                 }
-                if (autoCb) alert(`Aset "${name}" disimpan & pengeluaran ${this.formatRp(cost)} otomatis tercatat di Buku Kas Perusahaan!`);
+                if (autoCb) alert(`Aset "${name}" disimpan! Pengeluaran kas ${this.formatRp(cost)} tercatat di Buku Kas (Investasi Aset — tidak dobel potong Laba Rugi).`);
             },
 
             async deleteAsset(id) {
                 if (document.getElementById('viewRoleSelect').value !== 'owner') return alert('Hanya Owner yang dapat menghapus aset.');
-                if (!confirm('Hapus aset ini?')) return;
+                const assetObj = this.state.assets.find(a => a.id === id);
+                if (!assetObj) return;
+                if (!confirm(`Hapus aset "${assetObj.name}"?\nJika pembelian aset ini tercatat di Buku Kas, catatannya otomatis dibatalkan (VOID) agar saldo Kas Utama kembali normal.`)) return;
+
+                // Cari & batalkan (VOID) otomatis catatan Buku Kas terkait aset ini!
+                const linkedCb = (this.state.cashbook || []).find(cb =>
+                    cb && cb.status !== 'voided' && (
+                        (assetObj.cashbookId && cb.id === assetObj.cashbookId) ||
+                        (cb.assetId && cb.assetId === assetObj.id) ||
+                        (String(cb.id || '').startsWith('ASTCB-') &&
+                         cb.date === assetObj.purchaseDate &&
+                         Number(cb.amount) === Number(assetObj.cost) &&
+                         String(cb.note || '').includes(assetObj.name))
+                    )
+                );
+                if (linkedCb) {
+                    linkedCb.status = 'voided';
+                    linkedCb.voidReason = `Otomatis batal karena aset "${assetObj.name}" dihapus Owner`;
+                    linkedCb.voidedBy = this.state.currentUserName || 'Owner';
+                    linkedCb.voidedAt = new Date().toISOString();
+                }
+
                 this.state.assets = this.state.assets.filter(a => a.id !== id);
                 this.saveLocalCache();
                 this.renderAll();
-                if (window.__officeCloud) await window.__officeCloud.deleteRow('office_assets', id);
+                if (window.__officeCloud) {
+                    await window.__officeCloud.deleteRow('office_assets', id);
+                    if (linkedCb) {
+                        await window.__officeCloud.upsertRow('office_cashbook', linkedCb);
+                        this.refreshServerCashSummary();
+                    }
+                }
             },
 
             setHrReqStatusFilter(st) {
@@ -3050,91 +3269,264 @@ Keterangan / No. Ref Transfer:`, 'Transfer Bank');
                 }, 120);
             },
 
-            renderAll() {
-                const ym = document.getElementById('activeMonthInput').value;
-                const bFilter = this.state.branchFilter || 'ALL';
-                const matchBranch = (row) => (bFilter === 'ALL') || ((row.branchId || 'cabang-1') === bFilter);
-                const scopedCashbook = this.state.cashbook.filter(matchBranch);
-                const scopedDebts = this.state.debts.filter(matchBranch);
+            computeMonthlyFinancials(ym, bFilter = 'ALL') {
+                const matchBranch = (row) => (bFilter === 'ALL') || ((row?.branchId || 'cabang-1') === bFilter);
+                const scopedCashbook = (this.state.cashbook || []).filter(matchBranch);
+                const scopedDebts = (this.state.debts || []).filter(matchBranch);
 
-                let mainCash = 0, reserveCash = 0, monthTransferIn = 0, monthExpenseOut = 0;
+                // 1. SALDO KAS & ARUS KAS OFFICE
+                let mainCash = 0, reserveCash = 0;
+                let monthTransferIn = 0, monthOfficeOpExp = 0, monthCapex = 0, monthModalIn = 0, monthPriveOut = 0;
+                const posMap = {};
+
                 scopedCashbook.filter(item => item.status !== 'voided').forEach(item => {
                     const amt = Number(item.amount) || 0;
-                    const inMonth = (item.date || '').startsWith(ym);
-                    if (item.kind === 'SETORAN_TOKO') { mainCash += amt; if (inMonth) monthTransferIn += amt; }
-                    else if (item.kind === 'BEBAN_PERUSAHAAN') { mainCash -= amt; if (inMonth) monthExpenseOut += amt; }
-                    else if (item.kind === 'KE_CADANGAN') { mainCash -= amt; reserveCash += amt; }
-                    else if (item.kind === 'DARI_CADANGAN') { reserveCash -= amt; mainCash += amt; }
+                    const inMonth = String(item.date || '').startsWith(ym);
+                    const grp = this.classifyCashbookGroup(item);
+
+                    if (item.kind === 'SETORAN_TOKO') {
+                        mainCash += amt;
+                        if (inMonth) {
+                            if (grp === 'MODAL_OWNER') monthModalIn += amt;
+                            else monthTransferIn += amt;
+                        }
+                    } else if (item.kind === 'BEBAN_PERUSAHAAN') {
+                        mainCash -= amt;
+                        if (inMonth) {
+                            if (grp === 'CAPEX_ASET') monthCapex += amt;
+                            else if (grp === 'PRIVE_OWNER') monthPriveOut += amt;
+                            else {
+                                monthOfficeOpExp += amt;
+                                posMap[item.category || 'Beban Lain'] = (posMap[item.category || 'Beban Lain'] || 0) + amt;
+                            }
+                        }
+                    } else if (item.kind === 'KE_CADANGAN') {
+                        mainCash -= amt;
+                        reserveCash += amt;
+                    } else if (item.kind === 'DARI_CADANGAN') {
+                        reserveCash -= amt;
+                        mainCash += amt;
+                    }
                 });
-                // Gunakan agregasi saldo penuh langsung dari PostgreSQL agar 100% akurat meski > 500 baris (#2)
+
+                // Gunakan agregasi saldo penuh PostgreSQL bila tersedia (> 500 baris tetap akurat!)
                 if (this.state.serverCashSummary && (this.state.serverCashSummary.branch_filter || 'ALL') === bFilter) {
                     mainCash = Number(this.state.serverCashSummary.main_cash) || 0;
                     reserveCash = Number(this.state.serverCashSummary.reserve_cash) || 0;
                 }
 
+                // 2. DATA REAL-TIME DARI POS TOKO (OMSET, HPP, BUAH RUSAK, KAS KELUAR POS, STOK BUAH)
+                const posTxMonth = (this.state.posTransactions || []).filter(t =>
+                    t && t.status !== 'cancelled' && matchBranch(t) && String(t.date || '').slice(0, 7) === ym
+                );
+                let posOmset = 0, posOmsetTunai = 0, posOmsetQris = 0, posOmsetTransfer = 0;
+                let posHpp = 0, posPlatformFee = 0;
+                posTxMonth.forEach(t => {
+                    const tot = Number(t.total) || 0;
+                    posOmset += tot;
+                    posHpp += (Number(t.totalCost) || 0);
+                    posPlatformFee += (Number(t.platformFee) || 0);
+                    const pm = String(t.paymentMethod || '').toLowerCase();
+                    if (pm.includes('qris')) posOmsetQris += tot;
+                    else if (pm.includes('transfer') || pm.includes('debit') || pm.includes('edc')) posOmsetTransfer += tot;
+                    else posOmsetTunai += tot;
+                });
+
+                const isProdLog = (w) => {
+                    const act = String(w?.actionType || '');
+                    return act.includes('Dapur Jus') || act.includes('Produksi Jus') || act.includes('Rakit Parsel') || act.includes('Promo');
+                };
+                const posWasteMonth = (this.state.posWasteLogs || []).filter(w =>
+                    w && w.status !== 'voided' && !isProdLog(w) && matchBranch(w) && String(w.date || '').slice(0, 7) === ym
+                );
+                const posWasteLoss = posWasteMonth.reduce((s, w) => s + (Number(w.totalLoss) || 0), 0);
+                const wasteRatioPct = posOmset > 0 ? (posWasteLoss / posOmset) * 100 : 0;
+
+                const posExpMonth = (this.state.posExpenses || []).filter(e =>
+                    e && e.status !== 'voided' && matchBranch(e) && String(e.date || '').slice(0, 7) === ym
+                );
+                const posDrawerExp = posExpMonth.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+                const posOpsTotal = posPlatformFee + posDrawerExp;
+
+                // Valuasi Stok Buah Aktif di Rak POS saat ini
+                let stockCostVal = 0, stockRevVal = 0;
+                (this.state.posInventory || []).forEach(it => {
+                    if (!it || it.active === false) return;
+                    const u = it.unit || 'Gram';
+                    const div = (u === 'Gram' || u === 'ml') ? 1000 : 1;
+                    const st = Math.max(0, Number(it.stock) || 0);
+                    stockCostVal += Math.round((st / div) * (Number(it.cost) || 0));
+                    stockRevVal += Math.round((st / div) * (Number(it.price) || 0));
+                });
+
+                // 3. ASET & PENYUSUTAN BULANAN
                 let monthDepTotal = 0, totalBookVal = 0;
+                (this.state.assets || []).forEach(a => {
+                    const dep = this.calcAssetDepreciationForMonth(a, ym);
+                    monthDepTotal += dep.monthly;
+                    totalBookVal += dep.bookValue;
+                });
+                if (monthDepTotal > 0) posMap['Penyusutan Aset (Otomatis)'] = monthDepTotal;
+
+                // 4. HUTANG & PIUTANG
+                const isDebtVoid = (d) => ['VOID', 'voided'].includes(String(d?.status || ''));
+                const unpaidRec = scopedDebts.filter(d => !isDebtVoid(d) && d.type === 'PIUTANG_TAGIHAN' && d.status !== 'Lunas').reduce((s, d) => s + (Number(d.amount) || 0), 0);
+                const unpaidPay = scopedDebts.filter(d => !isDebtVoid(d) && d.type === 'HUTANG_SUPPLIER' && d.status !== 'Lunas').reduce((s, d) => s + (Number(d.amount) || 0), 0);
+
+                // 5. LABA RUGI & KEKAYAAN BERSIH
+                const grossProfitAfterWaste = posOmset - posHpp - posWasteLoss;
+                const totalAllExpenses = posOpsTotal + monthOfficeOpExp + monthDepTotal;
+                const netProfit = grossProfitAfterWaste - totalAllExpenses;
+                const netMarginPct = posOmset > 0 ? (netProfit / posOmset) * 100 : 0;
+                const totalCash = mainCash + reserveCash;
+                const netWorth = totalCash + stockCostVal + totalBookVal + unpaidRec - unpaidPay;
+
+                return {
+                    scopedCashbook, scopedDebts, mainCash, reserveCash, totalCash,
+                    monthTransferIn, monthOfficeOpExp, monthCapex, monthModalIn, monthPriveOut, posMap,
+                    posTxCount: posTxMonth.length, posOmset, posOmsetTunai, posOmsetQris, posOmsetTransfer,
+                    posHpp, posWasteLoss, wasteRatioPct, posPlatformFee, posDrawerExp, posOpsTotal,
+                    stockCostVal, stockRevVal, monthDepTotal, totalBookVal, unpaidRec, unpaidPay,
+                    grossProfitAfterWaste, totalAllExpenses, netProfit, netMarginPct, netWorth
+                };
+            },
+
+            renderAll() {
+                const ym = document.getElementById('activeMonthInput').value;
+                const bFilter = this.state.branchFilter || 'ALL';
+                const f = this.computeMonthlyFinancials(ym, bFilter);
+
+                // Tabel Aset & Penyusutan
                 const assetTb = document.getElementById('assetTableBody');
                 assetTb.innerHTML = this.state.assets.length === 0
                     ? '<tr><td colspan="6" class="p-6 text-center text-gray-400">Belum ada aset perusahaan tercatat.</td></tr>'
                     : '';
                 this.state.assets.forEach(a => {
                     const dep = this.calcAssetDepreciationForMonth(a, ym);
-                    monthDepTotal += dep.monthly;
-                    totalBookVal += dep.bookValue;
-                    if (this.state.assets.length > 0) {
-                        assetTb.innerHTML += `
-                            <tr class="hover:bg-gray-50">
-                                <td class="p-3"><div class="font-extrabold text-gray-900">${this.escapeHtml(a.name)}</div><div class="text-[11px] text-gray-500 font-mono">${this.escapeHtml(a.purchaseDate)} • ${a.lifeMonths} bln</div></td>
-                                <td class="p-3 text-right font-bold">${this.formatRp(a.cost)}</td>
-                                <td class="p-3 text-right font-extrabold text-red-600">${this.formatRp(dep.monthly)}</td>
-                                <td class="p-3 text-right text-gray-700">${this.formatRp(dep.accum)}</td>
-                                <td class="p-3 text-right font-black text-purple-900">${this.formatRp(dep.bookValue)}</td>
-                                <td class="p-3 text-center"><button type="button" onclick="officeApp.deleteAsset('${this.escapeHtml(a.id)}')" class="text-gray-400 hover:text-red-600 p-1"><i class="fa-solid fa-trash-can"></i></button></td>
-                            </tr>
-                        `;
+                    assetTb.innerHTML += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-3"><div class="font-extrabold text-gray-900">${this.escapeHtml(a.name)}</div><div class="text-[11px] text-gray-500 font-mono">${this.escapeHtml(a.purchaseDate)} • ${a.lifeMonths} bln</div></td>
+                            <td class="p-3 text-right font-bold">${this.formatRp(a.cost)}</td>
+                            <td class="p-3 text-right font-extrabold text-red-600">${this.formatRp(dep.monthly)}</td>
+                            <td class="p-3 text-right text-gray-700">${this.formatRp(dep.accum)}</td>
+                            <td class="p-3 text-right font-black text-purple-900">${this.formatRp(dep.bookValue)}</td>
+                            <td class="p-3 text-center"><button type="button" onclick="officeApp.deleteAsset('${this.escapeHtml(a.id)}')" class="text-gray-400 hover:text-red-600 p-1"><i class="fa-solid fa-trash-can"></i></button></td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('assetMonthlyDepTotalLabel').textContent = `Susut / Bln: ${this.formatRp(f.monthDepTotal)}`;
+
+                // 3 Hero Executive Cards
+                const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+                setTxt('cardNetProfitReal', this.formatRp(f.netProfit));
+                setTxt('cardNetMarginBadge', f.posOmset > 0 ? `Margin ${f.netMarginPct.toFixed(1)}%` : 'Belum ada nota');
+                setTxt('cardNetProfitSub', f.posTxCount > 0
+                    ? `Dari ${f.posTxCount} nota POS (${this.formatRp(f.posOmset)}) bulan ${ym}`
+                    : `Belum ada transaksi POS di ${ym}`);
+
+                setTxt('cardMainCash', this.formatRp(f.mainCash));
+                setTxt('cardReserveCash', this.formatRp(f.reserveCash));
+                setTxt('cardStoreTransferSub', `Setoran Bln Ini: ${this.formatRp(f.monthTransferIn)}`);
+                setTxt('cardNetWorthDisplay', this.formatRp(f.netWorth));
+                setTxt('cardNetWorthSub', `Kas ${this.formatRp(f.totalCash)} + Stok ${this.formatRp(f.stockCostVal)} + Aset ${this.formatRp(f.totalBookVal)}`);
+
+                // Kartu A: Laporan Laba Rugi Toko Buah
+                setTxt('plPeriodSubtitle', `Periode ${ym} • Cabang: ${bFilter === 'ALL' ? 'Semua Cabang' : bFilter}`);
+                setTxt('plTxCountBadge', `${f.posTxCount} nota POS`);
+                setTxt('plOmsetTotal', this.formatRp(f.posOmset));
+                setTxt('plOmsetTunai', this.formatRp(f.posOmsetTunai));
+                setTxt('plOmsetQris', this.formatRp(f.posOmsetQris));
+                setTxt('plOmsetTransfer', this.formatRp(f.posOmsetTransfer));
+                setTxt('plHppTotal', `- ${this.formatRp(f.posHpp)}`);
+                setTxt('plWasteTotal', `- ${this.formatRp(f.posWasteLoss)}`);
+                const wBadge = document.getElementById('plWasteRatioBadge');
+                if (wBadge) {
+                    const pctStr = f.wasteRatioPct.toFixed(1);
+                    if (f.wasteRatioPct <= 3) {
+                        wBadge.className = 'text-[10px] font-black px-2 py-0.5 rounded-full bg-green-100 text-nutri-dark';
+                        wBadge.textContent = `${pctStr}% • Sangat Sehat`;
+                    } else if (f.wasteRatioPct <= 5) {
+                        wBadge.className = 'text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800';
+                        wBadge.textContent = `${pctStr}% • Wajar`;
+                    } else {
+                        wBadge.className = 'text-[10px] font-black px-2 py-0.5 rounded-full bg-red-100 text-red-700';
+                        wBadge.textContent = `${pctStr}% • Waspada Susut!`;
                     }
-                });
-                document.getElementById('assetMonthlyDepTotalLabel').textContent = `Susut / Bln: ${this.formatRp(monthDepTotal)}`;
+                }
+                setTxt('plGrossProfit', this.formatRp(f.grossProfitAfterWaste));
+                setTxt('plPosOpsExp', `- ${this.formatRp(f.posOpsTotal)}`);
+                setTxt('plOfficeExp', `- ${this.formatRp(f.monthOfficeOpExp)}`);
+                setTxt('plDepExp', `- ${this.formatRp(f.monthDepTotal)}`);
+                setTxt('plNetProfitRow', this.formatRp(f.netProfit));
+                setTxt('cardTotalOutflow', this.formatRp(f.monthOfficeOpExp + f.monthDepTotal));
+                setTxt('cardNetSurplus', this.formatRp(f.monthTransferIn - (f.monthOfficeOpExp + f.monthDepTotal)));
 
-                const totalOutWithDep = monthExpenseOut + monthDepTotal;
-                document.getElementById('cardMainCash').textContent = this.formatRp(mainCash);
-                document.getElementById('cardStoreTransferSub').textContent = `Setoran Toko Bln Ini: ${this.formatRp(monthTransferIn)}`;
-                document.getElementById('cardReserveCash').textContent = this.formatRp(reserveCash);
-                document.getElementById('cardTotalOutflow').textContent = this.formatRp(totalOutWithDep);
-                document.getElementById('cardDepreciationSub').textContent = `Termasuk Susut Aset: ${this.formatRp(monthDepTotal)}`;
-                document.getElementById('cardNetSurplus').textContent = this.formatRp(monthTransferIn - totalOutWithDep);
-                document.getElementById('miniAssetBookValue').textContent = this.formatRp(totalBookVal);
+                // Kartu B: Posisi Harta & Uang (Neraca Mini)
+                setTxt('balTotalCash', this.formatRp(f.totalCash));
+                setTxt('balStockCost', this.formatRp(f.stockCostVal));
+                setTxt('balStockRevHint', `Potensi omset jual: ${this.formatRp(f.stockRevVal)}`);
+                setTxt('miniAssetBookValue', this.formatRp(f.totalBookVal));
+                setTxt('miniReceivableTotal', this.formatRp(f.unpaidRec));
+                setTxt('miniPayableTotal', `- ${this.formatRp(f.unpaidPay)}`);
+                setTxt('cfCapexMonth', this.formatRp(f.monthCapex));
+                setTxt('cfModalMonth', this.formatRp(f.monthModalIn));
+                setTxt('cfPriveMonth', this.formatRp(f.monthPriveOut));
 
-                const isDebtVoid = (d) => ['VOID', 'voided'].includes(String(d.status || ''));
-                const unpaidRec = scopedDebts.filter(d => !isDebtVoid(d) && d.type === 'PIUTANG_TAGIHAN' && d.status !== 'Lunas').reduce((s, d) => s + (Number(d.amount) || 0), 0);
-                const unpaidPay = scopedDebts.filter(d => !isDebtVoid(d) && d.type === 'HUTANG_SUPPLIER' && d.status !== 'Lunas').reduce((s, d) => s + (Number(d.amount) || 0), 0);
-                document.getElementById('miniReceivableTotal').textContent = this.formatRp(unpaidRec);
-                document.getElementById('miniPayableTotal').textContent = this.formatRp(unpaidPay);
+                const posEntries = Object.entries(f.posMap);
+                const expBreakEl = document.getElementById('expenseBreakdownBox');
+                if (expBreakEl) {
+                    expBreakEl.innerHTML = posEntries.length === 0
+                        ? ''
+                        : `<div class="text-[10.5px] font-extrabold text-gray-500 uppercase pt-1">Rincian Beban Kantor (${ym}):</div>` +
+                          posEntries.map(([k, v]) => `<div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-gray-50 border border-gray-200/80"><span class="font-bold text-gray-700">${this.escapeHtml(k)}</span><span class="font-black text-red-600">${this.formatRp(v)}</span></div>`).join('');
+                }
 
-                const posMap = {};
-                scopedCashbook.filter(x => x.status !== 'voided' && x.kind === 'BEBAN_PERUSAHAAN' && (x.date || '').startsWith(ym)).forEach(e => {
-                    posMap[e.category] = (posMap[e.category] || 0) + (Number(e.amount) || 0);
-                });
-                if (monthDepTotal > 0) posMap['Penyusutan Aset (Otomatis)'] = monthDepTotal;
-                const posEntries = Object.entries(posMap);
-                document.getElementById('expenseBreakdownBox').innerHTML = posEntries.length === 0
-                    ? '<div class="text-gray-400 py-3">Belum ada beban pada bulan ini.</div>'
-                    : posEntries.map(([k, v]) => `<div class="flex items-center justify-between p-2.5 rounded-xl bg-gray-50 border border-gray-200/80"><span class="font-bold text-gray-700">${this.escapeHtml(k)}</span><span class="font-black text-red-600">${this.formatRp(v)}</span></div>`).join('');
+                // BUKU KAS PERUSAHAAN (TRANSPARAN: BULAN INI vs SEMUA WAKTU + PENCARIAN)
+                const scope = this.state.cashbookScope || 'month';
+                const qCb = (document.getElementById('cashbookSearchInput')?.value || '').trim().toLowerCase();
+                const allScoped = f.scopedCashbook;
+                const monthOnly = allScoped.filter(x => String(x.date || '').startsWith(ym));
+                const otherMonthActiveCount = allScoped.filter(x => x.status !== 'voided' && !String(x.date || '').startsWith(ym)).length;
 
-                const monthCash = scopedCashbook.filter(x => (x.date || '').startsWith(ym));
-                document.getElementById('cashbookCountLabel').textContent = `${monthCash.length} catatan (${ym})`;
-                document.getElementById('cashbookTableBody').innerHTML = monthCash.length === 0
-                    ? '<tr><td colspan="5" class="p-6 text-center text-gray-400">Belum ada transaksi kas pada bulan ini.</td></tr>'
-                    : monthCash.map(row => {
+                const noticeBar = document.getElementById('cashbookOtherMonthsNotice');
+                const noticeTxt = document.getElementById('cashbookOtherMonthsText');
+                if (noticeBar && noticeTxt) {
+                    if (scope === 'month' && otherMonthActiveCount > 0) {
+                        noticeBar.classList.remove('hidden');
+                        noticeTxt.textContent = `Terdapat ${otherMonthActiveCount} catatan kas aktif di bulan lain yang ikut memengaruhi Saldo Kas Utama (${this.formatRp(f.mainCash)}).`;
+                    } else {
+                        noticeBar.classList.add('hidden');
+                    }
+                }
+
+                let shownCash = (scope === 'all') ? [...allScoped] : [...monthOnly];
+                if (qCb) {
+                    shownCash = shownCash.filter(r =>
+                        String(r.category || '').toLowerCase().includes(qCb) ||
+                        String(r.note || '').toLowerCase().includes(qCb) ||
+                        String(r.date || '').toLowerCase().includes(qCb)
+                    );
+                }
+                document.getElementById('cashbookCountLabel').textContent = `${shownCash.length} catatan (${scope === 'all' ? 'Semua Waktu' : ym})`;
+                document.getElementById('cashbookTableBody').innerHTML = shownCash.length === 0
+                    ? `<tr><td colspan="5" class="p-6 text-center text-gray-400">Belum ada transaksi kas ${scope === 'all' ? 'tercatat' : 'pada bulan ' + this.escapeHtml(ym)}.</td></tr>`
+                    : shownCash.map(row => {
                         const isPos = row.kind === 'SETORAN_TOKO' || row.kind === 'DARI_CADANGAN';
                         const isVoid = row.status === 'voided';
                         const isFromPos = row.sourceType === 'pos_shift' || row.sourceType === 'tempo_settlement';
-                        return `<tr class="hover:bg-gray-50 ${isVoid ? 'opacity-50 line-through' : ''}"><td class="p-3 font-mono text-gray-600 whitespace-nowrap">${this.escapeHtml(row.date)}</td><td class="p-3"><span class="px-2 py-0.5 rounded-md text-[10px] font-black ${isVoid ? 'bg-red-900/60 text-red-300' : (isPos ? 'bg-green-100 text-nutri-dark' : 'bg-red-100 text-red-700')}">${this.escapeHtml(row.category)}</span>${isFromPos ? ' <span class="px-1.5 py-0.5 rounded bg-emerald-900/60 text-emerald-300 text-[9px] font-black">🔗 POS</span>' : ''}</td><td class="p-3 text-gray-700">${this.escapeHtml(row.note)}${isVoid ? `<div class="text-[10px] text-red-400 font-bold">VOID: ${this.escapeHtml(row.voidReason || '-')}</div>` : ''}</td><td class="p-3 text-right font-black whitespace-nowrap ${isPos ? 'text-nutri-dark' : 'text-red-600'}">${isPos ? '+' : '-'} ${this.formatRp(row.amount)}</td><td class="p-3 text-center">${isVoid ? '<span class="text-[10px] font-black text-red-400">VOID</span>' : `<button type="button" onclick="officeApp.deleteCashbookEntry('${this.escapeHtml(row.id)}')" title="Void Catatan Kas" class="text-gray-400 hover:text-red-500 p-1"><i class="fa-solid fa-ban"></i></button>`}</td></tr>`;
+                        const grp = this.classifyCashbookGroup(row);
+                        const grpTag = grp === 'CAPEX_ASET'
+                            ? ' <span class="px-1.5 py-0.5 rounded bg-purple-100 text-purple-900 text-[9px] font-black">ASET (NON-BEBAN)</span>'
+                            : (grp === 'MODAL_OWNER'
+                                ? ' <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[9px] font-black">MODAL</span>'
+                                : (grp === 'PRIVE_OWNER' ? ' <span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[9px] font-black">PRIVE</span>' : ''));
+                        return `<tr class="hover:bg-gray-50 ${isVoid ? 'opacity-50 line-through' : ''}"><td class="p-3 font-mono text-gray-600 whitespace-nowrap">${this.escapeHtml(row.date)}</td><td class="p-3"><span class="px-2 py-0.5 rounded-md text-[10px] font-black ${isVoid ? 'bg-red-900/60 text-red-300' : (isPos ? 'bg-green-100 text-nutri-dark' : 'bg-red-100 text-red-700')}">${this.escapeHtml(row.category)}</span>${grpTag}${isFromPos ? ' <span class="px-1.5 py-0.5 rounded bg-emerald-900/60 text-emerald-300 text-[9px] font-black">🔗 POS</span>' : ''}</td><td class="p-3 text-gray-700">${this.escapeHtml(row.note)}${isVoid ? `<div class="text-[10px] text-red-400 font-bold">VOID: ${this.escapeHtml(row.voidReason || '-')}</div>` : ''}</td><td class="p-3 text-right font-black whitespace-nowrap ${isPos ? 'text-nutri-dark' : 'text-red-600'}">${isPos ? '+' : '-'} ${this.formatRp(row.amount)}</td><td class="p-3 text-center">${isVoid ? '<span class="text-[10px] font-black text-red-400">VOID</span>' : `<button type="button" onclick="officeApp.deleteCashbookEntry('${this.escapeHtml(row.id)}')" title="Batalkan (VOID) Catatan Kas" class="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold text-[10.5px]"><i class="fa-solid fa-ban mr-0.5"></i> Void</button>`}</td></tr>`;
                     }).join('');
 
-                document.getElementById('debtTableBody').innerHTML = scopedDebts.length === 0
+                const isDebtVoid = (d) => ['VOID', 'voided'].includes(String(d?.status || ''));
+                document.getElementById('debtTableBody').innerHTML = f.scopedDebts.length === 0
                     ? '<tr><td colspan="5" class="p-6 text-center text-gray-400">Belum ada data hutang atau piutang.</td></tr>'
-                    : scopedDebts.map(d => {
+                    : f.scopedDebts.map(d => {
                         const isRec = d.type === 'PIUTANG_TAGIHAN';
                         const isVoid = isDebtVoid(d);
                         const isPaid = d.status === 'Lunas';
@@ -3513,6 +3905,23 @@ Keterangan / No. Ref Transfer:`, 'Transfer Bank');
 
                         const wb = XLSX.utils.book_new();
                         if (canFinance) {
+                            const finSum = this.computeMonthlyFinancials(ym, this.state.branchFilter || 'ALL');
+                            const plRows = [
+                                { 'No': 1, 'Pos Laporan Keuangan': '(+) Omset Penjualan POS (Tunai + QRIS + Transfer)', 'Keterangan': `${finSum.posTxCount} nota (Tunai: ${this.formatRp(finSum.posOmsetTunai)}, QRIS: ${this.formatRp(finSum.posOmsetQris)}, Transfer: ${this.formatRp(finSum.posOmsetTransfer)})`, 'Nominal (Rp)': finSum.posOmset },
+                                { 'No': 2, 'Pos Laporan Keuangan': '(-) Modal Buah Terjual (HPP POS)', 'Keterangan': 'Harga pokok buah yang terjual', 'Nominal (Rp)': -finSum.posHpp },
+                                { 'No': 3, 'Pos Laporan Keuangan': '(-) Buah Rusak / Busuk & Susut Timbangan', 'Keterangan': `Rasio susut: ${finSum.wasteRatioPct.toFixed(1)}% dari omset`, 'Nominal (Rp)': -finSum.posWasteLoss },
+                                { 'No': 4, 'Pos Laporan Keuangan': '(=) LABA KOTOR TOKO (SETELAH SUSUT)', 'Keterangan': 'Omset - HPP - Susut Buah', 'Nominal (Rp)': finSum.grossProfitAfterWaste },
+                                { 'No': 5, 'Pos Laporan Keuangan': '(-) Komisi Aplikasi & Kas Keluar Laci POS', 'Keterangan': `Komisi: ${this.formatRp(finSum.posPlatformFee)} + Laci POS: ${this.formatRp(finSum.posDrawerExp)}`, 'Nominal (Rp)': -finSum.posOpsTotal },
+                                { 'No': 6, 'Pos Laporan Keuangan': '(-) Beban Operasional Kantor & Gaji (Office)', 'Keterangan': 'Tidak termasuk Beli Aset & Prive Owner', 'Nominal (Rp)': -finSum.monthOfficeOpExp },
+                                { 'No': 7, 'Pos Laporan Keuangan': '(-) Penyusutan Aset Bulanan', 'Keterangan': 'Garis lurus bulanan otomatis', 'Nominal (Rp)': -finSum.monthDepTotal },
+                                { 'No': 8, 'Pos Laporan Keuangan': '(=) LABA BERSIH USAHA', 'Keterangan': `Margin bersih: ${finSum.netMarginPct.toFixed(1)}%`, 'Nominal (Rp)': finSum.netProfit },
+                                { 'No': 9, 'Pos Laporan Keuangan': '--- NERACA MINI: Total Kas (Utama + Cadangan)', 'Keterangan': `Utama: ${this.formatRp(finSum.mainCash)} | Cadangan: ${this.formatRp(finSum.reserveCash)}`, 'Nominal (Rp)': finSum.totalCash },
+                                { 'No': 10, 'Pos Laporan Keuangan': '--- NERACA MINI: Modal Stok Buah di Rak POS', 'Keterangan': `Potensi omset jual: ${this.formatRp(finSum.stockRevVal)}`, 'Nominal (Rp)': finSum.stockCostVal },
+                                { 'No': 11, 'Pos Laporan Keuangan': '--- NERACA MINI: Nilai Buku Aset + Piutang - Hutang', 'Keterangan': `Aset: ${this.formatRp(finSum.totalBookVal)} | Piutang: ${this.formatRp(finSum.unpaidRec)} | Hutang: ${this.formatRp(finSum.unpaidPay)}`, 'Nominal (Rp)': finSum.totalBookVal + finSum.unpaidRec - finSum.unpaidPay },
+                                { 'No': 12, 'Pos Laporan Keuangan': '(=) KEKAYAAN BERSIH USAHA', 'Keterangan': 'Total Harta - Total Hutang', 'Nominal (Rp)': finSum.netWorth }
+                            ];
+                            XLSX.utils.book_append_sheet(wb, buildStyledSheet(plRows, 'LABA RUGI & NERACA MINI NUTRIFRESH (POS + OFFICE)', '064E3B', 'D1FAE5', [3], [0]), 'Laba_Rugi_Gabungan');
+
                             const cashData = cashRows.length ? cashRows : [{ 'No': '-', 'Tanggal': '-', 'Jenis': '-', 'Pos / Kategori': '-', 'Keterangan': 'Belum ada transaksi kas pada bulan ini', 'Nominal (Rp)': 0 }];
                             XLSX.utils.book_append_sheet(wb, buildStyledSheet(cashData, 'LAPORAN KAS PERUSAHAAN', '14532D', 'DCFCE7', [5], [0, 1]), 'Kas_Perusahaan');
 
@@ -4068,6 +4477,23 @@ Catat juga sebagai Kas Masuk (Pengembalian Pinjaman) di Buku Kas Perusahaan?`);
                         officeApp.state.dzikirLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                         if (officeApp.state.activeTab === 'absensi_foto') officeApp.renderOfficeAttendanceTable();
                     }, () => {});
+                    // KONEKSI LIVE POS -> OFFICE (v149: Omset, HPP, Buah Rusak, Kas Keluar Laci & Valuasi Stok Buah)
+                    onSnapshot(query(collection(this.db, "artifacts", appId, "public", "data", "transactions"), orderBy("date", "desc"), limit(1500)), (snap) => {
+                        officeApp.state.posTransactions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        officeApp.scheduleRenderAll();
+                    }, () => {});
+                    onSnapshot(query(collection(this.db, "artifacts", appId, "public", "data", "waste_logs"), orderBy("date", "desc"), limit(800)), (snap) => {
+                        officeApp.state.posWasteLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        officeApp.scheduleRenderAll();
+                    }, () => {});
+                    onSnapshot(query(collection(this.db, "artifacts", appId, "public", "data", "expenses"), orderBy("date", "desc"), limit(800)), (snap) => {
+                        officeApp.state.posExpenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        officeApp.scheduleRenderAll();
+                    }, () => {});
+                    onSnapshot(collection(this.db, "artifacts", appId, "public", "data", "inventory"), (snap) => {
+                        officeApp.state.posInventory = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        officeApp.scheduleRenderAll();
+                    }, () => {});
                 }
             },
             async isAuthorizedStaffOrOwner(emailLow, uid = "") {
@@ -4266,7 +4692,7 @@ Catat juga sebagai Kas Masuk (Pengembalian Pinjaman) di Buku Kas Perusahaan?`);
     </div>
 
     <script>
-        window.__NF_APP_VERSION = 'v148';
+        window.__NF_APP_VERSION = 'v149';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 

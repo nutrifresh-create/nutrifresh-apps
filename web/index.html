@@ -3523,12 +3523,13 @@
 
         installGlobalErrorTracker("index.html");
         window.__nfRegisterPushToken = (tok, meta = {}) => {
-            const memPhone = meta.phone || appObj.state.customerMember?.phone || document.getElementById('custPhone')?.value || "";
+            const rawPhone = meta.phone || appObj.state.customerMember?.phone || document.getElementById('custPhone')?.value || "";
+            const normPhone = (appObj && typeof appObj.normalizeWaPhone === 'function') ? appObj.normalizeWaPhone(rawPhone) : String(rawPhone || '').replace(/\D/g, '');
             registerPushDeviceRpc({
                 token: tok,
                 appRole: "customer",
                 userEmail: appObj.state.customerMember?.email || "",
-                customerPhone: memPhone,
+                customerPhone: normPhone,
                 platform: window.NfAndroidNative ? "android" : "web"
             }).catch(() => {});
         };
@@ -4825,9 +4826,24 @@
                         totalText: this.formatCurrency(grand),
                         courierName: top.courierName || '',
                         deliveryMode: top.deliveryMode || 'Kirim ke Rumah',
-                        replyUrl: (SUPABASE_CONFIG && SUPABASE_CONFIG.url) ? `${SUPABASE_CONFIG.url}/functions/v1/send-push` : ''
+                        replyUrl: (SUPABASE_CONFIG && SUPABASE_CONFIG.url) ? `${SUPABASE_CONFIG.url}/functions/v1/send-push` : '',
+                        replyApiKey: (SUPABASE_CONFIG && (SUPABASE_CONFIG.anonKey || SUPABASE_CONFIG.key)) || ''
                     };
                     window.NfAndroidNative.syncActiveOrderState(JSON.stringify(payload));
+                } catch (_) {}
+            },
+            dispatchOrderPushNow(payload) {
+                try {
+                    const url = (SUPABASE_CONFIG && SUPABASE_CONFIG.url) ? `${SUPABASE_CONFIG.url}/functions/v1/send-push` : '';
+                    const key = (SUPABASE_CONFIG && (SUPABASE_CONFIG.anonKey || SUPABASE_CONFIG.key)) || '';
+                    if (!url || !payload) return;
+                    const hdrs = { 'Content-Type': 'application/json' };
+                    if (key) { hdrs['apikey'] = key; hdrs['Authorization'] = `Bearer ${key}`; }
+                    fetch(url, {
+                        method: 'POST',
+                        headers: hdrs,
+                        body: JSON.stringify({ action: 'dispatch_order_push', ...payload })
+                    }).catch(() => {});
                 } catch (_) {}
             },
             updateFloatingOrderPillPosition() {
@@ -4917,7 +4933,7 @@
                             const prevChatLenMap = new Map((this.state.myOrdersList || []).map(o => [o.id, Array.isArray(o.orderChat) ? o.orderChat.length : 0]));
                             // Deteksi perubahan status & pesan baru (anti-duplikat & tidak banjir saat baru buka app dari background!)
                             if (!this._notifiedOrderEvents) this._notifiedOrderEvents = new Set();
-                            const skipLocalNotify = !!silentNotify || !!window.NfAndroidNative;
+                            const skipLocalNotify = !!silentNotify;
                             res.orders.forEach(o => {
                                 const oldSt = prevMap.get(o.id);
                                 const oldChatLen = prevChatLenMap.get(o.id) || 0;
@@ -5337,6 +5353,13 @@
                 try {
                     this.showCustomerToast('Mengirim persetujuan timbangan...');
                     await customerApproveOrderRpc({ orderId, token });
+                    this.dispatchOrderPushNow({
+                        order_id: orderId,
+                        target_roles: ['pos'],
+                        event_type: 'order_status',
+                        title: `✅ Pelanggan Setujui Timbangan #${orderId}`,
+                        body: 'Pelanggan telah menyetujui hasil timbangan. Segera siapkan pesanan!'
+                    });
                     this.showCustomerToast('Persetujuan terkirim! Pesanan segera diproses.');
                     await this.refreshCustomerOrders(true);
                 } catch (err) {
@@ -5350,11 +5373,21 @@
                 inp.disabled = true;
                 try {
                     const ord = (this.state.myOrdersList || []).find(o => o.id === orderId);
+                    const cSenderName = ord?.customerName || this.state.customerMember?.name || 'Pelanggan';
                     await customerSendOrderChatRpc({
                         orderId,
                         token,
                         message: msg,
-                        senderName: ord?.customerName || this.state.customerMember?.name || 'Pelanggan'
+                        senderName: cSenderName
+                    });
+                    this.dispatchOrderPushNow({
+                        order_id: orderId,
+                        target_roles: ['pos', 'staff'],
+                        event_type: 'chat',
+                        sender_name: cSenderName,
+                        chat_text: msg,
+                        title: `💬 Chat dari ${cSenderName} (#${orderId})`,
+                        body: msg
                     });
                     inp.value = '';
                     if (this.state.custChatDrafts) delete this.state.custChatDrafts[orderId];
@@ -5405,6 +5438,13 @@
                                 if (uploaded && uploaded.startsWith('http')) finalUrl = uploaded;
                             } catch (_) {}
                             await customerUploadOrderProofRpc({ orderId, token, proofUrl: finalUrl });
+                            this.dispatchOrderPushNow({
+                                order_id: orderId,
+                                target_roles: ['pos'],
+                                event_type: 'order_status',
+                                title: `🧾 Bukti Bayar Masuk #${orderId}`,
+                                body: 'Pelanggan mengunggah bukti transfer/QRIS. Silakan cek & verifikasi di POS.'
+                            });
                             this.showCustomerToast('Bukti transfer terkirim ke kasir!');
                             await this.refreshCustomerOrders(true);
                         } catch (err) {
@@ -5466,6 +5506,13 @@
                     };
                     this.saveCustomerOrderRef(newOrderObj.id, newOrderObj.receiptToken, newOrderObj);
                     if (window.__nfSyncFcmToken) window.__nfSyncFcmToken({ phone });
+                    this.dispatchOrderPushNow({
+                        order_id: newOrderObj.id,
+                        target_roles: ['pos'],
+                        event_type: 'order_status',
+                        title: `🛒 Order Baru #${newOrderObj.orderCode}`,
+                        body: `${name} (${delivery}) • Estimasi ${this.formatCurrency(estimatedTotal)}`
+                    });
 
                     this.state.customerCart = [];
                     this.state.selectedCartVoucher = null;
@@ -7040,7 +7087,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v148';
+        window.__NF_APP_VERSION = 'v149';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 

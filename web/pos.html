@@ -5663,6 +5663,20 @@
                 if (bDone) bDone.className = this.state.onlineOrdersFilter === 'done' ? 'px-3 py-1.5 font-extrabold bg-nutri-green text-white shadow-sm' : 'px-3 py-1.5 font-bold bg-gray-200 text-gray-700';
                 this.renderOnlineOrdersList();
             },
+            dispatchOrderPushNow(payload) {
+                try {
+                    const url = (SUPABASE_CONFIG && SUPABASE_CONFIG.url) ? `${SUPABASE_CONFIG.url}/functions/v1/send-push` : '';
+                    const key = (SUPABASE_CONFIG && (SUPABASE_CONFIG.anonKey || SUPABASE_CONFIG.key)) || '';
+                    if (!url || !payload) return;
+                    const hdrs = { 'Content-Type': 'application/json' };
+                    if (key) { hdrs['apikey'] = key; hdrs['Authorization'] = `Bearer ${key}`; }
+                    fetch(url, {
+                        method: 'POST',
+                        headers: hdrs,
+                        body: JSON.stringify({ action: 'dispatch_order_push', ...payload })
+                    }).catch(() => {});
+                } catch (_) {}
+            },
             mergeOrderChatsSafe(baseChat, incomingChat) {
                 const combined = [];
                 const seen = new Set();
@@ -5858,6 +5872,17 @@
                     const senderName = this.state.currentCashier || this.state.staffAccount?.name || 'Kasir NutriFresh';
                     const res = await staffSendOrderChatRpc({ orderId, message: msg, senderName, senderRole: 'store' });
                     if (inp) inp.value = '';
+                    const ordForPush = (this.state.onlineOrders || []).find(o => o.id === orderId);
+                    this.dispatchOrderPushNow({
+                        order_id: orderId,
+                        target_roles: ['customer'],
+                        target_phone: ordForPush?.customerPhone || '',
+                        event_type: 'chat',
+                        sender_name: senderName,
+                        chat_text: msg,
+                        title: `💬 Pesan dari ${senderName} (#${ordForPush?.orderCode || orderId})`,
+                        body: msg
+                    });
                     const ord = (this.state.onlineOrders || []).find(o => o.id === orderId);
                     if (ord && res && Array.isArray(res.orderChat)) {
                         ord.orderChat = res.orderChat;
@@ -5934,7 +5959,17 @@
 
                 if (ord.orderStatus === 'Menunggu Timbang') {
                     ord.orderStatus = 'Sedang Ditimbang';
-                    this.persistOnlineOrderRecord(ord);
+                    this.persistOnlineOrderRecord(ord).then(() => {
+                        this.dispatchOrderPushNow({
+                            order_id: ord.id,
+                            target_roles: ['customer'],
+                            target_phone: ord.customerPhone || '',
+                            event_type: 'order_status',
+                            silent_live_only: true,
+                            title: `⚖️ Sedang Ditimbang • #${ord.orderCode || ord.id}`,
+                            body: 'Kasir NutriFresh sedang memilih & menimbang buah pesanan Anda.'
+                        });
+                    });
                 }
                 this.state.activeLinkedOnlineOrder = ord;
                 const cleanPhone = this.normalizeWaPhone(ord.customerPhone || '');
@@ -6070,6 +6105,41 @@
                 if (!ord) return;
                 ord.orderStatus = newStatus;
                 await this.persistOnlineOrderRecord(ord);
+                const grandNow = (Number(ord.finalTotal) || Number(ord.estimatedTotal) || 0) + (Number(ord.shippingFee) || 0);
+                if (newStatus === 'Siap Diambil Kurir') {
+                    this.dispatchOrderPushNow({
+                        order_id: ord.id,
+                        target_roles: ['staff'],
+                        event_type: 'order_status',
+                        title: `🛵 Paket Siap Diambil Kurir! #${ord.orderCode || ord.id}`,
+                        body: `${ord.customerName || 'Pelanggan'} • ${ord.paymentMethod || ''} ${this.formatCurrency(grandNow)}`
+                    });
+                    this.dispatchOrderPushNow({
+                        order_id: ord.id,
+                        target_roles: ['customer'],
+                        target_phone: ord.customerPhone || '',
+                        event_type: 'order_status',
+                        title: `📦 Pesanan Siap Diantar Kurir • #${ord.orderCode || ord.id}`,
+                        body: `Pesanan Anda sudah dikemas rapi (${this.formatCurrency(grandNow)}) dan menunggu kurir berangkat.`
+                    });
+                } else {
+                    const stTitle = newStatus === 'Siap Diambil'
+                        ? `🛍️ Pesanan Siap Diambil di Toko! #${ord.orderCode || ord.id}`
+                        : (newStatus === 'Diantar Kurir'
+                            ? `🛵 Pesanan Sedang Diantar! #${ord.orderCode || ord.id}`
+                            : `🍐 Update Pesanan #${ord.orderCode || ord.id}: ${newStatus}`);
+                    const stBody = newStatus === 'Siap Diambil'
+                        ? `Total ${this.formatCurrency(grandNow)}. Silakan ambil di gerai NutriFresh.`
+                        : `Status terbaru: ${newStatus} • Total ${this.formatCurrency(grandNow)}.`;
+                    this.dispatchOrderPushNow({
+                        order_id: ord.id,
+                        target_roles: ['customer'],
+                        target_phone: ord.customerPhone || '',
+                        event_type: 'order_status',
+                        title: stTitle,
+                        body: stBody
+                    });
+                }
                 this.showAlert(`Status pesanan #${ord.orderCode || ord.id} diperbarui menjadi "${newStatus}". Layar HP pelanggan langsung ter-update!`);
             },
             async sendOnlineOrderFinalToApp() {
@@ -6112,6 +6182,16 @@
                 });
                 ord.orderChat = chatArr;
                 await this.persistOnlineOrderRecord(ord);
+                const grandFinal = totalBuah + shippingFee;
+                this.dispatchOrderPushNow({
+                    order_id: ord.id,
+                    target_roles: ['customer'],
+                    target_phone: ord.customerPhone || '',
+                    event_type: 'order_status',
+                    dedupe_key: `weigh:${ord.id}:${grandFinal}:${Date.now()}`,
+                    title: `⚖️ Buah Selesai Ditimbang! #${ord.orderCode || ord.id}`,
+                    body: `Total final ${this.formatCurrency(grandFinal)}${shippingFee === 0 ? ' (Gratis Ongkir)' : ''}.${cleanNote ? ' ' + cleanNote : ''} Ketuk untuk ACC / bayar.`
+                });
                 this.showAlert(`Total Final (${this.formatCurrency(totalBuah + shippingFee)}) berhasil dikirim ke HP pelanggan!\n\nJika dalam 5-10 menit pelanggan belum upload bukti bayar, klik tombol hijau "WA" untuk mengingatkan cepat.`);
             },
 
@@ -6149,6 +6229,15 @@
                 ord.finalTotal = this.state.posTotal;
                 ord.weighedItems = weighedItems;
                 await this.persistOnlineOrderRecord(ord);
+                this.dispatchOrderPushNow({
+                    order_id: ord.id,
+                    target_roles: ['customer'],
+                    target_phone: ord.customerPhone || '',
+                    event_type: 'order_status',
+                    dedupe_key: `weighwa:${ord.id}:${this.state.posTotal}:${Date.now()}`,
+                    title: `⚖️ Hasil Timbangan Siap • #${ord.orderCode || ord.id}`,
+                    body: `Total akhir ${this.formatCurrency(this.state.posTotal)}. Cek rincian di aplikasi atau WA.`
+                });
                 window.open(`https://wa.me/${ph}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
             },
             openOnlineOrderWaChat(orderId) {
@@ -6165,6 +6254,14 @@
                 this.showConfirm(`Batalkan Order Katalog ${ord.orderCode} a.n "${ord.customerName}"?`, async () => {
                     ord.orderStatus = 'Dibatalkan';
                     await this.persistOnlineOrderRecord(ord);
+                    this.dispatchOrderPushNow({
+                        order_id: ord.id,
+                        target_roles: ['customer'],
+                        target_phone: ord.customerPhone || '',
+                        event_type: 'order_status',
+                        title: `❌ Pesanan Dibatalkan • #${ord.orderCode || ord.id}`,
+                        body: 'Pesanan Anda telah dibatalkan oleh kasir toko.'
+                    });
                     if (this.state.activeLinkedOnlineOrder && this.state.activeLinkedOnlineOrder.id === orderId) {
                         this.detachLinkedOnlineOrder();
                     }
@@ -6178,6 +6275,14 @@
                 ord.finalTotal = Number(finalTotal) || ord.estimatedTotal;
                 ord.weighedItems = weighedItems;
                 await this.persistOnlineOrderRecord(ord);
+                this.dispatchOrderPushNow({
+                    order_id: ord.id,
+                    target_roles: ['customer'],
+                    target_phone: ord.customerPhone || '',
+                    event_type: 'order_status',
+                    title: `✅ Pesanan Selesai! #${ord.orderCode || ord.id}`,
+                    body: `Terima kasih telah berbelanja di NutriFresh (${this.formatCurrency(ord.finalTotal)}). Resi digital Anda sudah siap diunduh!`
+                });
             },
 
             // ---- RESI DIGITAL ONLINE + DOWNLOAD PNG + SHARE WA ----
@@ -11796,7 +11901,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v148';
+        window.__NF_APP_VERSION = 'v149';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;

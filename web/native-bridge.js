@@ -1661,7 +1661,7 @@
                 }
                 renderAppUpdateModal(local, remote);
             } else if (wasManual) {
-                showUpdateNoticeToast(`Aplikasi sudah versi terbaru (v${local.versionName || '1.48'}) ✓`);
+                showUpdateNoticeToast(`Aplikasi sudah versi terbaru (v${local.versionName || '1.49'}) ✓`);
             }
         } catch (_) {
             if (wasManual) showUpdateNoticeToast("Gagal membaca info versi terbaru.");
@@ -1862,6 +1862,11 @@
                 window.staffApp.loadAllData();
             }
 
+            // Jika hanya update senyap kartu Live Order (misal: Sedang Ditimbang), cukup refresh diam-diam
+            if (p.silentLiveOnly === true || p.silent_live_only === "1") {
+                return;
+            }
+
             // 2. Jika pelanggan sedang menatap layar Pesanan Saya, cukup bunyikan chime lembut tanpa banner menumpuk
             const custOrdModal = document.getElementById("customerOrdersModal");
             const isViewingCustOrders = !!(custOrdModal && !custOrdModal.classList.contains("hidden"));
@@ -1870,12 +1875,15 @@
                 return;
             }
 
-            // 3. Tampilkan 1 banner in-app bersih (dedupe otomatis oleh window.nfNotify.send)
+            // 3. Tampilkan 1 banner in-app bersih (tag seragam dengan polling agar tidak pernah dobel!)
+            const unifiedTag = eventType === "chat"
+                ? `ord-chat-${refId || p.outboxId || "gen"}`
+                : `ord-${refId || p.outboxId || "gen"}`;
             if (window.nfNotify) {
                 window.nfNotify.send({
                     title,
                     body,
-                    tag: `fcm-${eventType}-${refId || p.outboxId || "gen"}`,
+                    tag: unifiedTag,
                     sound: eventType === "order_status" ? "order" : "status",
                     onClick: () => {
                         if (window.__nfOpenOrderFromNotif) window.__nfOpenOrderFromNotif(refId);
