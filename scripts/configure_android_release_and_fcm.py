@@ -123,29 +123,37 @@ def main():
     if marker.exists():
         marker.unlink()
 
+    def groovy_sq(val: str) -> str:
+        return "'" + str(val).replace("\\", "\\\\").replace("'", "\\'") + "'"
+
     if ks_b64 and ks_pass:
         ks_file = android_dir / "app" / "nutrifresh-release.jks"
         ks_file.write_bytes(base64.b64decode(ks_b64))
         signing_block = (
             "\n    signingConfigs {\n"
             "        release {\n"
-            '            storeFile file("nutrifresh-release.jks")\n'
-            f'            storePassword "{ks_pass}"\n'
-            f'            keyAlias "{key_alias}"\n'
-            f'            keyPassword "{key_pass}"\n'
+            "            storeFile file('nutrifresh-release.jks')\n"
+            f"            storePassword {groovy_sq(ks_pass)}\n"
+            f"            keyAlias {groovy_sq(key_alias)}\n"
+            f"            keyPassword {groovy_sq(key_pass)}\n"
             "        }\n"
             "    }\n"
             "    buildTypes {"
         )
         if "signingConfigs {" not in g_txt:
-            g_txt = g_txt.replace("    buildTypes {", signing_block, 1)
+            g_txt = re.sub(r"([ \t]*buildTypes\s*\{)", signing_block, g_txt, count=1)
         if "signingConfig signingConfigs.release" not in g_txt:
-            g_txt = re.sub(
-                r"(release\s*\{)",
-                r"\1\n            signingConfig signingConfigs.release",
-                g_txt,
-                count=1,
-            )
+            bt_match = re.search(r"buildTypes\s*\{", g_txt)
+            if bt_match:
+                before_bt = g_txt[:bt_match.end()]
+                after_bt = g_txt[bt_match.end():]
+                after_bt = re.sub(
+                    r"(release\s*\{)",
+                    r"\1\n            signingConfig signingConfigs.release",
+                    after_bt,
+                    count=1,
+                )
+                g_txt = before_bt + after_bt
         marker.write_text("release", encoding="utf-8")
         print(f"[signing] Permanent Release Keystore configured! versionCode={ver_code}, versionName={ver_name}")
     else:
