@@ -6,7 +6,7 @@ on:
       release_notes:
         description: 'Catatan pembaruan (tampil di pop-up update HP)'
         required: false
-        default: 'v147: Live Order ala Gojek, Balas Chat dari Notifikasi, dan Anti-Duplikat Notifikasi.'
+        default: 'v147 - Live Order ala Gojek, Balas Chat dari Notifikasi, dan Anti-Duplikat Notifikasi.'
       force_update:
         description: 'Wajibkan update (user tidak bisa melewati pop-up)?'
         type: boolean
@@ -81,7 +81,7 @@ jobs:
       - name: Publish Signed APK & Update Manifest to GitHub Releases (In-App Auto-Update)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_NOTES: ${{ github.event.inputs.release_notes || 'v147: Live Order ala Gojek, Balas Chat dari Notifikasi, dan Anti-Duplikat Notifikasi.' }}
+          RELEASE_NOTES: "${{ github.event.inputs.release_notes || 'v147 - Live Order ala Gojek, Balas Chat dari Notifikasi, dan Anti-Duplikat Notifikasi.' }}"
           FORCE_UPDATE: ${{ github.event.inputs.force_update || 'false' }}
         run: |
           if [ ! -f mobile/staff-android/android/.nf_release_signed ]; then
