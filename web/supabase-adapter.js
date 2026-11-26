@@ -590,6 +590,9 @@ const COLLECTION_MAP = {
             ...(d.weighPhotoUrl ? { weigh_photo_url: d.weighPhotoUrl } : {}),
             ...(d.paymentProofUrl ? { payment_proof_url: d.paymentProofUrl } : {}),
             ...(d.cashierNote !== undefined ? { cashier_note: String(d.cashierNote || "") } : {}),
+            ...(d.courierName !== undefined ? { courier_name: String(d.courierName || "") } : {}),
+            ...(d.deliveryProofUrl ? { delivery_proof_url: d.deliveryProofUrl } : {}),
+            ...(Array.isArray(d.orderChat) ? { order_chat: d.orderChat } : {}),
             status_updated_at: new Date().toISOString(),
             items: Array.isArray(d.items) ? d.items : []
         })
@@ -689,6 +692,10 @@ function rowToItem(row) {
     if ("weigh_photo_url" in row && row.weigh_photo_url) base.weighPhotoUrl = row.weigh_photo_url;
     if ("payment_proof_url" in row && row.payment_proof_url) base.paymentProofUrl = row.payment_proof_url;
     if ("cashier_note" in row && row.cashier_note) base.cashierNote = row.cashier_note;
+    if ("courier_name" in row && row.courier_name) base.courierName = row.courier_name;
+    if ("delivery_proof_url" in row && row.delivery_proof_url) base.deliveryProofUrl = row.delivery_proof_url;
+    if ("order_chat" in row && Array.isArray(row.order_chat)) base.orderChat = row.order_chat;
+    if ("customer_approved_at" in row && row.customer_approved_at) base.customerApprovedAt = row.customer_approved_at;
     return base;
 }
 
@@ -2396,6 +2403,61 @@ export async function customerUploadOrderProofRpc({ orderId, token, proofUrl, pa
         p_token: String(token || "").trim().toUpperCase(),
         p_proof_url: String(proofUrl || "").trim(),
         p_payment_method: String(paymentMethod || "").trim(),
+        p_tenant_id: TENANT_ID
+    });
+    if (error) throw error;
+    return data;
+}
+
+
+// =========================================================================
+// PAKET A (v142) — ACC TIMBANGAN, CHAT 2 ARAH PESANAN & PORTAL ANTARAN KURIR
+// =========================================================================
+export async function customerApproveOrderRpc({ orderId, token }) {
+    if (!supabase) throw new Error("Supabase belum terkonfigurasi.");
+    const { data, error } = await supabase.rpc("nf_customer_approve_order", {
+        p_order_id: String(orderId || "").trim(),
+        p_token: String(token || "").trim().toUpperCase(),
+        p_tenant_id: TENANT_ID
+    });
+    if (error) throw error;
+    return data;
+}
+
+export async function customerSendOrderChatRpc({ orderId, token, message, senderName = "" }) {
+    if (!supabase) throw new Error("Supabase belum terkonfigurasi.");
+    const { data, error } = await supabase.rpc("nf_customer_send_order_chat", {
+        p_order_id: String(orderId || "").trim(),
+        p_token: String(token || "").trim().toUpperCase(),
+        p_message: String(message || "").trim(),
+        p_sender_name: String(senderName || "").trim(),
+        p_tenant_id: TENANT_ID
+    });
+    if (error) throw error;
+    return data;
+}
+
+export async function staffSendOrderChatRpc({ orderId, message, senderName = "Kasir Toko", senderRole = "store" }) {
+    if (!supabase) throw new Error("Supabase belum terkonfigurasi.");
+    const { data, error } = await supabase.rpc("nf_staff_send_order_chat", {
+        p_order_id: String(orderId || "").trim(),
+        p_message: String(message || "").trim(),
+        p_sender_name: String(senderName || "Kasir Toko").trim(),
+        p_sender_role: String(senderRole || "store").trim(),
+        p_tenant_id: TENANT_ID
+    });
+    if (error) throw error;
+    return data;
+}
+
+export async function courierUpdateDeliveryRpc({ orderId, newStatus, courierName = "Kurir NutriFresh", proofUrl = "", note = "" }) {
+    if (!supabase) throw new Error("Supabase belum terkonfigurasi.");
+    const { data, error } = await supabase.rpc("nf_courier_update_delivery", {
+        p_order_id: String(orderId || "").trim(),
+        p_new_status: String(newStatus || "").trim(),
+        p_courier_name: String(courierName || "Kurir NutriFresh").trim(),
+        p_proof_url: String(proofUrl || "").trim(),
+        p_note: String(note || "").trim(),
         p_tenant_id: TENANT_ID
     });
     if (error) throw error;

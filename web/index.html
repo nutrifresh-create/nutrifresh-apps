@@ -3515,7 +3515,7 @@
             ensureQrCodeLoaded,
             memberRegisterPinRpc, memberLoginPinRpc, memberGoogleSyncRpc,
             memberGetPortalRpc, memberUpdateProfileRpc, memberRedeemRewardRpc,
-            installGlobalErrorTracker, logClientErrorRpc, submitParcelOrderRpc, submitOnlineOrderRpc, getPublicReceiptRpc, customerGetOrdersRpc, customerUploadOrderProofRpc, uploadDataUrlToStorage
+            installGlobalErrorTracker, logClientErrorRpc, submitParcelOrderRpc, submitOnlineOrderRpc, getPublicReceiptRpc, customerGetOrdersRpc, customerUploadOrderProofRpc, customerApproveOrderRpc, customerSendOrderChatRpc, uploadDataUrlToStorage
         } from "./supabase-adapter.js";
 
         installGlobalErrorTracker("index.html");
@@ -4854,26 +4854,42 @@
                         }
                         if (res && Array.isArray(res.orders)) {
                             const cloudMap = new Map(res.orders.map(o => [o.id, o]));
-                            // Deteksi perubahan status -> kirim Notifikasi otomatis!
+                            const prevChatLenMap = new Map((this.state.myOrdersList || []).map(o => [o.id, Array.isArray(o.orderChat) ? o.orderChat.length : 0]));
+                            // Deteksi perubahan status & pesan baru dari toko/kurir -> kirim Notifikasi otomatis!
                             res.orders.forEach(o => {
                                 const oldSt = prevMap.get(o.id);
+                                const oldChatLen = prevChatLenMap.get(o.id) || 0;
+                                const curChat = Array.isArray(o.orderChat) ? o.orderChat : [];
                                 if (oldSt && oldSt !== o.orderStatus) {
                                     let body = `Status pesanan ${o.orderCode || o.id}: ${o.orderStatus}`;
                                     if (o.orderStatus === 'Menunggu Pembayaran') {
                                         const grand = (Number(o.finalTotal) || Number(o.estimatedTotal) || 0) + (Number(o.shippingFee) || 0);
-                                        body = `Buah selesai ditimbang! Total final ${this.formatCurrency(grand)}. Ketuk untuk bayar / upload bukti.`;
+                                        body = `Buah selesai ditimbang! Total final ${this.formatCurrency(grand)}. Ketuk untuk ACC / bayar.`;
                                     } else if (o.orderStatus === 'Diantar Kurir') {
-                                        body = `Kurir NutriFresh sedang mengantar pesanan ${o.orderCode || o.id} ke alamat Anda!`;
-                                    } else if (o.orderStatus === 'Siap Diambil') {
+                                        body = `Kurir ${o.courierName || 'NutriFresh'} sedang mengantar pesanan ${o.orderCode || o.id} ke alamat Anda!`;
+                                    } else if (o.orderStatus === 'Siap Diambil' || o.orderStatus === 'Disetujui — Siap Diambil') {
                                         body = `Pesanan ${o.orderCode || o.id} sudah siap diambil di gerai NutriFresh!`;
+                                    } else if (String(o.orderStatus || '').startsWith('Terkirim')) {
+                                        body = `Pesanan ${o.orderCode || o.id} telah diterima. Terima kasih!`;
                                     } else if (o.orderStatus === 'Selesai') {
-                                        body = `Pesanan ${o.orderCode || o.id} selesai. Terima kasih telah berbelanja di NutriFresh!`;
+                                        body = `Pesanan ${o.orderCode || o.id} selesai. Resi digital sudah siap diunduh!`;
                                     }
                                     if (window.nfNotify) {
                                         window.nfNotify.send({
                                             title: `Update Pesanan NutriFresh 🍐`,
                                             body,
                                             tag: `ord-${o.id}`,
+                                            sound: 'status',
+                                            onClick: () => this.openCustomerOrdersModal('active')
+                                        });
+                                    }
+                                } else if (oldSt && curChat.length > oldChatLen) {
+                                    const lastMsg = curChat[curChat.length - 1];
+                                    if (lastMsg && lastMsg.sender !== 'customer' && window.nfNotify) {
+                                        window.nfNotify.send({
+                                            title: `💬 Pesan dari ${lastMsg.name || 'Toko NutriFresh'}`,
+                                            body: lastMsg.text || 'Ada pesan baru pada pesanan Anda.',
+                                            tag: `ord-chat-${o.id}`,
                                             sound: 'status',
                                             onClick: () => this.openCustomerOrdersModal('active')
                                         });
@@ -4919,11 +4935,15 @@
                         const statusEmoji = {
                             'Menunggu Timbang': '⏳',
                             'Sedang Ditimbang': '⚖️',
-                            'Menunggu Pembayaran': '💳',
-                            'Menunggu Konfirmasi': '💳',
+                            'Menunggu Pembayaran': '⚖️',
+                            'Menunggu Konfirmasi': '⚖️',
                             'Menunggu Verifikasi Bayar': '🔎',
+                            'Disetujui — Siap Kirim': '✅',
+                            'Disetujui — Siap Diambil': '✅',
                             'Diantar Kurir': '🛵',
-                            'Siap Diambil': '🛍️'
+                            'Siap Diambil': '🛍️',
+                            'Terkirim • Tunggu Setor COD': '📦',
+                            'Terkirim • Lunas': '📦'
                         }[top.orderStatus] || '🍐';
                         titleEl.textContent = cnt > 1
                             ? `${cnt} Pesanan Aktif • #${top.orderCode || top.id}`
@@ -4954,7 +4974,7 @@
             },
             getOrderStepNumber(st) {
                 if (st === 'Selesai') return 5;
-                if (st === 'Diantar Kurir' || st === 'Siap Diambil') return 4;
+                if (['Diantar Kurir', 'Siap Diambil', 'Disetujui — Siap Kirim', 'Disetujui — Siap Diambil', 'Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(st)) return 4;
                 if (st === 'Menunggu Pembayaran' || st === 'Menunggu Konfirmasi' || st === 'Menunggu Verifikasi Bayar') return 3;
                 if (st === 'Sedang Ditimbang') return 2;
                 return 1;
@@ -5040,11 +5060,16 @@
 
                             ${needPay ? `
                             <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-3 space-y-2.5">
-                                <div class="font-extrabold text-amber-950 text-xs flex items-center gap-1.5"><i class="fa-solid fa-wallet text-amber-600"></i> Buah Siap! Silakan Lakukan Pembayaran (${this.formatCurrency(grandTotal)})</div>
-                                ${isCod ? `<p class="text-[11px] text-amber-900">Metode Anda <strong>Cash / Tunai (COD)</strong>. Siapkan uang tunai sebesar <strong>${this.formatCurrency(grandTotal)}</strong> saat kurir tiba atau saat ambil di toko.</p>` : `
+                                <div class="font-extrabold text-amber-950 text-xs flex items-center gap-1.5"><i class="fa-solid fa-scale-balanced text-amber-600"></i> Buah Selesai Ditimbang! Total Final: ${this.formatCurrency(grandTotal)}</div>
+                                ${isCod ? `
+                                    <p class="text-[11px] text-amber-900 leading-relaxed">Metode Anda <strong>Cash / Tunai (COD)</strong>. Cek berat &amp; total final di atas — jika ada tambahan atau permintaan perubahan, tulis di kolom <strong>Chat Pesanan</strong> di bawah sebelum menyetujui.</p>
+                                    <button type="button" onclick="app.approveCustomerOrder('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-full shadow-sm transition text-xs flex items-center justify-center gap-1.5">
+                                        <i class="fa-solid fa-circle-check"></i> <span>Setuju &amp; ${ord.deliveryMode === 'Ambil di Toko' ? 'Siapkan di Toko' : 'Kirim Sekarang (COD)'}</span>
+                                    </button>
+                                ` : `
                                     ${qrisUrl ? `<div class="bg-white p-2.5 rounded-xl border border-amber-200 text-center"><img src="${this.escapeHtml(qrisUrl)}" alt="QRIS NutriFresh" class="max-h-48 mx-auto rounded-lg"><span class="text-[10px] font-bold text-gray-500 block mt-1">Scan QRIS NutriFresh di atas sesuai total final</span></div>` : ''}
                                     ${bankInfo ? `<div class="bg-white p-2.5 rounded-xl border border-amber-200 text-[11px] text-gray-800 whitespace-pre-line font-mono">${this.escapeHtml(bankInfo)}</div>` : ''}
-                                    ${(!qrisUrl && !bankInfo) ? `<p class="text-[11px] text-amber-900">Hubungi tombol <strong>Chat Toko</strong> untuk meminta QRIS / nomor rekening pembayaran.</p>` : ''}
+                                    ${(!qrisUrl && !bankInfo) ? `<p class="text-[11px] text-amber-900">Tulis di <strong>Chat Pesanan</strong> di bawah atau hubungi WA Toko untuk meminta QRIS / nomor rekening.</p>` : ''}
                                     <button type="button" onclick="app.triggerUploadCustomerOrderProof('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-full shadow-sm transition text-xs flex items-center justify-center gap-1.5">
                                         <i class="fa-solid fa-upload"></i> <span>Upload Bukti Transfer / QRIS</span>
                                     </button>
@@ -5057,12 +5082,89 @@
                                 <span>Bukti bayar sudah diterima! Kasir sedang memverifikasi &amp; menyiapkan pengantaran.</span>
                             </div>` : ''}
 
+                            ${(ord.orderStatus === 'Disetujui — Siap Kirim' || ord.orderStatus === 'Disetujui — Siap Diambil') ? `
+                            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-[11px] text-emerald-900 font-bold flex items-center gap-2">
+                                <i class="fa-solid fa-thumbs-up text-emerald-600 text-base"></i>
+                                <span>Hasil timbangan sudah Anda setujui! ${ord.deliveryMode === 'Ambil di Toko' ? 'Pesanan siap diambil di toko.' : 'Menunggu kurir mengambil pesanan untuk diantar.'}</span>
+                            </div>` : ''}
+
+                            ${ord.courierName ? `
+                            <div class="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-[11px] text-indigo-950 flex items-center justify-between gap-2">
+                                <span><i class="fa-solid fa-motorcycle text-indigo-600 mr-1.5"></i><strong>Kurir:</strong> ${this.escapeHtml(ord.courierName)}</span>
+                                ${ord.deliveryProofUrl ? `<a href="${this.escapeHtml(ord.deliveryProofUrl)}" target="_blank" rel="noopener" class="font-extrabold text-indigo-700 underline">Bukti Antar →</a>` : ''}
+                            </div>` : ''}
+
+                            <!-- CHAT 2 ARAH LANGSUNG DI DALAM PESANAN (v142) -->
+                            ${(() => {
+                                const chatArr = Array.isArray(ord.orderChat) ? ord.orderChat : [];
+                                const isClosedOrd = ['Selesai', 'Dibatalkan'].includes(ord.orderStatus);
+                                if (isClosedOrd && chatArr.length === 0) return '';
+                                const msgsHtml = chatArr.length === 0
+                                    ? '<div class="text-[10.5px] text-gray-400 text-center py-1.5">Ingin tambah buah, tanya kematangan, atau ubah pesanan? Tulis pesan langsung ke kasir di sini.</div>'
+                                    : chatArr.slice(-12).map(m => {
+                                        const isMe = m.sender === 'customer';
+                                        const tStr = m.at ? new Date(m.at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
+                                        const senderTag = isMe ? 'Anda' : (m.sender === 'courier' ? `🛵 ${this.escapeHtml(m.name || 'Kurir')}` : `🍐 ${this.escapeHtml(m.name || 'Toko')}`);
+                                        return `<div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+                                            <div class="max-w-[85%] rounded-2xl px-3 py-1.5 text-[11px] ${isMe ? 'bg-nutri-green text-white rounded-br-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm'}">
+                                                <div class="text-[9.5px] font-bold ${isMe ? 'text-green-100' : 'text-nutri-dark'}">${senderTag} • ${tStr}</div>
+                                                <div class="leading-snug mt-0.5 break-words">${this.escapeHtml(m.text || '')}</div>
+                                            </div>
+                                        </div>`;
+                                    }).join('');
+                                return `
+                                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 space-y-2">
+                                    <div class="flex items-center justify-between text-[10.5px] font-extrabold text-slate-700">
+                                        <span><i class="fa-solid fa-comments text-nutri-green mr-1"></i> Chat Pesanan (2 Arah)</span>
+                                        <span class="text-[9.5px] text-slate-400">${chatArr.length} pesan</span>
+                                    </div>
+                                    <div class="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">${msgsHtml}</div>
+                                    ${!isClosedOrd ? `
+                                    <div class="flex items-center gap-1.5 pt-1">
+                                        <input type="text" id="custChatInp-${this.escapeHtml(ord.id)}" onkeydown="if(event.key==='Enter'){event.preventDefault();app.sendCustomerOrderChat('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}');}" placeholder="Tulis pesan / minta tambah item..." class="flex-1 px-3 py-1.5 text-[11px] rounded-full border border-slate-300 bg-white outline-none">
+                                        <button type="button" onclick="app.sendCustomerOrderChat('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="px-3 py-1.5 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] flex-shrink-0 transition">Kirim</button>
+                                    </div>` : ''}
+                                </div>`;
+                            })()}
+
                             <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-gray-100">
                                 <button type="button" onclick="app.openPublicReceiptModal('${this.escapeHtml(ord.linkedTxId || ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[11px] transition"><i class="fa-solid fa-file-invoice mr-1"></i> Resi Digital</button>
-                                <button type="button" onclick="app.openCustomerOrderWaHelp('${this.escapeHtml(ord.orderCode || ord.id)}')" class="px-3 py-1.5 rounded-full bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 font-extrabold text-[11px] transition"><i class="fa-brands fa-whatsapp mr-1"></i> Chat Toko</button>
+                                <button type="button" onclick="app.openCustomerOrderWaHelp('${this.escapeHtml(ord.orderCode || ord.id)}')" class="px-3 py-1.5 rounded-full bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 font-extrabold text-[11px] transition"><i class="fa-brands fa-whatsapp mr-1"></i> WA Toko</button>
                             </div>
                         </div>`;
                 }).join('');
+            },
+            async approveCustomerOrder(orderId, token) {
+                if (!orderId || !token) return;
+                try {
+                    this.showCustomerToast('Mengirim persetujuan timbangan...');
+                    await customerApproveOrderRpc({ orderId, token });
+                    this.showCustomerToast('Persetujuan terkirim! Pesanan segera diproses.');
+                    await this.refreshCustomerOrders(true);
+                } catch (err) {
+                    this.showAlert('Gagal menyetujui pesanan: ' + this.cleanRpcErrorMsg(err));
+                }
+            },
+            async sendCustomerOrderChat(orderId, token) {
+                const inp = document.getElementById(`custChatInp-${orderId}`);
+                const msg = (inp?.value || '').trim();
+                if (!msg || !orderId || !token) return;
+                inp.disabled = true;
+                try {
+                    const ord = (this.state.myOrdersList || []).find(o => o.id === orderId);
+                    await customerSendOrderChatRpc({
+                        orderId,
+                        token,
+                        message: msg,
+                        senderName: ord?.customerName || this.state.customerMember?.name || 'Pelanggan'
+                    });
+                    inp.value = '';
+                    await this.refreshCustomerOrders(false);
+                } catch (err) {
+                    this.showAlert('Gagal mengirim pesan: ' + this.cleanRpcErrorMsg(err));
+                } finally {
+                    if (inp) inp.disabled = false;
+                }
             },
             triggerUploadCustomerOrderProof(orderId, token) {
                 this.state.uploadingProofOrderId = orderId;
@@ -6687,7 +6789,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v139';
+        window.__NF_APP_VERSION = 'v142';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 

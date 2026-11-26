@@ -121,6 +121,18 @@
                 <!-- Pengumuman Manajemen Aktif -->
                 <div id="staffAnnouncementsWrap" class="hidden space-y-2"></div>
 
+                <!-- Pita Cepat Antaran Kurir (Muncul otomatis jika ada order Siap Kirim / Diantar) -->
+                <div id="staffCourierQuickBanner" class="hidden bg-gradient-to-r from-indigo-900 via-slate-900 to-emerald-950 text-white rounded-2xl p-3.5 shadow-md flex items-center justify-between gap-3 cursor-pointer" onclick="staffApp.switchTab('antaran')">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-9 h-9 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-base font-black flex-shrink-0"><i class="fa-solid fa-motorcycle"></i></span>
+                        <div class="min-w-0">
+                            <div id="staffCourierQuickTitle" class="text-xs font-black text-amber-300 truncate">Ada Antaran Kurir Aktif!</div>
+                            <div id="staffCourierQuickSub" class="text-[11px] text-slate-200 truncate">Ketuk untuk lihat alamat &amp; nominal COD</div>
+                        </div>
+                    </div>
+                    <span class="bg-lime-400 text-slate-950 font-black text-[10px] px-2.5 py-1.5 rounded-full flex-shrink-0">Buka →</span>
+                </div>
+
                 <!-- Kartu Jam & Status GPS -->
                 <div class="nf-staff-card rounded-3xl p-4 sm:p-5 space-y-4">
                     <div class="flex items-center justify-between gap-3 border-b pb-3.5">
@@ -229,6 +241,36 @@
                     </div>
                     <div id="myAttendanceList" class="divide-y divide-gray-100 text-xs"></div>
                 </div>
+            </section>
+
+
+            <!-- TAB BARU: ANTARAN KURIR (ORDER SIAP KIRIM, TAGIHAN COD, MAPS, CHAT & BUKTI ANTAR — v142) -->
+            <section id="pane-antaran" class="staff-pane hidden space-y-4 fade-in">
+                <!-- Ringkasan Antaran & Total COD Dipegang Kurir -->
+                <div class="grid grid-cols-3 gap-2.5">
+                    <div class="nf-staff-card rounded-2xl p-3 border-l-4 border-l-blue-600">
+                        <span class="text-[9.5px] font-bold uppercase text-gray-500 block">Siap Antar</span>
+                        <p id="courStatReady" class="text-lg font-black text-blue-700 mt-0.5">0</p>
+                    </div>
+                    <div class="nf-staff-card rounded-2xl p-3 border-l-4 border-l-indigo-600">
+                        <span class="text-[9.5px] font-bold uppercase text-gray-500 block">Di Jalan</span>
+                        <p id="courStatOnWay" class="text-lg font-black text-indigo-700 mt-0.5">0</p>
+                    </div>
+                    <div class="nf-staff-card rounded-2xl p-3 border-l-4 border-l-amber-500">
+                        <span class="text-[9.5px] font-bold uppercase text-gray-500 block">COD Setor</span>
+                        <p id="courStatCodHold" class="text-sm sm:text-base font-black text-amber-700 mt-1 truncate">Rp 0</p>
+                    </div>
+                </div>
+
+                <!-- Filter Antaran -->
+                <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs">
+                    <button type="button" id="courFilt-active" onclick="staffApp.setCourierFilter('active')" class="px-3.5 py-1.5 rounded-full font-extrabold bg-teal-700 text-white shadow-sm whitespace-nowrap">🛵 Antaran Aktif</button>
+                    <button type="button" id="courFilt-cod" onclick="staffApp.setCourierFilter('cod')" class="px-3.5 py-1.5 rounded-full font-bold bg-white border border-gray-200 text-gray-700 whitespace-nowrap">💵 Tunggu Setor COD</button>
+                    <button type="button" id="courFilt-done" onclick="staffApp.setCourierFilter('done')" class="px-3.5 py-1.5 rounded-full font-bold bg-white border border-gray-200 text-gray-700 whitespace-nowrap">✅ Selesai</button>
+                </div>
+
+                <div id="courierOrdersList" class="space-y-3 text-xs"></div>
+                <input type="file" id="courierProofFileInput" accept="image/*" capture="environment" class="hidden" onchange="staffApp.handleCourierProofPicked(event)">
             </section>
 
             <!-- TAB 2: PENGAJUAN HR (CUTI, IZIN, SAKIT, LEMBUR, KASBON) + SALDO CUTI & PINJAMAN -->
@@ -395,17 +437,21 @@
 
         <!-- FLOATING BOTTOM DOCK -->
         <nav class="fixed bottom-3 inset-x-3 z-40">
-            <div class="nf-staff-dock max-w-md mx-auto rounded-full p-1.5 grid grid-cols-4 gap-1">
-                <button type="button" id="nav-absensi" onclick="staffApp.switchTab('absensi')" class="staff-tab-btn is-active rounded-full py-2 flex flex-col items-center justify-center text-[10px] font-bold text-gray-600 transition">
+            <div class="nf-staff-dock max-w-lg mx-auto rounded-full p-1.5 grid grid-cols-5 gap-0.5">
+                <button type="button" id="nav-absensi" onclick="staffApp.switchTab('absensi')" class="staff-tab-btn is-active rounded-full py-2 flex flex-col items-center justify-center text-[9.5px] font-bold text-gray-600 transition">
                     <i class="fa-solid fa-clock text-sm mb-0.5"></i><span>Absensi</span>
                 </button>
-                <button type="button" id="nav-pengajuan" onclick="staffApp.switchTab('pengajuan')" class="staff-tab-btn rounded-full py-2 flex flex-col items-center justify-center text-[10px] font-bold text-gray-600 transition">
+                <button type="button" id="nav-antaran" onclick="staffApp.switchTab('antaran')" class="staff-tab-btn relative rounded-full py-2 flex flex-col items-center justify-center text-[9.5px] font-bold text-gray-600 transition">
+                    <i class="fa-solid fa-motorcycle text-sm mb-0.5"></i><span>Antaran</span>
+                    <span id="navAntaranBadge" class="hidden absolute top-1 right-2 bg-rose-600 text-white text-[8.5px] font-black min-w-[15px] h-3.5 px-1 rounded-full flex items-center justify-center">0</span>
+                </button>
+                <button type="button" id="nav-pengajuan" onclick="staffApp.switchTab('pengajuan')" class="staff-tab-btn rounded-full py-2 flex flex-col items-center justify-center text-[9.5px] font-bold text-gray-600 transition">
                     <i class="fa-solid fa-file-signature text-sm mb-0.5"></i><span>Pengajuan</span>
                 </button>
-                <button type="button" id="nav-gaji" onclick="staffApp.switchTab('gaji')" class="staff-tab-btn rounded-full py-2 flex flex-col items-center justify-center text-[10px] font-bold text-gray-600 transition">
-                    <i class="fa-solid fa-calendar-check text-sm mb-0.5"></i><span>Jadwal & Gaji</span>
+                <button type="button" id="nav-gaji" onclick="staffApp.switchTab('gaji')" class="staff-tab-btn rounded-full py-2 flex flex-col items-center justify-center text-[9.5px] font-bold text-gray-600 transition">
+                    <i class="fa-solid fa-calendar-check text-sm mb-0.5"></i><span>Gaji</span>
                 </button>
-                <button type="button" id="nav-profil" onclick="staffApp.switchTab('profil')" class="staff-tab-btn rounded-full py-2 flex flex-col items-center justify-center text-[10px] font-bold text-gray-600 transition">
+                <button type="button" id="nav-profil" onclick="staffApp.switchTab('profil')" class="staff-tab-btn rounded-full py-2 flex flex-col items-center justify-center text-[9.5px] font-bold text-gray-600 transition">
                     <i class="fa-solid fa-user-gear text-sm mb-0.5"></i><span>Profil</span>
                 </button>
             </div>
@@ -442,7 +488,7 @@
             GoogleAuthProvider, getAuth, setPersistence, browserLocalPersistence,
             signOut, onAuthStateChanged, signInWithPopup,
             getMyStaffProfileRpc, clockInServerRpc, clockOutServerRpc,
-            uploadDataUrlToStorage, attachAttendancePhotoRpc,
+            uploadDataUrlToStorage, attachAttendancePhotoRpc, courierUpdateDeliveryRpc, staffSendOrderChatRpc,
             clearSensitiveLocalStorage, installGlobalErrorTracker
         } from "./supabase-adapter.js";
 
@@ -478,6 +524,10 @@
                 schedules: [],
                 loans: [],
                 leaveQuotas: [],
+                onlineOrders: [],
+                courierFilter: 'active',
+                courierProofOrderId: '',
+                courierProofDataByOrder: {},
                 listenersBound: false
             },
 
@@ -639,14 +689,15 @@
                     this.renderIdentity();
                 }
 
-                const [attS, reqS, payS, annS, schS, loanS, qtaS] = await Promise.all([
+                const [attS, reqS, payS, annS, schS, loanS, qtaS, ordS] = await Promise.all([
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'attendance'), orderBy('clockInTime', 'desc'), limit(250))), null),
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'office_hr_requests'), orderBy('date', 'desc'), limit(200))), null),
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'office_payroll'), limit(300))), null),
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_announcements'), orderBy('createdAt', 'desc'), limit(20))), null),
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_schedules'), orderBy('schedDate', 'desc'), limit(200))), null),
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_loans'), limit(100))), null),
-                    safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_leave_quotas'), limit(100))), null)
+                    safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_leave_quotas'), limit(100))), null),
+                    safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'online_orders'), orderBy('createdAt', 'desc'), limit(100))), null)
                 ]);
 
                 if (attS) this.state.attendance = attS.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -656,6 +707,7 @@
                 if (schS) this.state.schedules = schS.docs.map(d => ({ id: d.id, ...d.data() }));
                 if (loanS) this.state.loans = loanS.docs.map(d => ({ id: d.id, ...d.data() }));
                 if (qtaS) this.state.leaveQuotas = qtaS.docs.map(d => ({ id: d.id, ...d.data() }));
+                if (ordS) this.state.onlineOrders = ordS.docs.map(d => ({ id: d.id, ...d.data() }));
 
                 this.renderAll();
             },
@@ -691,6 +743,27 @@
                     this.state.leaveQuotas = s.docs.map(d => ({ id: d.id, ...d.data() }));
                     this.renderHrRequests();
                 });
+                safeSnap(query(collection(db, 'artifacts', appId, 'public', 'data', 'online_orders'), orderBy('createdAt', 'desc'), limit(100)), (s) => {
+                    const prevReadyIds = new Set((this.state.onlineOrders || []).filter(o => o.orderStatus === 'Disetujui — Siap Kirim').map(o => o.id));
+                    const hadOnce = !!this._courierHydrated;
+                    this._courierHydrated = true;
+                    this.state.onlineOrders = s.docs.map(d => ({ id: d.id, ...d.data() }));
+                    if (hadOnce && window.nfNotify) {
+                        this.state.onlineOrders.forEach(o => {
+                            if (o.orderStatus === 'Disetujui — Siap Kirim' && !prevReadyIds.has(o.id)) {
+                                const grand = (Number(o.finalTotal) || Number(o.estimatedTotal) || 0) + (Number(o.shippingFee) || 0);
+                                window.nfNotify.send({
+                                    title: `🛵 Antaran Siap Diambil! #${o.orderCode || o.id}`,
+                                    body: `${o.customerName || 'Pelanggan'} • ${o.paymentMethod || ''} ${this.rp(grand)}`,
+                                    tag: `cour-${o.id}`,
+                                    sound: 'order',
+                                    onClick: () => this.switchTab('antaran')
+                                });
+                            }
+                        });
+                    }
+                    this.renderCourierOrders();
+                });
             },
 
             async refreshAll(showSpin = false) {
@@ -703,7 +776,7 @@
 
             switchTab(tab) {
                 this.state.activeTab = tab;
-                ['absensi', 'pengajuan', 'gaji', 'profil'].forEach(t => {
+                ['absensi', 'antaran', 'pengajuan', 'gaji', 'profil'].forEach(t => {
                     document.getElementById(`pane-${t}`)?.classList.toggle('hidden', t !== tab);
                     document.getElementById(`nav-${t}`)?.classList.toggle('is-active', t === tab);
                 });
@@ -1013,9 +1086,263 @@
             renderAll() {
                 this.renderAnnouncements();
                 this.renderAttendance();
+                this.renderCourierOrders();
                 this.renderHrRequests();
                 this.renderScheduleList();
                 this.renderMyPayslip();
+            },
+
+            // =================================================================
+            // PORTAL ANTARAN KURIR (v142) — COD TAGIHAN, MAPS, CHAT & BUKTI ANTAR
+            // =================================================================
+            setCourierFilter(mode) {
+                this.state.courierFilter = mode || 'active';
+                ['active', 'cod', 'done'].forEach(k => {
+                    const b = document.getElementById(`courFilt-${k}`);
+                    if (!b) return;
+                    b.className = (k === this.state.courierFilter)
+                        ? 'px-3.5 py-1.5 rounded-full font-extrabold bg-teal-700 text-white shadow-sm whitespace-nowrap'
+                        : 'px-3.5 py-1.5 rounded-full font-bold bg-white border border-gray-200 text-gray-700 whitespace-nowrap';
+                });
+                this.renderCourierOrders();
+            },
+            formatStockShort(qty, unit) {
+                const n = Math.round(Number(qty) || 0);
+                if (unit === 'Gram') return n >= 1000 ? `${(n / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} Kg` : `${n} gr`;
+                return `${n} ${unit || 'Pcs'}`;
+            },
+            normalizeWa(p) {
+                let d = String(p || '').replace(/\D/g, '');
+                if (d.startsWith('0')) d = '62' + d.slice(1);
+                else if (d.startsWith('8')) d = '62' + d;
+                return d;
+            },
+            renderCourierOrders() {
+                const all = (this.state.onlineOrders || []).filter(o => o && o.deliveryMode !== 'Ambil di Toko');
+                const readyList = all.filter(o => ['Disetujui — Siap Kirim', 'Siap Kirim'].includes(o.orderStatus));
+                const onWayList = all.filter(o => o.orderStatus === 'Diantar Kurir');
+                const codWaitList = all.filter(o => o.orderStatus === 'Terkirim • Tunggu Setor COD');
+                const activeCount = readyList.length + onWayList.length + codWaitList.length;
+
+                const codTotalHold = [...onWayList, ...codWaitList]
+                    .filter(o => {
+                        const pm = String(o.paymentMethod || '').toLowerCase();
+                        return pm.includes('cash') || pm.includes('tunai');
+                    })
+                    .reduce((s, o) => s + (Number(o.finalTotal) || Number(o.estimatedTotal) || 0) + (Number(o.shippingFee) || 0), 0);
+
+                const elR = document.getElementById('courStatReady');
+                const elW = document.getElementById('courStatOnWay');
+                const elC = document.getElementById('courStatCodHold');
+                if (elR) elR.textContent = String(readyList.length);
+                if (elW) elW.textContent = String(onWayList.length);
+                if (elC) elC.textContent = this.rp(codTotalHold);
+
+                const badge = document.getElementById('navAntaranBadge');
+                if (badge) {
+                    badge.textContent = String(activeCount);
+                    badge.classList.toggle('hidden', activeCount <= 0);
+                }
+                const qBar = document.getElementById('staffCourierQuickBanner');
+                if (qBar) {
+                    if (activeCount > 0) {
+                        qBar.classList.remove('hidden');
+                        const qt = document.getElementById('staffCourierQuickTitle');
+                        const qs = document.getElementById('staffCourierQuickSub');
+                        if (qt) qt.textContent = `${readyList.length} Siap Antar • ${onWayList.length} Di Jalan${codWaitList.length > 0 ? ' • ' + codWaitList.length + ' Setor COD' : ''}`;
+                        if (qs) qs.textContent = codTotalHold > 0 ? `Total COD dipegang/tagih: ${this.rp(codTotalHold)}` : 'Ketuk untuk lihat rincian alamat & mulai antar';
+                    } else {
+                        qBar.classList.add('hidden');
+                    }
+                }
+
+                const box = document.getElementById('courierOrdersList');
+                if (!box) return;
+                const filt = this.state.courierFilter || 'active';
+                let shown = [];
+                if (filt === 'cod') {
+                    shown = codWaitList;
+                } else if (filt === 'done') {
+                    shown = all.filter(o => ['Terkirim • Lunas', 'Selesai'].includes(o.orderStatus)).slice(0, 20);
+                } else {
+                    // Antaran Aktif: Siap Kirim + Diantar Kurir + Tunggu Setor COD (dan juga Menunggu Pembayaran COD jika kasir belum klik Siap Kirim)
+                    shown = all.filter(o => ['Disetujui — Siap Kirim', 'Siap Kirim', 'Diantar Kurir', 'Terkirim • Tunggu Setor COD'].includes(o.orderStatus));
+                }
+
+                if (shown.length === 0) {
+                    box.innerHTML = `<div class="nf-staff-card rounded-3xl p-8 text-center text-gray-400 space-y-1.5"><i class="fa-solid fa-motorcycle text-3xl text-gray-300"></i><p class="font-bold">${filt === 'cod' ? 'Tidak ada uang COD yang belum disetor.' : (filt === 'done' ? 'Belum ada riwayat antaran selesai.' : 'Belum ada pesanan siap antar saat ini.')}</p><p class="text-[11px]">Pesanan yang sudah di-ACC pelanggan atau ditandai "Siap Kirim" oleh kasir otomatis muncul di sini.</p></div>`;
+                    return;
+                }
+
+                box.innerHTML = shown.map(ord => {
+                    const isCod = String(ord.paymentMethod || '').toLowerCase().includes('cash') || String(ord.paymentMethod || '').toLowerCase().includes('tunai');
+                    const grand = (Number(ord.finalTotal) || Number(ord.estimatedTotal) || 0) + (Number(ord.shippingFee) || 0);
+                    const items = Array.isArray(ord.weighedItems) && ord.weighedItems.length > 0 ? ord.weighedItems : (Array.isArray(ord.items) ? ord.items : []);
+                    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ord.address || '')}`;
+                    const waUrl = `https://wa.me/${this.normalizeWa(ord.customerPhone)}?text=${encodeURIComponent('Halo Kak ' + (ord.customerName || '') + ', saya kurir NutriFresh sedang mengantar pesanan #' + (ord.orderCode || ord.id) + '.')}`;
+                    const telUrl = `tel:${String(ord.customerPhone || '').replace(/[^0-9+]/g, '')}`;
+                    const isReady = ['Disetujui — Siap Kirim', 'Siap Kirim'].includes(ord.orderStatus);
+                    const isOnWay = ord.orderStatus === 'Diantar Kurir';
+                    const isCodWait = ord.orderStatus === 'Terkirim • Tunggu Setor COD';
+                    const isDone = ['Terkirim • Lunas', 'Selesai'].includes(ord.orderStatus);
+                    const pickedProof = this.state.courierProofDataByOrder[ord.id] || '';
+                    const chatArr = Array.isArray(ord.orderChat) ? ord.orderChat : [];
+
+                    return `
+                        <div class="nf-staff-card rounded-3xl p-4 space-y-3 border ${isCodWait ? 'border-amber-400' : (isOnWay ? 'border-indigo-400' : 'border-gray-200')}">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <span class="font-mono font-black text-[11px] bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full">${this.esc(ord.orderCode || ord.id)}</span>
+                                    <h4 class="font-black text-sm text-gray-900 mt-1">${this.esc(ord.customerName || 'Pelanggan')}</h4>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black flex-shrink-0 ${isDone ? 'bg-green-100 text-nutri-dark' : (isCodWait ? 'bg-amber-100 text-amber-900' : (isOnWay ? 'bg-indigo-100 text-indigo-800' : 'bg-blue-100 text-blue-800'))}">${this.esc(ord.orderStatus)}</span>
+                            </div>
+
+                            <!-- Kotak Tagihan COD vs Lunas -->
+                            ${isCod ? `
+                            <div class="bg-amber-50 border-2 border-amber-400 rounded-2xl p-3 flex items-center justify-between gap-2">
+                                <div>
+                                    <span class="text-[10px] font-black uppercase text-amber-800 block">💵 TAGIH TUNAI (COD) KE PEMBELI</span>
+                                    <span class="text-lg font-black text-amber-950">${this.rp(grand)}</span>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full bg-amber-500 text-white font-black text-[10px]">COD</span>
+                            </div>` : `
+                            <div class="bg-emerald-50 border border-emerald-300 rounded-2xl p-2.5 flex items-center justify-between gap-2">
+                                <div>
+                                    <span class="text-[10px] font-black uppercase text-emerald-800 block">✅ NON-TUNAI (${this.esc(ord.paymentMethod || 'QRIS')})</span>
+                                    <span class="text-xs font-extrabold text-emerald-900">Tidak perlu tagih uang tunai (${this.rp(grand)})</span>
+                                </div>
+                                <span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[10px]">LUNAS</span>
+                            </div>`}
+
+                            <!-- Alamat & Tombol Navigasi -->
+                            <div class="bg-gray-50 border border-gray-200 rounded-2xl p-3 space-y-2">
+                                <div class="text-[11px] font-semibold text-gray-800 leading-snug"><i class="fa-solid fa-location-dot text-red-500 mr-1"></i> ${this.esc(ord.address || 'Alamat belum diisi')}</div>
+                                <div class="grid grid-cols-3 gap-1.5">
+                                    <a href="${mapsUrl}" target="_blank" rel="noopener" class="py-1.5 px-2 rounded-full bg-blue-600 text-white font-extrabold text-[10.5px] text-center"><i class="fa-solid fa-map-location-dot mr-1"></i>Maps</a>
+                                    <a href="${telUrl}" class="py-1.5 px-2 rounded-full bg-slate-800 text-white font-extrabold text-[10.5px] text-center"><i class="fa-solid fa-phone mr-1"></i>Telp</a>
+                                    <a href="${waUrl}" target="_blank" rel="noopener" class="py-1.5 px-2 rounded-full bg-green-600 text-white font-extrabold text-[10.5px] text-center"><i class="fa-brands fa-whatsapp mr-1"></i>WA</a>
+                                </div>
+                            </div>
+
+                            <!-- Rincian Buah -->
+                            <div class="bg-gray-50 border border-gray-100 rounded-2xl p-2.5 space-y-1 text-[11px]">
+                                ${items.map(it => `<div class="flex justify-between gap-2"><span class="text-gray-700">▪️ <strong>${this.formatStockShort(it.qty, it.unit)}</strong> ${this.esc(it.name)}</span><span class="font-bold text-gray-800">${this.rp(it.subtotal)}</span></div>`).join('')}
+                            </div>
+
+                            <!-- Chat Cepat Kurir <-> Pembeli -->
+                            ${!isDone ? `
+                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2 space-y-1.5">
+                                ${chatArr.slice(-4).map(m => `<div class="text-[10.5px] text-gray-700"><strong class="${m.sender === 'customer' ? 'text-amber-800' : 'text-teal-700'}">${this.esc(m.name || m.sender)}:</strong> ${this.esc(m.text || '')}</div>`).join('')}
+                                <div class="flex items-center gap-1.5">
+                                    <input type="text" id="courChatInp-${this.esc(ord.id)}" onkeydown="if(event.key==='Enter'){event.preventDefault();staffApp.sendCourierChat('${this.esc(ord.id)}');}" placeholder="Kabari pembeli (misal: Saya di depan)..." class="flex-1 px-2.5 py-1.5 text-[11px] rounded-full border border-slate-300 bg-white outline-none">
+                                    <button type="button" onclick="staffApp.sendCourierChat('${this.esc(ord.id)}')" class="px-3 py-1.5 rounded-full bg-slate-800 text-white font-extrabold text-[10.5px] flex-shrink-0">Kirim</button>
+                                </div>
+                            </div>` : ''}
+
+                            <!-- Aksi Kurir -->
+                            ${isReady ? `
+                            <button type="button" onclick="staffApp.courierStartDelivery('${this.esc(ord.id)}')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 rounded-2xl shadow-sm transition text-xs flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-motorcycle"></i> <span>Ambil &amp; Mulai Antar Sekarang</span>
+                            </button>` : ''}
+
+                            ${isOnWay ? `
+                            <div class="space-y-2 pt-1">
+                                <div class="flex items-center justify-between gap-2">
+                                    <button type="button" onclick="staffApp.triggerCourierProofPhoto('${this.esc(ord.id)}')" class="flex-1 py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 font-extrabold text-[11px] flex items-center justify-center gap-1.5">
+                                        <i class="fa-solid fa-camera"></i> <span>${pickedProof ? '✓ Foto Siap (Ganti)' : 'Foto Serah Terima (Opsional)'}</span>
+                                    </button>
+                                    ${pickedProof ? `<img src="${pickedProof}" alt="" class="w-10 h-10 rounded-lg object-cover border">` : ''}
+                                </div>
+                                <button type="button" onclick="staffApp.courierMarkDelivered('${this.esc(ord.id)}', ${isCod ? 'true' : 'false'})" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-3 rounded-2xl shadow-md transition text-xs flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-circle-check"></i> <span>${isCod ? 'Sudah Diterima &amp; Uang COD Diterima' : 'Sudah Diterima Pembeli'}</span>
+                                </button>
+                            </div>` : ''}
+
+                            ${isCodWait ? `
+                            <div class="bg-amber-50 border border-amber-300 rounded-2xl p-2.5 text-[11px] font-bold text-amber-950">
+                                💵 Serahkan uang tunai <strong>${this.rp(grand)}</strong> ke Kasir POS agar kasir menekan <em>Terima COD &amp; Selesai</em>.
+                            </div>` : ''}
+                        </div>`;
+                }).join('');
+            },
+            triggerCourierProofPhoto(orderId) {
+                this.state.courierProofOrderId = orderId;
+                const inp = document.getElementById('courierProofFileInput');
+                if (inp) { inp.value = ''; inp.click(); }
+            },
+            handleCourierProofPicked(ev) {
+                const file = ev?.target?.files?.[0];
+                const orderId = this.state.courierProofOrderId;
+                if (!file || !orderId) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const maxSide = 540;
+                        let w = img.width, h = img.height;
+                        if (w > maxSide || h > maxSide) {
+                            if (w >= h) { h = Math.round((h * maxSide) / w); w = maxSide; }
+                            else { w = Math.round((w * maxSide) / h); h = maxSide; }
+                        }
+                        const cv = document.createElement('canvas');
+                        cv.width = w; cv.height = h;
+                        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+                        this.state.courierProofDataByOrder[orderId] = cv.toDataURL('image/jpeg', 0.55);
+                        this.renderCourierOrders();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                ev.target.value = '';
+            },
+            async courierStartDelivery(orderId) {
+                const cname = this.state.profile?.name || 'Kurir NutriFresh';
+                try {
+                    await courierUpdateDeliveryRpc({ orderId, newStatus: 'Diantar Kurir', courierName: cname });
+                    await this.loadAllData();
+                    this.alert('Status diperbarui: Diantar Kurir! Pelanggan & POS otomatis mendapat kabar.');
+                } catch (err) {
+                    this.alert('Gagal memperbarui status antaran: ' + (err?.message || err));
+                }
+            },
+            async courierMarkDelivered(orderId, isCod) {
+                const cname = this.state.profile?.name || 'Kurir NutriFresh';
+                let proofUrl = '';
+                const localDataUrl = this.state.courierProofDataByOrder[orderId] || '';
+                try {
+                    if (localDataUrl) {
+                        const uploaded = await uploadDataUrlToStorage(localDataUrl, 'proofs', `${orderId}_deliv`);
+                        proofUrl = (uploaded && uploaded.startsWith('http')) ? uploaded : localDataUrl;
+                    }
+                    const nextSt = isCod ? 'Terkirim • Tunggu Setor COD' : 'Terkirim • Lunas';
+                    await courierUpdateDeliveryRpc({ orderId, newStatus: nextSt, courierName: cname, proofUrl });
+                    delete this.state.courierProofDataByOrder[orderId];
+                    await this.loadAllData();
+                    this.alert(isCod ? 'Antaran selesai! Kasir POS langsung dikabari — silakan setor uang COD ke kasir.' : 'Antaran selesai! Kasir POS & pelanggan langsung mendapat kabar.');
+                } catch (err) {
+                    this.alert('Gagal menyelesaikan antaran: ' + (err?.message || err));
+                }
+            },
+            async sendCourierChat(orderId) {
+                const inp = document.getElementById(`courChatInp-${orderId}`);
+                const msg = (inp?.value || '').trim();
+                if (!msg || !orderId) return;
+                if (inp) inp.disabled = true;
+                try {
+                    await staffSendOrderChatRpc({
+                        orderId,
+                        message: msg,
+                        senderName: this.state.profile?.name || 'Kurir NutriFresh',
+                        senderRole: 'courier'
+                    });
+                    if (inp) inp.value = '';
+                    await this.loadAllData();
+                } catch (err) {
+                    this.alert('Gagal mengirim pesan: ' + (err?.message || err));
+                } finally {
+                    if (inp) inp.disabled = false;
+                }
             },
 
             renderAnnouncements() {
