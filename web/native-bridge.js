@@ -690,6 +690,8 @@
 
     function closeTopmostVisibleModal() {
         // 1. Dynamic overlays (Camera Scanner, Native Printer Picker)
+        const docClose = document.getElementById("nfSafeDocClose");
+        if (docClose) { docClose.click(); return true; }
         const camClose = document.getElementById("nfCamClose");
         if (camClose) { camClose.click(); return true; }
         const updModal = document.getElementById("nfAppUpdateModal");
@@ -1659,7 +1661,7 @@
                 }
                 renderAppUpdateModal(local, remote);
             } else if (wasManual) {
-                showUpdateNoticeToast(`Aplikasi sudah versi terbaru (v${local.versionName || '1.46'}) ✓`);
+                showUpdateNoticeToast(`Aplikasi sudah versi terbaru (v${local.versionName || '1.48'}) ✓`);
             }
         } catch (_) {
             if (wasManual) showUpdateNoticeToast("Gagal membaca info versi terbaru.");
@@ -1775,7 +1777,74 @@
     }
 
     // =========================================================================
-    // NATIVE FCM FOREGROUND & RESUME BRIDGE (ZERO-DUPLICATE + INSTANT REFRESH v147)
+    // SAFE NATIVE PRINT / SAVE-AS-PDF HELPER (ANTI-WHITE-SCREEN TRAP IN APK v148)
+    // =========================================================================
+    window.nfPrintHtmlSafe = function (jobName, htmlContent) {
+        const safeName = String(jobName || "NutriFresh_Dokumen").trim();
+        const html = String(htmlContent || "");
+
+        // 1. Android APK v148+: Cetak/Simpan PDF via Native PrintManager (WebView tersembunyi — layar app 100% aman!)
+        if (isAndroidNative()) {
+            if (typeof window.NfAndroidNative.printHtmlDocument === "function") {
+                try {
+                    window.NfAndroidNative.printHtmlDocument(safeName, html);
+                    return true;
+                } catch (_) {}
+            }
+            // Fallback aman jika masih APK lama (< v148): JANGAN pernah panggil window.open('', '_blank')!
+            document.getElementById("nfSafeDocPreviewModal")?.remove();
+            const wrap = document.createElement("div");
+            wrap.id = "nfSafeDocPreviewModal";
+            wrap.style.cssText = "position:fixed;inset:0;z-index:100050;background:rgba(15,23,42,.78);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:14px;font-family:Inter,system-ui,sans-serif;";
+            wrap.innerHTML = `
+                <div style="width:100%;max-width:440px;max-height:88vh;background:#fff;border-radius:24px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.45);">
+                    <div style="padding:12px 16px;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                        <span style="font-size:13px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(safeName)}</span>
+                        <button type="button" id="nfSafeDocClose" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:5px 12px;border-radius:999px;font-size:11.5px;font-weight:900;cursor:pointer;">Tutup ✕</button>
+                    </div>
+                    <iframe id="nfSafeDocFrame" style="flex:1;width:100%;min-height:420px;border:none;background:#fff;"></iframe>
+                    <div style="padding:10px 14px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:11px;color:#475569;text-align:center;">
+                        Untuk simpan langsung jadi PDF, perbarui aplikasi ke versi terbaru (<strong>v1.48+</strong>) lewat menu Cek Update APK.
+                    </div>
+                </div>`;
+            document.body.appendChild(wrap);
+            const fr = wrap.querySelector("#nfSafeDocFrame");
+            if (fr) fr.srcdoc = html;
+            wrap.querySelector("#nfSafeDocClose").onclick = () => wrap.remove();
+            wrap.addEventListener("click", (e) => { if (e.target === wrap) wrap.remove(); });
+            return true;
+        }
+
+        // 2. Browser Web / PC Desktop: Gunakan iframe tersembunyi agar tidak pernah diblokir pop-up
+        try {
+            const oldFrame = document.getElementById("nfHiddenPrintFrame");
+            if (oldFrame) oldFrame.remove();
+            const iframe = document.createElement("iframe");
+            iframe.id = "nfHiddenPrintFrame";
+            iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;";
+            document.body.appendChild(iframe);
+            const doc = iframe.contentWindow && iframe.contentWindow.document;
+            if (doc) {
+                doc.open();
+                doc.write(html);
+                doc.close();
+                setTimeout(() => {
+                    try {
+                        iframe.contentWindow.focus();
+                        iframe.contentWindow.print();
+                    } catch (_) {}
+                    setTimeout(() => { if (iframe.parentNode) iframe.remove(); }, 3000);
+                }, 260);
+                return true;
+            }
+        } catch (_) {}
+
+        try { window.print(); } catch (_) {}
+        return false;
+    };
+
+    // =========================================================================
+    // NATIVE FCM FOREGROUND & RESUME BRIDGE (ZERO-DUPLICATE + INSTANT REFRESH v148)
     // =========================================================================
     window.__nfOnPushReceived = function (rawJsonStr) {
         try {
@@ -1820,7 +1889,6 @@
         try {
             const realApp = getReadyApp();
             if (document.getElementById("customerView") && realApp && typeof realApp.refreshCustomerOrders === "function") {
-                // Silent sync saat kembali ke aplikasi (tanpa memicu banjir notifikasi lokal!)
                 realApp.refreshCustomerOrders(false, true);
             } else if (window.staffApp && typeof window.staffApp.loadAllData === "function") {
                 window.staffApp.loadAllData();

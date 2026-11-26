@@ -5663,19 +5663,69 @@
                 if (bDone) bDone.className = this.state.onlineOrdersFilter === 'done' ? 'px-3 py-1.5 font-extrabold bg-nutri-green text-white shadow-sm' : 'px-3 py-1.5 font-bold bg-gray-200 text-gray-700';
                 this.renderOnlineOrdersList();
             },
+            mergeOrderChatsSafe(baseChat, incomingChat) {
+                const combined = [];
+                const seen = new Set();
+                const pushAll = (arr) => {
+                    if (!Array.isArray(arr)) return;
+                    arr.forEach(m => {
+                        if (!m || typeof m !== 'object') return;
+                        const k = m.id ? String(m.id) : `${m.sender || ''}|${m.at || ''}|${m.text || ''}`;
+                        if (seen.has(k)) return;
+                        seen.add(k);
+                        combined.push(m);
+                    });
+                };
+                pushAll(baseChat);
+                pushAll(incomingChat);
+                combined.sort((a, b) => String(a.at || '').localeCompare(String(b.at || '')));
+                return combined;
+            },
             async persistOnlineOrderRecord(ord) {
-                const idx = this.state.onlineOrders.findIndex(x => x.id === ord.id);
-                if (idx > -1) this.state.onlineOrders[idx] = ord;
-                else this.state.onlineOrders.unshift(ord);
+                if (!ord || !ord.id) return false;
+                // 1. Gabungkan dengan versi terbaru di memori agar chat/bukti bayar yang baru masuk tidak pernah terhapus!
+                const memLatest = (this.state.onlineOrders || []).find(x => x && x.id === ord.id);
+                let mergedOrd = memLatest ? { ...memLatest, ...ord } : { ...ord };
+                mergedOrd.orderChat = this.mergeOrderChatsSafe(memLatest?.orderChat, ord.orderChat);
+                ['paymentProofUrl', 'deliveryProofUrl', 'courierName', 'weighPhotoUrl', 'receiptToken'].forEach(f => {
+                    if (!mergedOrd[f] && memLatest && memLatest[f]) mergedOrd[f] = memLatest[f];
+                });
+
+                // 2. Jika terhubung Cloud, tarik versi paling segar dari server tepat sebelum menyimpan (anti-overwrite Direct Reply!)
                 if (this.state.onlineOrdersCloudAvailable && !this.state.isOfflineMode && db && user) {
                     try {
-                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'online_orders', ord.id), { ...ord, localOnly: false, updatedAt: new Date().toISOString() }, { merge: true });
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'online_orders', ord.id);
+                        try {
+                            const freshSnap = await getDoc(docRef);
+                            if (freshSnap && freshSnap.exists()) {
+                                const srv = freshSnap.data() || {};
+                                mergedOrd.orderChat = this.mergeOrderChatsSafe(srv.orderChat, mergedOrd.orderChat);
+                                ['paymentProofUrl', 'deliveryProofUrl', 'courierName', 'weighPhotoUrl', 'receiptToken'].forEach(f => {
+                                    if (!mergedOrd[f] && srv[f]) mergedOrd[f] = srv[f];
+                                });
+                            }
+                        } catch (_) {}
+
+                        const idx = this.state.onlineOrders.findIndex(x => x.id === mergedOrd.id);
+                        if (idx > -1) this.state.onlineOrders[idx] = mergedOrd;
+                        else this.state.onlineOrders.unshift(mergedOrd);
+                        if (this.state.activeLinkedOnlineOrder && this.state.activeLinkedOnlineOrder.id === mergedOrd.id) {
+                            this.state.activeLinkedOnlineOrder = mergedOrd;
+                        }
+
+                        await setDoc(docRef, { ...mergedOrd, localOnly: false, updatedAt: new Date().toISOString() }, { merge: true });
                         this.updateOnlineOrdersBadge();
                         this.renderOnlineOrdersList();
                         return true;
                     } catch (e) {
                         console.warn('[POS] Simpan online_order cloud gagal:', e?.message || e);
                     }
+                }
+                const idx = this.state.onlineOrders.findIndex(x => x.id === mergedOrd.id);
+                if (idx > -1) this.state.onlineOrders[idx] = mergedOrd;
+                else this.state.onlineOrders.unshift(mergedOrd);
+                if (this.state.activeLinkedOnlineOrder && this.state.activeLinkedOnlineOrder.id === mergedOrd.id) {
+                    this.state.activeLinkedOnlineOrder = mergedOrd;
                 }
                 this.saveLocalOnlineOrders(this.state.onlineOrders);
                 this.updateOnlineOrdersBadge();
@@ -6023,7 +6073,8 @@
                 this.showAlert(`Status pesanan #${ord.orderCode || ord.id} diperbarui menjadi "${newStatus}". Layar HP pelanggan langsung ter-update!`);
             },
             async sendOnlineOrderFinalToApp() {
-                const ord = this.state.activeLinkedOnlineOrder;
+                const activeRef = this.state.activeLinkedOnlineOrder;
+                const ord = activeRef ? ({ ...(this.state.onlineOrders.find(x => x.id === activeRef.id) || activeRef) }) : null;
                 if (!ord) return;
                 if (this.state.posCart.length === 0) return this.showAlert('Keranjang kasir kosong.');
 
@@ -6065,7 +6116,8 @@
             },
 
             async sendOnlineOrderWeighConfirmWa() {
-                const ord = this.state.activeLinkedOnlineOrder;
+                const activeRef = this.state.activeLinkedOnlineOrder;
+                const ord = activeRef ? ({ ...(this.state.onlineOrders.find(x => x.id === activeRef.id) || activeRef) }) : null;
                 if (!ord) return;
                 if (this.state.posCart.length === 0) return this.showAlert('Keranjang kasir kosong.');
                 const ph = this.normalizeWaPhone(ord.customerPhone || '');
@@ -11744,7 +11796,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v147';
+        window.__NF_APP_VERSION = 'v148';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;

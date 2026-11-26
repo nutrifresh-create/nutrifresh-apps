@@ -5903,10 +5903,12 @@
             printPublicReceipt() {
                 const card = document.getElementById('publicReceiptPaperCard');
                 if (!card) return;
-                const w = window.open('', '_blank', 'width=420,height=640');
-                if (!w) return window.print();
-                w.document.write(`<!DOCTYPE html><html><head><title>Resi NutriFresh</title><style>body{font-family:Inter,Arial,sans-serif;padding:18px;color:#111;max-width:380px;margin:0 auto;}</style></head><body>${card.innerHTML}<script>window.onload=function(){window.print();};<\/script></body></html>`);
-                w.document.close();
+                const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Resi NutriFresh</title><style>body{font-family:Inter,Arial,sans-serif;padding:20px;color:#111;max-width:390px;margin:0 auto;font-size:13px;}</style></head><body>${card.innerHTML}</body></html>`;
+                if (typeof window.nfPrintHtmlSafe === 'function') {
+                    window.nfPrintHtmlSafe('Resi_NutriFresh', html);
+                    return;
+                }
+                window.print();
             },
 
             // ==========================================
@@ -7038,7 +7040,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v147';
+        window.__NF_APP_VERSION = 'v148';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 

@@ -3604,10 +3604,12 @@ Keterangan / No. Ref Transfer:`, 'Transfer Bank');
             printPayslip() {
                 const d = this._lastPayslipData;
                 if (!d) return;
-                const w = window.open('', '_blank', 'width=460,height=640');
-                if (!w) return alert('Izinkan pop-up browser untuk mencetak slip gaji.');
-                w.document.write(`<!DOCTYPE html><html><head><title>Slip Gaji - ${this.escapeHtml(d.empName)}</title><style>body{font-family:Inter,Arial,sans-serif;padding:24px;color:#111;max-width:420px;margin:0 auto;}h2{margin:0 0 4px;}p.sub{margin:0 0 16px;color:#555;font-size:12px;}table{width:100%;border-collapse:collapse;font-size:13px;}td{padding:7px 0;border-bottom:1px solid #eee;}td.r{text-align:right;font-weight:700;}.tot td{border-top:2px solid #111;border-bottom:2px solid #111;font-size:15px;font-weight:900;padding:10px 0;}</style></head><body><h2>NutriFresh Office</h2><p class="sub">Slip Gaji Karyawan • Periode ${this.escapeHtml(d.ym)} • ${d.isPaid ? 'DIBAYAR' : 'DRAFT'}</p><p style="font-size:13px;"><strong>Nama:</strong> ${this.escapeHtml(d.empName)}<br><strong>Jabatan:</strong> ${this.escapeHtml(d.role)}<br><strong>Cabang:</strong> ${this.escapeHtml(d.branch)}<br><strong>Hadir / Telat / Lembur:</strong> ${d.hadir} Hari / ${d.telat}x / ${d.lemburJam} Jam</p><table><tr><td>Gaji Pokok</td><td class="r">${this.formatRp(d.baseRp)}</td></tr><tr><td>Tunjangan</td><td class="r">${this.formatRp(d.allowRp)}</td></tr><tr><td>Bonus Lembur</td><td class="r">+ ${this.formatRp(d.overtimeBonus)}</td></tr><tr><td>Potongan Telat</td><td class="r">- ${this.formatRp(d.lateCut)}</td></tr><tr><td>Kasbon</td><td class="r">- ${this.formatRp(d.kasbonRp)}</td></tr><tr class="tot"><td>Gaji Bersih</td><td class="r">${this.formatRp(d.netPay)}</td></tr></table><script>window.onload=function(){window.print();};<\/script></body></html>`);
-                w.document.close();
+                const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Slip Gaji - ${this.escapeHtml(d.empName)}</title><style>body{font-family:Inter,Arial,sans-serif;padding:24px;color:#111;max-width:420px;margin:0 auto;}h2{margin:0 0 4px;color:#558b2f;}p.sub{margin:0 0 16px;color:#555;font-size:12px;}table{width:100%;border-collapse:collapse;font-size:13px;}td{padding:8px 0;border-bottom:1px solid #eee;}td.r{text-align:right;font-weight:700;}.tot td{border-top:2px solid #111;border-bottom:2px solid #111;font-size:15px;font-weight:900;padding:10px 0;}</style></head><body><h2>NutriFresh Office</h2><p class="sub">Slip Gaji Karyawan • Periode ${this.escapeHtml(d.ym)} • ${d.isPaid ? 'DIBAYAR' : 'DRAFT'}</p><p style="font-size:13px;line-height:1.55;"><strong>Nama:</strong> ${this.escapeHtml(d.empName)}<br><strong>Jabatan:</strong> ${this.escapeHtml(d.role)}<br><strong>Cabang:</strong> ${this.escapeHtml(d.branch)}<br><strong>Hadir / Telat / Lembur:</strong> ${d.hadir} Hari / ${d.telat}x / ${d.lemburJam} Jam</p><table><tr><td>Gaji Pokok</td><td class="r">${this.formatRp(d.baseRp)}</td></tr><tr><td>Tunjangan</td><td class="r">${this.formatRp(d.allowRp)}</td></tr><tr><td>Bonus Lembur</td><td class="r">+ ${this.formatRp(d.overtimeBonus)}</td></tr><tr><td>Potongan Telat</td><td class="r">- ${this.formatRp(d.lateCut)}</td></tr><tr><td>Kasbon</td><td class="r">- ${this.formatRp(d.kasbonRp)}</td></tr><tr class="tot"><td>Gaji Bersih</td><td class="r">${this.formatRp(d.netPay)}</td></tr></table></body></html>`;
+                if (typeof window.nfPrintHtmlSafe === 'function') {
+                    window.nfPrintHtmlSafe(`Slip_Gaji_${d.empName}_${d.ym}`, html);
+                    return;
+                }
+                window.print();
             },
 
 
@@ -4264,7 +4266,7 @@ Catat juga sebagai Kas Masuk (Pengembalian Pinjaman) di Buku Kas Perusahaan?`);
     </div>
 
     <script>
-        window.__NF_APP_VERSION = 'v147';
+        window.__NF_APP_VERSION = 'v148';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 

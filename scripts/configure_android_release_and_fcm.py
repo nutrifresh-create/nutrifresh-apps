@@ -298,6 +298,17 @@ public class NfLiveOrderHelper {
                 }
             }
             activeChatNotifIds.clear();
+            // Bersihkan riwayat pesan notifikasi yang sudah dibaca agar notifikasi chat baru tampil bersih
+            SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            SharedPreferences.Editor ed = sp.edit();
+            boolean changed = false;
+            for (String k : sp.getAll().keySet()) {
+                if (k != null && (k.startsWith("chat_hist_") || k.equals("last_reply_note"))) {
+                    ed.remove(k);
+                    changed = true;
+                }
+            }
+            if (changed) ed.apply();
         } catch (Exception ignored) {}
     }
 
@@ -338,6 +349,11 @@ public class NfLiveOrderHelper {
             big.append("\nTotal: ").append(totalText);
             if (!courierName.isEmpty()) {
                 big.append("\nKurir: ").append(courierName);
+            }
+            String lastReplyNote = sp.getString("last_reply_note", "");
+            long lastReplyAt = sp.getLong("last_reply_at", 0L);
+            if (!lastReplyNote.isEmpty() && (System.currentTimeMillis() - lastReplyAt) < 90000L) {
+                big.append("\n").append(lastReplyNote);
             }
 
             Intent launch = new Intent(ctx, MainActivity.class);
@@ -674,29 +690,31 @@ public class NfDirectReplyReceiver extends BroadcastReceiver {
 
             try {
                 if (isLiveOrder) {
+                    context.getSharedPreferences(NfLiveOrderHelper.PREFS, Context.MODE_PRIVATE)
+                        .edit()
+                        .putString("last_reply_note", ok ? ("Pesan terkirim: \"" + replyText + "\" ✓") : ("Gagal kirim pesan — coba lagi"))
+                        .putLong("last_reply_at", System.currentTimeMillis())
+                        .apply();
                     NfLiveOrderHelper.showLiveOrderIfActive(context);
                     if (ok) {
                         NfLiveOrderHelper.appendChatHistoryLine(context, orderId, "Anda", replyText + " ✓", true);
                     }
                 } else {
-                    NfLiveOrderHelper.appendChatHistoryLine(
-                        context,
-                        orderId,
-                        "Anda",
-                        ok ? (replyText + " ✓") : ("(Gagal kirim) " + replyText),
-                        true
-                    );
-                    NfLiveOrderHelper.showChatNotification(
-                        context,
-                        notifId,
-                        orderId,
-                        "Chat Pesanan #" + orderId,
-                        receiptToken,
-                        senderRole != null ? senderRole : "customer",
-                        senderName != null ? senderName : "Pelanggan",
-                        replyUrl,
-                        true
-                    );
+                    if (ok) {
+                        NfLiveOrderHelper.appendChatHistoryLine(context, orderId, "Anda", replyText + " ✓", true);
+                        NfLiveOrderHelper.showChatNotification(
+                            context, notifId, orderId, "Chat Pesanan #" + orderId,
+                            receiptToken, senderRole != null ? senderRole : "customer",
+                            senderName != null ? senderName : "Pelanggan", replyUrl, true
+                        );
+                    } else {
+                        // Tampilkan status gagal sementara tanpa menyimpan permanen ke riwayat pesan
+                        NfLiveOrderHelper.showChatNotification(
+                            context, notifId, orderId, "Gagal kirim • Ketuk Balas untuk coba lagi",
+                            receiptToken, senderRole != null ? senderRole : "customer",
+                            senderName != null ? senderName : "Pelanggan", replyUrl, true
+                        );
+                    }
                 }
                 if (ok) {
                     NfLiveOrderHelper.dispatchJs("if(window.__nfOnAppResume){window.__nfOnAppResume();}");
@@ -799,6 +817,7 @@ UPDATE_PATHS_XML = """<?xml version="1.0" encoding="utf-8"?>
 SMART_PERM_AND_UPDATER_FIELDS = r"""
     private static final String NF_UPDATE_MANIFEST_URL = "__UPDATE_MANIFEST_URL__";
     private final java.util.concurrent.atomic.AtomicBoolean nfUpdateDownloading = new java.util.concurrent.atomic.AtomicBoolean(false);
+    private android.webkit.WebView nfHiddenPrintWebView = null;
 
     private java.net.HttpURLConnection nfOpenFollowRedirects(String rawUrl, int timeoutMs) throws Exception {
         String currentUrl = rawUrl;
@@ -807,7 +826,7 @@ SMART_PERM_AND_UPDATER_FIELDS = r"""
             conn.setInstanceFollowRedirects(false);
             conn.setConnectTimeout(timeoutMs);
             conn.setReadTimeout(timeoutMs);
-            conn.setRequestProperty("User-Agent", "NutriFresh-Android-Updater/1.47");
+            conn.setRequestProperty("User-Agent", "NutriFresh-Android-Updater/1.48");
             conn.setRequestProperty("Cache-Control", "no-cache");
             int code = conn.getResponseCode();
             if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308) {
@@ -871,6 +890,35 @@ SMART_PERM_AND_UPDATER_METHODS = r"""
             try {
                 NfLiveOrderHelper.saveLiveOrderState(MainActivity.this, jsonStr);
             } catch (Exception ignored) {}
+        }
+
+        @JavascriptInterface
+        public void printHtmlDocument(final String jobName, final String htmlContent) {
+            runOnUiThread(() -> {
+                try {
+                    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.KITKAT) return;
+                    final String safeJob = (jobName != null && !jobName.trim().isEmpty()) ? jobName.trim() : "NutriFresh_Dokumen";
+                    final android.webkit.WebView wv = new android.webkit.WebView(MainActivity.this);
+                    wv.getSettings().setJavaScriptEnabled(false);
+                    wv.setWebViewClient(new android.webkit.WebViewClient() {
+                        @Override
+                        public void onPageFinished(android.webkit.WebView view, String url) {
+                            try {
+                                android.print.PrintManager pm = (android.print.PrintManager) getSystemService(PRINT_SERVICE);
+                                if (pm != null) {
+                                    android.print.PrintDocumentAdapter adapter = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP
+                                        ? view.createPrintDocumentAdapter(safeJob)
+                                        : view.createPrintDocumentAdapter();
+                                    pm.print(safeJob, adapter, new android.print.PrintAttributes.Builder().build());
+                                }
+                            } catch (Exception ignored) {}
+                            nfHiddenPrintWebView = null;
+                        }
+                    });
+                    nfHiddenPrintWebView = wv;
+                    wv.loadDataWithBaseURL("https://nutrifresh.my.id/", htmlContent != null ? htmlContent : "", "text/html", "UTF-8", null);
+                } catch (Exception ignored) {}
+            });
         }
 
         @JavascriptInterface
@@ -1224,7 +1272,7 @@ def main():
     # 1. Auto-increment versionCode & versionName so Android allows direct in-place Update!
     run_num = int(os.environ.get("GITHUB_RUN_NUMBER", "1") or "1")
     ver_code = 100 + run_num
-    ver_name = f"1.47.{run_num}"
+    ver_name = f"1.48.{run_num}"
 
     gh_repo = (os.environ.get("GITHUB_REPOSITORY") or "nutrifresh-create/nutrifresh-apps").strip()
     update_manifest_url = f"https://github.com/{gh_repo}/releases/download/latest-apks/update-{app_role}.json"

@@ -1,4 +1,4 @@
-// Supabase Edge Function: send-push (NutriFresh v147 — Data-Only FCM + Live Order Enrichment + Direct Reply)
+// Supabase Edge Function: send-push (NutriFresh v148 — Fixed JSONB nf_online_orders for Direct Reply & Live Order!)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 let cachedAccessToken = "";
@@ -121,7 +121,7 @@ Deno.serve(async (req: Request) => {
       ? createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
       : null;
 
-    // 1. DIRECT REPLY CHAT DARI NOTIFIKASI ANDROID (TANPA BUKA APLIKASI — v147)
+    // 1. DIRECT REPLY CHAT DARI NOTIFIKASI ANDROID (TANPA BUKA APLIKASI — v148 FIXED JSONB)
     if (payload?.action === "direct_reply") {
       if (!sb) {
         return new Response(JSON.stringify({ ok: false, error: "Supabase service unavailable" }), { status: 500 });
@@ -131,38 +131,44 @@ Deno.serve(async (req: Request) => {
       const message = String(payload.message || "").trim().slice(0, 500);
       const rawRole = String(payload.sender_role || "customer").toLowerCase();
       const senderRole = ["customer", "store", "courier"].includes(rawRole) ? rawRole : "customer";
-      const senderName = String(payload.sender_name || (senderRole === "customer" ? "Pelanggan" : (senderRole === "courier" ? "Kurir" : "Kasir NutriFresh"))).trim().slice(0, 80);
+      const senderName = String(
+        payload.sender_name ||
+        (senderRole === "customer" ? "Pelanggan" : (senderRole === "courier" ? "Kurir" : "Kasir NutriFresh"))
+      ).trim().slice(0, 80);
 
       if (!orderId || !receiptToken || !message) {
         return new Response(JSON.stringify({ ok: false, error: "Data balasan tidak lengkap" }), { status: 400 });
       }
 
+      // PENTING: nf_online_orders menyimpan seluruh detail di kolom JSONB `data`
       const { data: ord, error: fetchErr } = await sb
         .from("nf_online_orders")
-        .select("id, receipt_token, customer_name, data")
+        .select("id, data")
         .eq("id", orderId)
         .maybeSingle();
 
       if (fetchErr || !ord) {
-        return new Response(JSON.stringify({ ok: false, error: "Pesanan tidak ditemukan" }), { status: 404 });
+        return new Response(JSON.stringify({ ok: false, error: fetchErr?.message || "Pesanan tidak ditemukan" }), { status: 404 });
       }
 
-      const expectedTok = String(ord.receipt_token || (ord.data as Record<string, unknown>)?.receiptToken || "").trim().toUpperCase();
+      const curData = (ord.data && typeof ord.data === "object") ? { ...(ord.data as Record<string, unknown>) } : {};
+      const expectedTok = String(curData.receiptToken || curData.receipt_token || "").trim().toUpperCase();
       if (!expectedTok || expectedTok !== receiptToken) {
         return new Response(JSON.stringify({ ok: false, error: "Token pesanan tidak valid" }), { status: 403 });
       }
 
-      const curData = (ord.data && typeof ord.data === "object") ? { ...(ord.data as Record<string, unknown>) } : {};
       const curChat = Array.isArray(curData.orderChat) ? [...curData.orderChat] : [];
+      const custNameFromData = String(curData.customerName || curData.customer_name || senderName);
       const msgObj = {
         id: "MSG-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6).toUpperCase(),
         sender: senderRole,
-        name: senderRole === "customer" ? (String(ord.customer_name || senderName)) : senderName,
+        name: senderRole === "customer" ? custNameFromData : senderName,
         text: message,
         at: new Date().toISOString(),
       };
       curChat.push(msgObj);
       curData.orderChat = curChat;
+      curData.updatedAt = new Date().toISOString();
 
       const { error: updErr } = await sb
         .from("nf_online_orders")
@@ -200,10 +206,10 @@ Deno.serve(async (req: Request) => {
       matchedTokens: 0,
       fcmSent: 0,
       telegramSent: false,
+      orderEnriched: false,
       updateError: null,
     };
 
-    // Klasifikasi jenis notifikasi + perkaya data pesanan secara otomatis untuk Live Order & Direct Reply
     const isChatNotif = title.includes("💬") || title.includes("Pesan dari") || title.includes("Chat dari");
     const isOrderRef = refId.startsWith("ORD-");
     const eventType = isChatNotif ? "chat" : (isOrderRef ? "order_status" : "general");
@@ -218,32 +224,36 @@ Deno.serve(async (req: Request) => {
       reply_url: supabaseUrl ? `${supabaseUrl}/functions/v1/send-push` : "",
     };
 
-    // Ambil detail live pesanan dari nf_online_orders jika ini terkait order (untuk Live Card & Direct Reply!)
+    // Ambil detail live pesanan dari kolom JSONB `data` di nf_online_orders (v148 FIXED!)
     const orderEnrichTask = (async () => {
       if (!isOrderRef || !sb) return;
       try {
-        const { data: ord } = await sb
+        const { data: ord, error: ordErr } = await sb
           .from("nf_online_orders")
-          .select("id, order_code, receipt_token, customer_name, delivery_mode, order_status, estimated_total, final_total, shipping_fee, courier_name, data")
+          .select("id, data")
           .eq("id", refId)
           .maybeSingle();
-        if (!ord) return;
+        if (ordErr || !ord) {
+          if (ordErr) results.enrichError = ordErr.message;
+          return;
+        }
         const oData = (ord.data && typeof ord.data === "object") ? (ord.data as Record<string, unknown>) : {};
-        const status = String(ord.order_status || oData.orderStatus || "Menunggu Timbang");
-        const grand = (Number(ord.final_total) || Number(ord.estimated_total) || Number(oData.finalTotal) || Number(oData.estimatedTotal) || 0)
-          + (Number(ord.shipping_fee) || Number(oData.shippingFee) || 0);
-        const rTok = String(ord.receipt_token || oData.receiptToken || "");
+        const status = String(oData.orderStatus || oData.order_status || "Menunggu Timbang");
+        const grand = (Number(oData.finalTotal) || Number(oData.estimatedTotal) || 0)
+          + (Number(oData.shippingFee) || 0);
+        const rTok = String(oData.receiptToken || oData.receipt_token || "");
 
         fcmData.order_id = String(ord.id || refId);
-        fcmData.order_code = String(ord.order_code || ord.id || refId);
+        fcmData.order_code = String(oData.orderCode || oData.order_code || ord.id || refId);
         fcmData.order_status = status;
         fcmData.step = String(getOrderStep(status));
         fcmData.items_summary = buildItemsSummary(oData);
         fcmData.total_text = formatRp(grand);
         fcmData.receipt_token = rTok;
-        fcmData.customer_name = String(ord.customer_name || oData.customerName || "Pelanggan");
-        fcmData.courier_name = String(ord.courier_name || oData.courierName || "");
-        fcmData.delivery_mode = String(ord.delivery_mode || oData.deliveryMode || "Kirim ke Rumah");
+        fcmData.customer_name = String(oData.customerName || oData.customer_name || "Pelanggan");
+        fcmData.courier_name = String(oData.courierName || oData.courier_name || "");
+        fcmData.delivery_mode = String(oData.deliveryMode || oData.delivery_mode || "Kirim ke Rumah");
+        results.orderEnriched = true;
 
         if (isChatNotif) {
           const chatArr = Array.isArray(oData.orderChat) ? oData.orderChat : [];
@@ -251,7 +261,9 @@ Deno.serve(async (req: Request) => {
           fcmData.sender_name = String(lastMsg?.name || (targetRole === "customer" ? "Toko NutriFresh" : fcmData.customer_name));
           fcmData.chat_text = String(lastMsg?.text || body);
         }
-      } catch (_) {}
+      } catch (e) {
+        results.enrichError = String(e);
+      }
     })();
 
     const tgTask = (async () => {
@@ -289,9 +301,6 @@ Deno.serve(async (req: Request) => {
       const deadTokens: string[] = [];
       let sentCount = 0;
 
-      // DATA-ONLY + android.priority HIGH:
-      // Selalu memanggil NfFirebaseMessagingService.onMessageReceived() di background & foreground
-      // untuk kontrol penuh: Anti-Duplikat, Live Order ala Gojek & Direct Reply Chat!
       await Promise.allSettled(tokens.map(async (token) => {
         const r = await fetch(fcmUrl, {
           method: "POST",
