@@ -1467,7 +1467,7 @@
                     </div>
 
                     <div class="flex-1 flex flex-col lg:flex-row gap-3.5 min-h-0">
-                        <div id="posLeftProductsPane" class="w-full lg:w-[46%] xl:w-[47%] flex flex-col min-h-0 flex-shrink-0">
+                        <div id="posLeftProductsPane" class="w-full lg:w-[46%] xl:w-[47%] flex lg:flex flex-col min-h-0 flex-shrink-0">
                             <div class="bg-white p-2.5 rounded-2xl shadow-sm mb-2 border border-gray-200/80 flex items-center gap-2">
                                 <div class="relative flex-1">
                                     <i class="fa-solid fa-barcode absolute left-3 top-1/2 -translate-y-1/2 text-nutri-green text-sm"></i>
@@ -5617,7 +5617,7 @@
                 } catch (e) {}
                 this.state.onlineOrders = Array.from(map.values()).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
                 this.updateOnlineOrdersBadge();
-                if (!document.getElementById('onlineOrdersModal')?.classList.contains('hidden')) this.renderOnlineOrdersList();
+                if (!document.getElementById('onlineOrdersModal')?.classList.contains('hidden')) const _posAct = document.activeElement; if (!(_posAct && _posAct.id && _posAct.id.startsWith('posOrdChatInp-'))) { this.renderOnlineOrdersList(); }
             },
             updateOnlineOrdersBadge() {
                 const pendingCnt = (this.state.onlineOrders || []).filter(o => !['Selesai', 'Dibatalkan'].includes(o.orderStatus)).length;
@@ -5693,7 +5693,18 @@
                         : (ord.orderStatus === 'Diantar Kurir' ? 'bg-indigo-100 text-indigo-800'
                         : (ord.orderStatus === 'Menunggu Konfirmasi' || ord.orderStatus === 'Menunggu Verifikasi Bayar' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-900')))));
                     const chatArr = Array.isArray(ord.orderChat) ? ord.orderChat : [];
-                    const canSendToCourier = !isClosed && ord.deliveryMode !== 'Ambil di Toko' && !['Disetujui — Siap Kirim', 'Diantar Kurir', 'Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(ord.orderStatus);
+                    const isPickup = ord.deliveryMode === 'Ambil di Toko';
+                    // 1. Tombol "Serahkan ke Kurir" HANYA muncul setelah pelanggan ACC (COD) atau sudah upload bukti bayar (Non-Tunai)
+                    const canReleaseToCourier = !isClosed && !isPickup && ['Disetujui — Siap Kirim', 'Menunggu Verifikasi Bayar'].includes(ord.orderStatus);
+                    // 2. Untuk Ambil di Toko: tombol "Siap Diambil" muncul setelah ACC / Verifikasi Bayar
+                    const canMarkPickupReady = !isClosed && isPickup && ['Disetujui — Siap Diambil', 'Menunggu Verifikasi Bayar'].includes(ord.orderStatus);
+                    // 3. Tombol "Terima COD & Selesai" / "Bayar & Selesaikan" TIDAK BOLEH muncul di awal sebelum barang dikirim kurir (atau siap diambil di toko)!
+                    const canSettleOrder = !isClosed && (
+                        isPickup
+                            ? ['Disetujui — Siap Diambil', 'Siap Diambil', 'Menunggu Verifikasi Bayar'].includes(ord.orderStatus)
+                            : ['Diantar Kurir', 'Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(ord.orderStatus)
+                    );
+                    const waitingCourierPickup = !isClosed && !isPickup && ord.orderStatus === 'Siap Diambil Kurir';
 
                     return `
                         <div class="bg-white rounded-2xl border ${isDelivered ? 'border-rose-400 ring-2 ring-rose-200' : 'border-gray-200'} p-3.5 shadow-sm space-y-2.5">
@@ -5748,9 +5759,12 @@
 
                             <div class="pt-1 flex flex-wrap items-center justify-between gap-2">
                                 <div class="flex flex-wrap items-center gap-1.5">
-                                    ${!isClosed ? `<button type="button" onclick="app.settleOnlineOrderQuick('${this.escapeHtml(ord.id)}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-3 py-1.5 text-[11px] shadow-sm transition flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> <span>${isCod ? 'Terima COD &amp; Selesai' : 'Bayar &amp; Selesaikan'}</span></button>` : (ord.linkedTxId ? `<button type="button" onclick="document.getElementById('onlineOrdersModal').classList.add('hidden'); app.openDigitalReceiptModalById('${this.escapeHtml(ord.linkedTxId)}')" class="bg-emerald-50 text-emerald-800 border border-emerald-200 font-extrabold px-3 py-1.5 text-[11px]">🧾 Lihat Resi (${this.escapeHtml(ord.linkedTxId)})</button>` : '')}
+                                    ${canSettleOrder ? `<button type="button" onclick="app.settleOnlineOrderQuick('${this.escapeHtml(ord.id)}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-3 py-1.5 text-[11px] shadow-sm transition flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> <span>${isCod ? 'Terima COD &amp; Selesai' : 'Bayar &amp; Selesaikan'}</span></button>` : ''}
+                                    ${canReleaseToCourier ? `<button type="button" onclick="app.updateOnlineOrderQuickStatus('${this.escapeHtml(ord.id)}','Siap Diambil Kurir')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-3 py-1.5 text-[11px] shadow-sm transition flex items-center gap-1"><i class="fa-solid fa-motorcycle"></i> <span>Serahkan ke Kurir</span></button>` : ''}
+                                    ${canMarkPickupReady ? `<button type="button" onclick="app.updateOnlineOrderQuickStatus('${this.escapeHtml(ord.id)}','Siap Diambil')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-3 py-1.5 text-[11px] shadow-sm transition">🛍️ Tandai Siap Diambil</button>` : ''}
+                                    ${waitingCourierPickup ? `<span class="px-2.5 py-1.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200 font-extrabold text-[10.5px]">⏳ Menunggu Kurir Ambil</span>` : ''}
+                                    ${isClosed && ord.linkedTxId ? `<button type="button" onclick="document.getElementById('onlineOrdersModal').classList.add('hidden'); app.openDigitalReceiptModalById('${this.escapeHtml(ord.linkedTxId)}')" class="bg-emerald-50 text-emerald-800 border border-emerald-200 font-extrabold px-3 py-1.5 text-[11px]">🧾 Lihat Resi (${this.escapeHtml(ord.linkedTxId)})</button>` : ''}
                                     ${!isClosed ? `<button type="button" onclick="app.loadOnlineOrderToPosCart('${this.escapeHtml(ord.id)}')" class="bg-nutri-green hover:bg-nutri-dark text-white font-extrabold px-2.5 py-1.5 text-[11px] shadow-sm transition flex items-center gap-1"><i class="fa-solid fa-scale-balanced"></i> <span>Timbang / Edit</span></button>` : ''}
-                                    ${canSendToCourier ? `<button type="button" onclick="app.updateOnlineOrderQuickStatus('${this.escapeHtml(ord.id)}','Disetujui — Siap Kirim')" class="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold px-2.5 py-1.5 text-[11px]">📦 Siap Kirim (Kurir)</button>` : ''}
                                     ${ord.paymentProofUrl ? `<button type="button" onclick="document.getElementById('viewProofFullImg').src='${this.escapeHtml(ord.paymentProofUrl)}';document.getElementById('viewProofModal').classList.remove('hidden')" class="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold px-2.5 py-1.5 text-[11px]"><i class="fa-solid fa-image mr-1"></i> Bukti Bayar</button>` : ''}
                                     ${ord.deliveryProofUrl ? `<button type="button" onclick="document.getElementById('viewProofFullImg').src='${this.escapeHtml(ord.deliveryProofUrl)}';document.getElementById('viewProofModal').classList.remove('hidden')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-extrabold px-2.5 py-1.5 text-[11px]"><i class="fa-solid fa-camera mr-1"></i> Bukti Antar</button>` : ''}
                                     <button type="button" onclick="app.openOnlineOrderWaChat('${this.escapeHtml(ord.id)}')" class="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 font-extrabold px-2.5 py-1.5 text-[11px]"><i class="fa-brands fa-whatsapp mr-1"></i> WA</button>
@@ -6924,8 +6938,15 @@ isKepalaTokoRole() {
                 this.state.mobilePosSubTab = tab;
                 const prodPane = document.getElementById('posLeftProductsPane'), cartPane = document.getElementById('posRightCartPane'), btnProd = document.getElementById('mobPosTab-products'), btnCart = document.getElementById('mobPosTab-cart');
                 if (!prodPane || !cartPane) return;
-                if (tab === 'products') { prodPane.classList.remove('hidden'); cartPane.classList.add('hidden'); cartPane.classList.remove('flex'); btnProd.className = 'py-2 rounded-xl text-xs font-extrabold bg-nutri-green text-white shadow-sm transition flex items-center justify-center'; btnCart.className = 'py-2 rounded-xl text-xs font-bold bg-gray-100 text-gray-600 transition flex items-center justify-center'; }
-                else { prodPane.classList.add('hidden'); cartPane.classList.remove('hidden'); cartPane.classList.add('flex'); btnCart.className = 'py-2 rounded-xl text-xs font-extrabold bg-nutri-green text-white shadow-sm transition flex items-center justify-center'; btnProd.className = 'py-2 rounded-xl text-xs font-bold bg-gray-100 text-gray-600 transition flex items-center justify-center'; }
+                if (window.innerWidth >= 1024) {
+                    // Di PC / Laptop: Panel Produk Kiri & Keranjang Kanan SELALU tampil berdampingan (normal)!
+                    prodPane.classList.remove('hidden');
+                    cartPane.classList.remove('hidden');
+                    cartPane.classList.add('flex');
+                    return;
+                }
+                if (tab === 'products') { prodPane.classList.remove('hidden'); cartPane.classList.add('hidden'); cartPane.classList.remove('flex'); if (btnProd) btnProd.className = 'py-2 rounded-xl text-xs font-extrabold bg-nutri-green text-white shadow-sm transition flex items-center justify-center'; if (btnCart) btnCart.className = 'py-2 rounded-xl text-xs font-bold bg-gray-100 text-gray-600 transition flex items-center justify-center'; }
+                else { prodPane.classList.add('hidden'); cartPane.classList.remove('hidden'); cartPane.classList.add('flex'); if (btnCart) btnCart.className = 'py-2 rounded-xl text-xs font-extrabold bg-nutri-green text-white shadow-sm transition flex items-center justify-center'; if (btnProd) btnProd.className = 'py-2 rounded-xl text-xs font-bold bg-gray-100 text-gray-600 transition flex items-center justify-center'; }
             },
             setPosViewMode(mode) {
                 this.state.posViewMode = mode; localStorage.setItem('nutri_pos_mode', mode);
@@ -8672,8 +8693,8 @@ isKepalaTokoRole() {
                     const earnedPts = (buyerMode === 'member') ? this.calculateEarnedPointsForPos(processedItems, this.state.posTotal) : 0;
 
                     const trxId = this.generateUniqueId('TRX');
-                    const receiptToken = this.generateReceiptToken();
                     const linkedOnlineOrd = this.state.activeLinkedOnlineOrder ? { ...this.state.activeLinkedOnlineOrder } : null;
+                    const receiptToken = (linkedOnlineOrd && linkedOnlineOrd.receiptToken) ? String(linkedOnlineOrd.receiptToken).toUpperCase() : this.generateReceiptToken();
                     const transaction = {
                         id: trxId, receiptToken, linkedOnlineOrderId: linkedOnlineOrd?.id || '', date: now.toISOString(), cashier: this.state.currentCashier, salesChannel, platformFee,
                         buyerMode, buyerRefId,
@@ -11688,7 +11709,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v142';
+        window.__NF_APP_VERSION = 'v143';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;

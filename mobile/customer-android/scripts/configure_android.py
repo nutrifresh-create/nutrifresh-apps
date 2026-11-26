@@ -13,11 +13,18 @@ import android.Manifest;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Base64;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import androidx.core.app.ActivityCompat;
@@ -178,6 +185,46 @@ public class MainActivity extends BridgeActivity {
                     startActivity(i);
                 } catch (Exception ignored) {}
             });
+        }
+
+        @JavascriptInterface
+        public String savePngBase64(String fileName, String base64Data) {
+            try {
+                String cleanName = (fileName != null && !fileName.trim().isEmpty())
+                    ? fileName.trim().replaceAll("[^a-zA-Z0-9._-]", "_")
+                    : ("Resi_NutriFresh_" + System.currentTimeMillis() + ".png");
+                if (!cleanName.toLowerCase().endsWith(".png")) cleanName += ".png";
+                String cleanB64 = base64Data != null ? base64Data : "";
+                int commaIdx = cleanB64.indexOf(',');
+                if (commaIdx >= 0) cleanB64 = cleanB64.substring(commaIdx + 1);
+                byte[] bytes = Base64.decode(cleanB64, Base64.DEFAULT);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ContentValues cv = new ContentValues();
+                    cv.put(MediaStore.Images.Media.DISPLAY_NAME, cleanName);
+                    cv.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+                    cv.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/NutriFresh");
+                    Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cv);
+                    if (uri == null) return "ERR:Gagal membuat file di Galeri.";
+                    try (OutputStream os = getContentResolver().openOutputStream(uri)) {
+                        if (os == null) return "ERR:Gagal membuka stream Galeri.";
+                        os.write(bytes);
+                        os.flush();
+                    }
+                    return "OK:Galeri (Pictures/NutriFresh/" + cleanName + ")";
+                } else {
+                    File dir = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "NutriFresh");
+                    if (!dir.exists()) dir.mkdirs();
+                    File outFile = new File(dir, cleanName);
+                    try (FileOutputStream fos = new FileOutputStream(outFile)) {
+                        fos.write(bytes);
+                        fos.flush();
+                    }
+                    return "OK:" + outFile.getAbsolutePath();
+                }
+            } catch (Exception e) {
+                return "ERR:" + (e.getMessage() != null ? e.getMessage() : "Gagal menyimpan PNG.");
+            }
         }
     }
 }

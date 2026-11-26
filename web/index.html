@@ -3567,6 +3567,8 @@
                 myOrdersPollTimer: null,
                 uploadingProofOrderId: '',
                 uploadingProofOrderToken: '',
+                expandedHistoryOrders: {},
+                custChatDrafts: {},
                 customerCart: [],
                 deferredInstallPrompt: null,
                 promoCarouselIndex: 0,
@@ -4911,8 +4913,25 @@
                 } finally {
                     if (ic) setTimeout(() => ic.classList.remove('fa-spin'), 350);
                     this.renderCustomerOrderIndicators();
-                    if (!document.getElementById('customerOrdersModal')?.classList.contains('hidden')) {
-                        this.renderCustomerOrdersModalBody();
+                    const modalEl = document.getElementById('customerOrdersModal');
+                    if (modalEl && !modalEl.classList.contains('hidden')) {
+                        const fp = JSON.stringify((this.state.myOrdersList || []).map(o => [
+                            o.id, o.orderStatus, o.finalTotal, o.shippingFee, o.courierName,
+                            o.cashierNote, o.weighPhotoUrl ? 1 : 0, o.paymentProofUrl ? 1 : 0,
+                            o.deliveryProofUrl ? 1 : 0, Array.isArray(o.orderChat) ? o.orderChat.length : 0
+                        ]));
+                        const act = document.activeElement;
+                        const isTypingChat = !!(act && act.id && act.id.startsWith('custChatInp-') && modalEl.contains(act));
+                        if (isTypingChat) {
+                            // Jangan pernah rebuild seluruh modal saat pelanggan sedang mengetik (anti-tutup keyboard!)
+                            if (fp !== this._lastOrdersRenderFp) {
+                                this._lastOrdersRenderFp = fp;
+                                this.patchCustomerOrderChatsInPlace();
+                            }
+                        } else if (showSpin || fp !== this._lastOrdersRenderFp) {
+                            this._lastOrdersRenderFp = fp;
+                            this.renderCustomerOrdersModalBody();
+                        }
                     }
                 }
             },
@@ -4939,6 +4958,7 @@
                             'Menunggu Konfirmasi': '⚖️',
                             'Menunggu Verifikasi Bayar': '🔎',
                             'Disetujui — Siap Kirim': '✅',
+                            'Siap Diambil Kurir': '📦',
                             'Disetujui — Siap Diambil': '✅',
                             'Diantar Kurir': '🛵',
                             'Siap Diambil': '🛍️',
@@ -4974,10 +4994,93 @@
             },
             getOrderStepNumber(st) {
                 if (st === 'Selesai') return 5;
-                if (['Diantar Kurir', 'Siap Diambil', 'Disetujui — Siap Kirim', 'Disetujui — Siap Diambil', 'Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(st)) return 4;
+                if (['Diantar Kurir', 'Siap Diambil', 'Disetujui — Siap Kirim', 'Disetujui — Siap Diambil', 'Siap Diambil Kurir', 'Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(st)) return 4;
                 if (st === 'Menunggu Pembayaran' || st === 'Menunggu Konfirmasi' || st === 'Menunggu Verifikasi Bayar') return 3;
                 if (st === 'Sedang Ditimbang') return 2;
                 return 1;
+            },
+            formatCustChatMessagesHtml(ord) {
+                const chatArr = Array.isArray(ord.orderChat) ? ord.orderChat : [];
+                if (chatArr.length === 0) {
+                    return '<div class="text-[10.5px] text-gray-400 text-center py-1.5">Ingin tambah buah, tanya kematangan, atau ubah pesanan? Tulis pesan langsung ke kasir di sini.</div>';
+                }
+                return chatArr.slice(-15).map(m => {
+                    const isMe = m.sender === 'customer';
+                    const tStr = m.at ? new Date(m.at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
+                    const senderTag = isMe ? 'Anda' : (m.sender === 'courier' ? `🛵 ${this.escapeHtml(m.name || 'Kurir')}` : `🍐 ${this.escapeHtml(m.name || 'Toko')}`);
+                    return `<div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+                        <div class="max-w-[85%] rounded-2xl px-3 py-1.5 text-[11px] ${isMe ? 'bg-nutri-green text-white rounded-br-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm'}">
+                            <div class="text-[9.5px] font-bold ${isMe ? 'text-green-100' : 'text-nutri-dark'}">${senderTag} • ${tStr}</div>
+                            <div class="leading-snug mt-0.5 break-words">${this.escapeHtml(m.text || '')}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+            },
+            patchCustomerOrderChatsInPlace() {
+                (this.state.myOrdersList || []).forEach(ord => {
+                    const wrap = document.getElementById(`custChatMsgs-${ord.id}`);
+                    if (wrap) {
+                        wrap.innerHTML = this.formatCustChatMessagesHtml(ord);
+                        wrap.scrollTop = wrap.scrollHeight;
+                    }
+                    const cnt = document.getElementById(`custChatCnt-${ord.id}`);
+                    if (cnt) cnt.textContent = `${Array.isArray(ord.orderChat) ? ord.orderChat.length : 0} pesan`;
+                });
+            },
+            toggleHistoryOrderDetail(orderId) {
+                if (!this.state.expandedHistoryOrders) this.state.expandedHistoryOrders = {};
+                this.state.expandedHistoryOrders[orderId] = !this.state.expandedHistoryOrders[orderId];
+                this.renderCustomerOrdersModalBody();
+            },
+            reorderCustomerOrder(orderId) {
+                const ord = (this.state.myOrdersList || []).find(o => o.id === orderId);
+                if (!ord) return;
+                const srcItems = Array.isArray(ord.weighedItems) && ord.weighedItems.length > 0
+                    ? ord.weighedItems
+                    : (Array.isArray(ord.items) ? ord.items : []);
+                if (srcItems.length === 0) return this.showAlert('Daftar item pada pesanan ini kosong.');
+
+                let added = 0;
+                const skipped = [];
+                srcItems.forEach(it => {
+                    const inv = this.state.inventory.find(p => p.id === it.id)
+                        || this.state.inventory.find(p => (p.name || '').toLowerCase() === (it.name || '').toLowerCase());
+                    if (!inv || inv.active === false) {
+                        skipped.push(it.name || 'Produk');
+                        return;
+                    }
+                    const avail = this.getEffectiveAvailableQty(inv);
+                    if (avail <= 0) {
+                        skipped.push(`${inv.name} (Stok Habis)`);
+                        return;
+                    }
+                    const wantQty = Math.min(avail, Math.max(1, Math.round(Number(it.requestedQty || it.qty) || (inv.unit === 'Gram' ? 500 : 1))));
+                    const existing = this.state.customerCart.find(c => c.id === inv.id);
+                    if (existing) {
+                        existing.qty = Math.min(avail, wantQty);
+                    } else {
+                        this.state.customerCart.push({
+                            ...inv,
+                            qty: wantQty,
+                            weightPref: it.weightPref || 'Boleh lebih sedikit',
+                            itemNote: it.itemNote || ''
+                        });
+                    }
+                    added++;
+                });
+
+                if (added === 0) {
+                    return this.showAlert('Maaf, semua buah pada pesanan sebelumnya sedang habis stoknya saat ini.');
+                }
+                this.persistCustomerCart();
+                this.updateCustomerCartBadge();
+                this.renderCustomerProducts();
+                document.getElementById('customerOrdersModal')?.classList.add('hidden');
+                this.showCustomerCartModal();
+                this.showCustomerToast(`${added} item dimasukkan kembali ke keranjang!`);
+                if (skipped.length > 0) {
+                    this.showAlert(`${added} item berhasil dimasukkan ke keranjang.\n\nItem dilewati karena stok habis:\n• ${skipped.join('\n• ')}`);
+                }
             },
             renderCustomerOrdersModalBody() {
                 const box = document.getElementById('custOrdersListContainer');
@@ -4998,6 +5101,7 @@
 
                 box.innerHTML = list.map(ord => {
                     const isCancelled = ord.orderStatus === 'Dibatalkan';
+                    const isClosedOrd = ['Selesai', 'Dibatalkan'].includes(ord.orderStatus);
                     const step = this.getOrderStepNumber(ord.orderStatus);
                     const steps = [
                         { n: 1, lbl: 'Masuk' },
@@ -5013,13 +5117,58 @@
                     const needPay = !isCancelled && ['Menunggu Pembayaran', 'Menunggu Konfirmasi'].includes(ord.orderStatus);
                     const isVerifying = ord.orderStatus === 'Menunggu Verifikasi Bayar';
                     const isCod = String(ord.paymentMethod || '').toLowerCase().includes('cash') || String(ord.paymentMethod || '').toLowerCase().includes('tunai');
+                    const dtShort = ord.createdAt ? new Date(ord.createdAt).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-';
+                    const chatArr = Array.isArray(ord.orderChat) ? ord.orderChat : [];
 
+                    // MODE RINGKAS (BISA DIKECILKAN / EXPAND) UNTUK RIWAYAT SELESAI / BATAL (v143)
+                    if (wantDone) {
+                        const isExpanded = !!(this.state.expandedHistoryOrders && this.state.expandedHistoryOrders[ord.id]);
+                        const summaryNames = items.slice(0, 2).map(it => it.name).join(', ') + (items.length > 2 ? ` +${items.length - 2} lainnya` : '');
+                        return `
+                        <div class="bg-white rounded-2xl border border-gray-200 p-3 shadow-sm space-y-2">
+                            <div class="flex items-start justify-between gap-2 cursor-pointer" onclick="app.toggleHistoryOrderDetail('${this.escapeHtml(ord.id)}')">
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="font-mono font-black text-[10.5px] bg-slate-100 text-slate-800 px-2 py-0.5 rounded-full">${this.escapeHtml(ord.orderCode || ord.id)}</span>
+                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-black ${isCancelled ? 'bg-red-100 text-red-700' : 'bg-green-100 text-nutri-dark'}">${this.escapeHtml(ord.orderStatus)}</span>
+                                    </div>
+                                    <div class="text-[11px] font-bold text-gray-800 truncate mt-1">${this.escapeHtml(summaryNames || 'Pesanan Buah')}</div>
+                                    <div class="text-[10px] text-gray-400">${dtShort} • ${items.length} item • ${this.escapeHtml(ord.deliveryMode || 'Kirim')}</div>
+                                </div>
+                                <div class="text-right flex-shrink-0">
+                                    <div class="font-black text-sm text-nutri-brown">${this.formatCurrency(grandTotal)}</div>
+                                    <span class="text-[10px] font-extrabold text-blue-600 inline-flex items-center gap-0.5 mt-0.5">${isExpanded ? 'Tutup ▴' : 'Detail ▾'}</span>
+                                </div>
+                            </div>
+
+                            ${isExpanded ? `
+                            <div class="pt-2 border-t border-gray-100 space-y-2">
+                                <div class="bg-gray-50 border border-gray-100 rounded-xl p-2 space-y-1 text-[11px]">
+                                    ${items.map(it => `<div class="flex justify-between gap-2"><span class="text-gray-700 truncate">${this.formatStockDisplay(it.qty, it.unit)} × ${this.escapeHtml(it.name)}</span><span class="font-bold text-gray-900 flex-shrink-0">${this.formatCurrency(it.subtotal || this.calculateLineAmount(it, it.qty))}</span></div>`).join('')}
+                                    <div class="flex justify-between pt-1 border-t border-gray-200/80 text-[10.5px] text-gray-500"><span>Ongkos Kirim</span><span class="font-bold">${shipFee === 0 ? 'Gratis (Rp 0)' : this.formatCurrency(shipFee)}</span></div>
+                                </div>
+                                ${ord.courierName ? `<div class="bg-indigo-50 border border-indigo-200 rounded-xl px-2.5 py-1.5 text-[10.5px] text-indigo-900 flex justify-between"><span>🛵 Kurir: <strong>${this.escapeHtml(ord.courierName)}</strong></span>${ord.deliveryProofUrl ? `<a href="${this.escapeHtml(ord.deliveryProofUrl)}" target="_blank" rel="noopener" class="font-extrabold underline">Bukti Antar</a>` : ''}</div>` : ''}
+                                ${chatArr.length > 0 ? `<div class="bg-slate-50 border border-slate-200 rounded-xl p-2 space-y-1 max-h-32 overflow-y-auto">${this.formatCustChatMessagesHtml(ord)}</div>` : ''}
+                            </div>` : ''}
+
+                            <div class="flex items-center justify-between gap-1.5 pt-2 border-t border-gray-100">
+                                <div class="flex items-center gap-1.5">
+                                    <button type="button" onclick="app.reorderCustomerOrder('${this.escapeHtml(ord.id)}')" class="px-3 py-1.5 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] shadow-sm transition flex items-center gap-1"><i class="fa-solid fa-rotate-right"></i> <span>Pesan Ulang</span></button>
+                                    <button type="button" onclick="app.openPublicReceiptModal('${this.escapeHtml(ord.linkedTxId || ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="px-2.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[11px] transition"><i class="fa-solid fa-file-invoice mr-1"></i> Resi</button>
+                                </div>
+                                <button type="button" onclick="app.toggleHistoryOrderDetail('${this.escapeHtml(ord.id)}')" class="px-2.5 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-[10.5px] transition">${isExpanded ? 'Kecilkan ▴' : 'Rincian ▾'}</button>
+                            </div>
+                        </div>`;
+                    }
+
+                    // MODE AKTIF (SEDANG BERJALAN)
+                    const draftVal = (this.state.custChatDrafts && this.state.custChatDrafts[ord.id]) || '';
                     return `
                         <div class="bg-white rounded-3xl border ${needPay ? 'border-amber-400 ring-2 ring-amber-200/70' : 'border-gray-200'} p-4 shadow-sm space-y-3">
                             <div class="flex items-start justify-between gap-2">
                                 <div class="min-w-0">
                                     <span class="font-mono font-black text-[11px] bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full">${this.escapeHtml(ord.orderCode || ord.id)}</span>
-                                    <div class="text-[10px] text-gray-400 mt-1">${ord.createdAt ? new Date(ord.createdAt).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-'} • ${this.escapeHtml(ord.deliveryMode || 'Kirim ke Rumah')}</div>
+                                    <div class="text-[10px] text-gray-400 mt-1">${dtShort} • ${this.escapeHtml(ord.deliveryMode || 'Kirim ke Rumah')}</div>
                                 </div>
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-black flex-shrink-0 ${isCancelled ? 'bg-red-100 text-red-700' : (ord.orderStatus === 'Selesai' ? 'bg-green-100 text-nutri-dark' : (needPay ? 'bg-amber-100 text-amber-900' : 'bg-blue-100 text-blue-800'))}">${this.escapeHtml(ord.orderStatus || 'Menunggu Timbang')}</span>
                             </div>
@@ -5062,7 +5211,7 @@
                             <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-3 space-y-2.5">
                                 <div class="font-extrabold text-amber-950 text-xs flex items-center gap-1.5"><i class="fa-solid fa-scale-balanced text-amber-600"></i> Buah Selesai Ditimbang! Total Final: ${this.formatCurrency(grandTotal)}</div>
                                 ${isCod ? `
-                                    <p class="text-[11px] text-amber-900 leading-relaxed">Metode Anda <strong>Cash / Tunai (COD)</strong>. Cek berat &amp; total final di atas — jika ada tambahan atau permintaan perubahan, tulis di kolom <strong>Chat Pesanan</strong> di bawah sebelum menyetujui.</p>
+                                    <p class="text-[11px] text-amber-900 leading-relaxed">Metode Anda <strong>Cash / Tunai (COD)</strong>. Cek berat &amp; total final di atas — jika ada tambahan atau perubahan, tulis di <strong>Chat Pesanan</strong> di bawah sebelum menyetujui.</p>
                                     <button type="button" onclick="app.approveCustomerOrder('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-full shadow-sm transition text-xs flex items-center justify-center gap-1.5">
                                         <i class="fa-solid fa-circle-check"></i> <span>Setuju &amp; ${ord.deliveryMode === 'Ambil di Toko' ? 'Siapkan di Toko' : 'Kirim Sekarang (COD)'}</span>
                                     </button>
@@ -5082,10 +5231,10 @@
                                 <span>Bukti bayar sudah diterima! Kasir sedang memverifikasi &amp; menyiapkan pengantaran.</span>
                             </div>` : ''}
 
-                            ${(ord.orderStatus === 'Disetujui — Siap Kirim' || ord.orderStatus === 'Disetujui — Siap Diambil') ? `
+                            ${(['Disetujui — Siap Kirim', 'Disetujui — Siap Diambil', 'Siap Diambil Kurir'].includes(ord.orderStatus)) ? `
                             <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-[11px] text-emerald-900 font-bold flex items-center gap-2">
                                 <i class="fa-solid fa-thumbs-up text-emerald-600 text-base"></i>
-                                <span>Hasil timbangan sudah Anda setujui! ${ord.deliveryMode === 'Ambil di Toko' ? 'Pesanan siap diambil di toko.' : 'Menunggu kurir mengambil pesanan untuk diantar.'}</span>
+                                <span>${ord.orderStatus === 'Siap Diambil Kurir' ? 'Pesanan sudah dikemas kasir &amp; sedang menunggu kurir mengambil untuk diantar.' : (ord.deliveryMode === 'Ambil di Toko' ? 'Hasil timbangan disetujui! Pesanan siap diambil di toko.' : 'Hasil timbangan sudah Anda setujui! Kasir sedang menyiapkan paket untuk kurir.')}</span>
                             </div>` : ''}
 
                             ${ord.courierName ? `
@@ -5094,38 +5243,19 @@
                                 ${ord.deliveryProofUrl ? `<a href="${this.escapeHtml(ord.deliveryProofUrl)}" target="_blank" rel="noopener" class="font-extrabold text-indigo-700 underline">Bukti Antar →</a>` : ''}
                             </div>` : ''}
 
-                            <!-- CHAT 2 ARAH LANGSUNG DI DALAM PESANAN (v142) -->
-                            ${(() => {
-                                const chatArr = Array.isArray(ord.orderChat) ? ord.orderChat : [];
-                                const isClosedOrd = ['Selesai', 'Dibatalkan'].includes(ord.orderStatus);
-                                if (isClosedOrd && chatArr.length === 0) return '';
-                                const msgsHtml = chatArr.length === 0
-                                    ? '<div class="text-[10.5px] text-gray-400 text-center py-1.5">Ingin tambah buah, tanya kematangan, atau ubah pesanan? Tulis pesan langsung ke kasir di sini.</div>'
-                                    : chatArr.slice(-12).map(m => {
-                                        const isMe = m.sender === 'customer';
-                                        const tStr = m.at ? new Date(m.at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
-                                        const senderTag = isMe ? 'Anda' : (m.sender === 'courier' ? `🛵 ${this.escapeHtml(m.name || 'Kurir')}` : `🍐 ${this.escapeHtml(m.name || 'Toko')}`);
-                                        return `<div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
-                                            <div class="max-w-[85%] rounded-2xl px-3 py-1.5 text-[11px] ${isMe ? 'bg-nutri-green text-white rounded-br-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm'}">
-                                                <div class="text-[9.5px] font-bold ${isMe ? 'text-green-100' : 'text-nutri-dark'}">${senderTag} • ${tStr}</div>
-                                                <div class="leading-snug mt-0.5 break-words">${this.escapeHtml(m.text || '')}</div>
-                                            </div>
-                                        </div>`;
-                                    }).join('');
-                                return `
-                                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 space-y-2">
-                                    <div class="flex items-center justify-between text-[10.5px] font-extrabold text-slate-700">
-                                        <span><i class="fa-solid fa-comments text-nutri-green mr-1"></i> Chat Pesanan (2 Arah)</span>
-                                        <span class="text-[9.5px] text-slate-400">${chatArr.length} pesan</span>
-                                    </div>
-                                    <div class="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">${msgsHtml}</div>
-                                    ${!isClosedOrd ? `
-                                    <div class="flex items-center gap-1.5 pt-1">
-                                        <input type="text" id="custChatInp-${this.escapeHtml(ord.id)}" onkeydown="if(event.key==='Enter'){event.preventDefault();app.sendCustomerOrderChat('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}');}" placeholder="Tulis pesan / minta tambah item..." class="flex-1 px-3 py-1.5 text-[11px] rounded-full border border-slate-300 bg-white outline-none">
-                                        <button type="button" onclick="app.sendCustomerOrderChat('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="px-3 py-1.5 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] flex-shrink-0 transition">Kirim</button>
-                                    </div>` : ''}
-                                </div>`;
-                            })()}
+                            <!-- CHAT 2 ARAH LANGSUNG DI DALAM PESANAN (ANTI-GANGGU KEYBOARD v143) -->
+                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 space-y-2">
+                                <div class="flex items-center justify-between text-[10.5px] font-extrabold text-slate-700">
+                                    <span><i class="fa-solid fa-comments text-nutri-green mr-1"></i> Chat Pesanan (2 Arah)</span>
+                                    <span id="custChatCnt-${this.escapeHtml(ord.id)}" class="text-[9.5px] text-slate-400">${chatArr.length} pesan</span>
+                                </div>
+                                <div id="custChatMsgs-${this.escapeHtml(ord.id)}" class="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">${this.formatCustChatMessagesHtml(ord)}</div>
+                                ${!isClosedOrd ? `
+                                <div class="flex items-center gap-1.5 pt-1">
+                                    <input type="text" id="custChatInp-${this.escapeHtml(ord.id)}" value="${this.escapeHtml(draftVal)}" oninput="app.state.custChatDrafts['${this.escapeHtml(ord.id)}']=this.value" onkeydown="if(event.key==='Enter'){event.preventDefault();app.sendCustomerOrderChat('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}');}" placeholder="Tulis pesan / minta tambah item..." class="flex-1 px-3 py-1.5 text-[11px] rounded-full border border-slate-300 bg-white outline-none">
+                                    <button type="button" onclick="app.sendCustomerOrderChat('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="px-3 py-1.5 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] flex-shrink-0 transition">Kirim</button>
+                                </div>` : ''}
+                            </div>
 
                             <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-gray-100">
                                 <button type="button" onclick="app.openPublicReceiptModal('${this.escapeHtml(ord.linkedTxId || ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[11px] transition"><i class="fa-solid fa-file-invoice mr-1"></i> Resi Digital</button>
@@ -5159,6 +5289,14 @@
                         senderName: ord?.customerName || this.state.customerMember?.name || 'Pelanggan'
                     });
                     inp.value = '';
+                    if (this.state.custChatDrafts) delete this.state.custChatDrafts[orderId];
+                    const ordRef = (this.state.myOrdersList || []).find(o => o.id === orderId);
+                    if (ordRef) {
+                        if (!Array.isArray(ordRef.orderChat)) ordRef.orderChat = [];
+                        ordRef.orderChat.push({ id: 'TMP-' + Date.now(), sender: 'customer', name: ordRef.customerName || 'Anda', text: msg, at: new Date().toISOString() });
+                        this.patchCustomerOrderChatsInPlace();
+                    }
+                    this._lastOrdersRenderFp = '';
                     await this.refreshCustomerOrders(false);
                 } catch (err) {
                     this.showAlert('Gagal mengirim pesan: ' + this.cleanRpcErrorMsg(err));
@@ -5650,13 +5788,44 @@
                 if (!payload) return;
                 const canvas = await this.renderPublicReceiptToCanvas(payload);
                 const fname = `Resi_NutriFresh_${payload.receipt?.id || 'Nota'}.png`;
+                const dataUrl = canvas.toDataURL('image/png');
+
+                // 1. Android Native APK (NutriFresh.apk): simpan langsung ke Galeri (Pictures/NutriFresh)
+                if (window.NfAndroidNative && typeof window.NfAndroidNative.savePngBase64 === 'function') {
+                    const res = String(window.NfAndroidNative.savePngBase64(fname, dataUrl) || '');
+                    if (res.startsWith('OK:')) {
+                        this.showCustomerToast('Resi PNG tersimpan di Galeri (Pictures/NutriFresh)!');
+                        return;
+                    }
+                    this.showAlert('Gagal menyimpan PNG di perangkat: ' + res.replace(/^ERR:/, ''));
+                    return;
+                }
+
+                // 2. Mobile Browser (iOS Safari / Chrome Android): gunakan Web Share API jika mendukung file
+                try {
+                    if (navigator.canShare && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || '')) {
+                        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                        if (blob) {
+                            const file = new File([blob], fname, { type: 'image/png' });
+                            if (navigator.canShare({ files: [file] })) {
+                                await navigator.share({ files: [file], title: 'Resi Digital NutriFresh' });
+                                this.showCustomerToast('Resi PNG siap disimpan / dibagikan!');
+                                return;
+                            }
+                        }
+                    }
+                } catch (shareErr) {
+                    if (shareErr && shareErr.name === 'AbortError') return;
+                }
+
+                // 3. Desktop Browser fallback (<a download>)
                 const link = document.createElement('a');
                 link.download = fname;
-                link.href = canvas.toDataURL('image/png');
+                link.href = dataUrl;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                this.showCustomerToast('Resi PNG berhasil disimpan!');
+                this.showCustomerToast('Resi PNG berhasil diunduh!');
             },
             printPublicReceipt() {
                 const card = document.getElementById('publicReceiptPaperCard');
@@ -6789,7 +6958,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v142';
+        window.__NF_APP_VERSION = 'v143';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 

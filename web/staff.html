@@ -744,16 +744,16 @@
                     this.renderHrRequests();
                 });
                 safeSnap(query(collection(db, 'artifacts', appId, 'public', 'data', 'online_orders'), orderBy('createdAt', 'desc'), limit(100)), (s) => {
-                    const prevReadyIds = new Set((this.state.onlineOrders || []).filter(o => o.orderStatus === 'Disetujui — Siap Kirim').map(o => o.id));
+                    const prevReadyIds = new Set((this.state.onlineOrders || []).filter(o => o.orderStatus === 'Siap Diambil Kurir').map(o => o.id));
                     const hadOnce = !!this._courierHydrated;
                     this._courierHydrated = true;
                     this.state.onlineOrders = s.docs.map(d => ({ id: d.id, ...d.data() }));
                     if (hadOnce && window.nfNotify) {
                         this.state.onlineOrders.forEach(o => {
-                            if (o.orderStatus === 'Disetujui — Siap Kirim' && !prevReadyIds.has(o.id)) {
+                            if (o.orderStatus === 'Siap Diambil Kurir' && !prevReadyIds.has(o.id)) {
                                 const grand = (Number(o.finalTotal) || Number(o.estimatedTotal) || 0) + (Number(o.shippingFee) || 0);
                                 window.nfNotify.send({
-                                    title: `🛵 Antaran Siap Diambil! #${o.orderCode || o.id}`,
+                                    title: `🛵 Paket Siap Diambil Kurir! #${o.orderCode || o.id}`,
                                     body: `${o.customerName || 'Pelanggan'} • ${o.paymentMethod || ''} ${this.rp(grand)}`,
                                     tag: `cour-${o.id}`,
                                     sound: 'order',
@@ -762,7 +762,10 @@
                             }
                         });
                     }
-                    this.renderCourierOrders();
+                    const actEl = document.activeElement;
+                    if (!(actEl && actEl.id && actEl.id.startsWith('courChatInp-'))) {
+                        this.renderCourierOrders();
+                    }
                 });
             },
 
@@ -1119,10 +1122,11 @@
             },
             renderCourierOrders() {
                 const all = (this.state.onlineOrders || []).filter(o => o && o.deliveryMode !== 'Ambil di Toko');
-                const readyList = all.filter(o => ['Disetujui — Siap Kirim', 'Siap Kirim'].includes(o.orderStatus));
+                const readyList = all.filter(o => ['Siap Diambil Kurir', 'Siap Kirim'].includes(o.orderStatus));
+                const waitHandoverList = all.filter(o => o.orderStatus === 'Disetujui — Siap Kirim');
                 const onWayList = all.filter(o => o.orderStatus === 'Diantar Kurir');
                 const codWaitList = all.filter(o => o.orderStatus === 'Terkirim • Tunggu Setor COD');
-                const activeCount = readyList.length + onWayList.length + codWaitList.length;
+                const activeCount = readyList.length + waitHandoverList.length + onWayList.length + codWaitList.length;
 
                 const codTotalHold = [...onWayList, ...codWaitList]
                     .filter(o => {
@@ -1166,7 +1170,7 @@
                     shown = all.filter(o => ['Terkirim • Lunas', 'Selesai'].includes(o.orderStatus)).slice(0, 20);
                 } else {
                     // Antaran Aktif: Siap Kirim + Diantar Kurir + Tunggu Setor COD (dan juga Menunggu Pembayaran COD jika kasir belum klik Siap Kirim)
-                    shown = all.filter(o => ['Disetujui — Siap Kirim', 'Siap Kirim', 'Diantar Kurir', 'Terkirim • Tunggu Setor COD'].includes(o.orderStatus));
+                    shown = all.filter(o => ['Siap Diambil Kurir', 'Siap Kirim', 'Disetujui — Siap Kirim', 'Diantar Kurir', 'Terkirim • Tunggu Setor COD'].includes(o.orderStatus));
                 }
 
                 if (shown.length === 0) {
@@ -1181,7 +1185,8 @@
                     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ord.address || '')}`;
                     const waUrl = `https://wa.me/${this.normalizeWa(ord.customerPhone)}?text=${encodeURIComponent('Halo Kak ' + (ord.customerName || '') + ', saya kurir NutriFresh sedang mengantar pesanan #' + (ord.orderCode || ord.id) + '.')}`;
                     const telUrl = `tel:${String(ord.customerPhone || '').replace(/[^0-9+]/g, '')}`;
-                    const isReady = ['Disetujui — Siap Kirim', 'Siap Kirim'].includes(ord.orderStatus);
+                    const isReady = ['Siap Diambil Kurir', 'Siap Kirim'].includes(ord.orderStatus);
+                    const isWaitingCashier = ord.orderStatus === 'Disetujui — Siap Kirim';
                     const isOnWay = ord.orderStatus === 'Diantar Kurir';
                     const isCodWait = ord.orderStatus === 'Terkirim • Tunggu Setor COD';
                     const isDone = ['Terkirim • Lunas', 'Selesai'].includes(ord.orderStatus);
@@ -1241,6 +1246,10 @@
                             </div>` : ''}
 
                             <!-- Aksi Kurir -->
+                            ${isWaitingCashier ? `
+                            <div class="w-full bg-slate-100 border border-slate-300 text-slate-600 font-extrabold py-2.5 px-3 rounded-2xl text-center text-[11px] flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-hourglass-half text-amber-600"></i> <span>Menunggu Kasir Menekan "Serahkan ke Kurir"</span>
+                            </div>` : ''}
                             ${isReady ? `
                             <button type="button" onclick="staffApp.courierStartDelivery('${this.esc(ord.id)}')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 rounded-2xl shadow-sm transition text-xs flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-motorcycle"></i> <span>Ambil &amp; Mulai Antar Sekarang</span>
