@@ -5663,6 +5663,24 @@
                 if (bDone) bDone.className = this.state.onlineOrdersFilter === 'done' ? 'px-3 py-1.5 font-extrabold bg-nutri-green text-white shadow-sm' : 'px-3 py-1.5 font-bold bg-gray-200 text-gray-700';
                 this.renderOnlineOrdersList();
             },
+            buildOrderPushMeta(ord, overrideStatus = '') {
+                if (!ord) return {};
+                const items = Array.isArray(ord.weighedItems) && ord.weighedItems.length > 0
+                    ? ord.weighedItems
+                    : (Array.isArray(ord.items) ? ord.items : []);
+                const parts = items.slice(0, 4).map(it => `${this.formatStockDisplay(it.qty, it.unit)} ${String(it.name || 'Buah').replace('[OBRAL]', '').trim()}`);
+                if (items.length > 4) parts.push(`+${items.length - 4} item`);
+                const grand = (Number(ord.finalTotal) || Number(ord.estimatedTotal) || 0) + (Number(ord.shippingFee) || 0);
+                return {
+                    order_status: overrideStatus || ord.orderStatus || 'Menunggu Timbang',
+                    receipt_token: ord.receiptToken || '',
+                    customer_name: ord.customerName || 'Pelanggan',
+                    courier_name: ord.courierName || '',
+                    delivery_mode: ord.deliveryMode || 'Kirim ke Rumah',
+                    items_summary: parts.join(', ').slice(0, 240) || 'Pesanan buah segar NutriFresh',
+                    total_text: this.formatCurrency(grand)
+                };
+            },
             dispatchOrderPushNow(payload) {
                 try {
                     const url = (SUPABASE_CONFIG && SUPABASE_CONFIG.url) ? `${SUPABASE_CONFIG.url}/functions/v1/send-push` : '';
@@ -5874,6 +5892,7 @@
                     if (inp) inp.value = '';
                     const ordForPush = (this.state.onlineOrders || []).find(o => o.id === orderId);
                     this.dispatchOrderPushNow({
+                        ...this.buildOrderPushMeta(ordForPush),
                         order_id: orderId,
                         target_roles: ['customer'],
                         target_phone: ordForPush?.customerPhone || '',
@@ -5961,12 +5980,12 @@
                     ord.orderStatus = 'Sedang Ditimbang';
                     this.persistOnlineOrderRecord(ord).then(() => {
                         this.dispatchOrderPushNow({
+                            ...this.buildOrderPushMeta(ord, 'Sedang Ditimbang'),
                             order_id: ord.id,
                             target_roles: ['customer'],
                             target_phone: ord.customerPhone || '',
                             event_type: 'order_status',
-                            silent_live_only: true,
-                            title: `⚖️ Sedang Ditimbang • #${ord.orderCode || ord.id}`,
+                            title: `⚖️ Pesanan Sedang Ditimbang • #${ord.orderCode || ord.id}`,
                             body: 'Kasir NutriFresh sedang memilih & menimbang buah pesanan Anda.'
                         });
                     });
@@ -6108,6 +6127,7 @@
                 const grandNow = (Number(ord.finalTotal) || Number(ord.estimatedTotal) || 0) + (Number(ord.shippingFee) || 0);
                 if (newStatus === 'Siap Diambil Kurir') {
                     this.dispatchOrderPushNow({
+                        ...this.buildOrderPushMeta(ord, 'Siap Diambil Kurir'),
                         order_id: ord.id,
                         target_roles: ['staff'],
                         event_type: 'order_status',
@@ -6115,6 +6135,7 @@
                         body: `${ord.customerName || 'Pelanggan'} • ${ord.paymentMethod || ''} ${this.formatCurrency(grandNow)}`
                     });
                     this.dispatchOrderPushNow({
+                        ...this.buildOrderPushMeta(ord, 'Siap Diambil Kurir'),
                         order_id: ord.id,
                         target_roles: ['customer'],
                         target_phone: ord.customerPhone || '',
@@ -6132,6 +6153,7 @@
                         ? `Total ${this.formatCurrency(grandNow)}. Silakan ambil di gerai NutriFresh.`
                         : `Status terbaru: ${newStatus} • Total ${this.formatCurrency(grandNow)}.`;
                     this.dispatchOrderPushNow({
+                        ...this.buildOrderPushMeta(ord, newStatus),
                         order_id: ord.id,
                         target_roles: ['customer'],
                         target_phone: ord.customerPhone || '',
@@ -6184,11 +6206,12 @@
                 await this.persistOnlineOrderRecord(ord);
                 const grandFinal = totalBuah + shippingFee;
                 this.dispatchOrderPushNow({
+                    ...this.buildOrderPushMeta(ord, 'Menunggu Pembayaran'),
                     order_id: ord.id,
                     target_roles: ['customer'],
                     target_phone: ord.customerPhone || '',
                     event_type: 'order_status',
-                    dedupe_key: `weigh:${ord.id}:${grandFinal}:${Date.now()}`,
+                    dedupe_key: `weigh:${ord.id}:${grandFinal}`,
                     title: `⚖️ Buah Selesai Ditimbang! #${ord.orderCode || ord.id}`,
                     body: `Total final ${this.formatCurrency(grandFinal)}${shippingFee === 0 ? ' (Gratis Ongkir)' : ''}.${cleanNote ? ' ' + cleanNote : ''} Ketuk untuk ACC / bayar.`
                 });
@@ -6230,11 +6253,12 @@
                 ord.weighedItems = weighedItems;
                 await this.persistOnlineOrderRecord(ord);
                 this.dispatchOrderPushNow({
+                    ...this.buildOrderPushMeta(ord, 'Menunggu Konfirmasi'),
                     order_id: ord.id,
                     target_roles: ['customer'],
                     target_phone: ord.customerPhone || '',
                     event_type: 'order_status',
-                    dedupe_key: `weighwa:${ord.id}:${this.state.posTotal}:${Date.now()}`,
+                    dedupe_key: `weighwa:${ord.id}:${this.state.posTotal}`,
                     title: `⚖️ Hasil Timbangan Siap • #${ord.orderCode || ord.id}`,
                     body: `Total akhir ${this.formatCurrency(this.state.posTotal)}. Cek rincian di aplikasi atau WA.`
                 });
@@ -6255,6 +6279,7 @@
                     ord.orderStatus = 'Dibatalkan';
                     await this.persistOnlineOrderRecord(ord);
                     this.dispatchOrderPushNow({
+                        ...this.buildOrderPushMeta(ord, 'Dibatalkan'),
                         order_id: ord.id,
                         target_roles: ['customer'],
                         target_phone: ord.customerPhone || '',
@@ -6276,6 +6301,7 @@
                 ord.weighedItems = weighedItems;
                 await this.persistOnlineOrderRecord(ord);
                 this.dispatchOrderPushNow({
+                    ...this.buildOrderPushMeta(ord, 'Selesai'),
                     order_id: ord.id,
                     target_roles: ['customer'],
                     target_phone: ord.customerPhone || '',
@@ -11901,7 +11927,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v149';
+        window.__NF_APP_VERSION = 'v150';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;

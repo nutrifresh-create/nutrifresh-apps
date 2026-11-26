@@ -3863,6 +3863,10 @@
 
                 this.applySettings();
                 this.restoreCustomerCheckoutDraft();
+                const bootPhone = this.normalizeWaPhone(this.state.customerMember?.phone || document.getElementById('custPhone')?.value || '');
+                if (bootPhone && window.__nfSyncFcmToken) {
+                    setTimeout(() => window.__nfSyncFcmToken({ phone: bootPhone }), 1200);
+                }
                 this.updateCustomerCartBadge();
                 this.startCountdownTimer();
                 this.initCustomerOrdersTracker();
@@ -5357,6 +5361,7 @@
                         order_id: orderId,
                         target_roles: ['pos'],
                         event_type: 'order_status',
+                        order_status: 'Disetujui — Siap Kirim',
                         title: `✅ Pelanggan Setujui Timbangan #${orderId}`,
                         body: 'Pelanggan telah menyetujui hasil timbangan. Segera siapkan pesanan!'
                     });
@@ -5442,6 +5447,7 @@
                                 order_id: orderId,
                                 target_roles: ['pos'],
                                 event_type: 'order_status',
+                                order_status: 'Menunggu Verifikasi Bayar',
                                 title: `🧾 Bukti Bayar Masuk #${orderId}`,
                                 body: 'Pelanggan mengunggah bukti transfer/QRIS. Silakan cek & verifikasi di POS.'
                             });
@@ -5510,6 +5516,7 @@
                         order_id: newOrderObj.id,
                         target_roles: ['pos'],
                         event_type: 'order_status',
+                        order_status: 'Menunggu Timbang',
                         title: `🛒 Order Baru #${newOrderObj.orderCode}`,
                         body: `${name} (${delivery}) • Estimasi ${this.formatCurrency(estimatedTotal)}`
                     });
@@ -7087,7 +7094,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v149';
+        window.__NF_APP_VERSION = 'v150';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 

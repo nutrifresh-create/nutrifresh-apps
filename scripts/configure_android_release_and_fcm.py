@@ -39,6 +39,7 @@ public class NfLiveOrderHelper {
     public static final String REPLY_KEY = "nf_direct_reply_text";
     public static final String EXTRA_OPEN_ORDER_ID = "nf_open_order_id";
     public static final String DEFAULT_REPLY_URL = "https://dsidhlpgdanmgndrbksx.supabase.co/functions/v1/send-push";
+    public static final String DEFAULT_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzaWRobHBnZGFubWduZHJia3N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUyMzU4MjksImV4cCI6MjExMDgxMTgyOX0.lMPZB67yKcaT55sJjSZG-p0QJuuEc4Tfvez3GA_GA7o";
     public static final int LIVE_ORDER_NOTIF_ID = 904200;
 
     private static volatile boolean appInForeground = false;
@@ -240,11 +241,13 @@ public class NfLiveOrderHelper {
                 cancelLiveOrderNotification(ctx);
                 return;
             }
-            sp.edit()
+            String oidSave = obj.optString("orderId", "").trim();
+            String tokSave = obj.optString("receiptToken", "").trim();
+            SharedPreferences.Editor ed = sp.edit()
                 .putBoolean("active", true)
-                .putString("order_id", obj.optString("orderId", ""))
-                .putString("order_code", obj.optString("orderCode", obj.optString("orderId", "")))
-                .putString("receipt_token", obj.optString("receiptToken", ""))
+                .putString("order_id", oidSave)
+                .putString("order_code", obj.optString("orderCode", oidSave))
+                .putString("receipt_token", tokSave)
                 .putString("customer_name", obj.optString("customerName", "Pelanggan"))
                 .putString("status", obj.optString("status", "Menunggu Timbang"))
                 .putInt("step", Math.max(1, Math.min(5, obj.optInt("step", 1))))
@@ -253,8 +256,9 @@ public class NfLiveOrderHelper {
                 .putString("courier_name", obj.optString("courierName", ""))
                 .putString("delivery_mode", obj.optString("deliveryMode", "Kirim ke Rumah"))
                 .putString("reply_url", obj.optString("replyUrl", DEFAULT_REPLY_URL))
-                .putString("reply_apikey", obj.optString("replyApiKey", sp.getString("reply_apikey", "")))
-                .apply();
+                .putString("reply_apikey", obj.optString("replyApiKey", sp.getString("reply_apikey", DEFAULT_ANON_KEY)));
+            if (!oidSave.isEmpty() && !tokSave.isEmpty()) ed.putString("tok_" + oidSave, tokSave);
+            ed.commit();
             if (!appInForeground) {
                 showLiveOrderIfActive(ctx);
             }
@@ -264,16 +268,21 @@ public class NfLiveOrderHelper {
     public static void updateLiveOrderFromFcm(Context ctx, Map<String, String> data) {
         if (ctx == null || data == null) return;
         if (!"customer".equals(APP_ROLE)) return;
-        String orderId = safe(data.get("order_id"));
-        if (orderId.isEmpty()) orderId = safe(data.get("ref_id"));
+        String orderId = safe(data.get("order_id")).replace("#", "");
+        if (orderId.isEmpty()) orderId = safe(data.get("ref_id")).replace("#", "");
         if (!orderId.startsWith("ORD-")) return;
+
+        SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        String rTok = safe(data.get("receipt_token"));
+        if (!rTok.isEmpty()) {
+            sp.edit().putString("tok_" + orderId, rTok).putString("receipt_token", rTok).commit();
+        }
 
         String status = safe(data.get("order_status"));
         if (status.isEmpty()) return;
 
-        SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         if ("Selesai".equalsIgnoreCase(status) || "Dibatalkan".equalsIgnoreCase(status)) {
-            sp.edit().putBoolean("active", false).apply();
+            sp.edit().putBoolean("active", false).commit();
             cancelLiveOrderNotification(ctx);
             return;
         }
@@ -287,7 +296,10 @@ public class NfLiveOrderHelper {
         ed.putString("order_id", orderId);
         if (!safe(data.get("order_code")).isEmpty()) ed.putString("order_code", safe(data.get("order_code")));
         else if (sp.getString("order_code", "").isEmpty()) ed.putString("order_code", orderId);
-        if (!safe(data.get("receipt_token")).isEmpty()) ed.putString("receipt_token", safe(data.get("receipt_token")));
+        if (!rTok.isEmpty()) {
+            ed.putString("receipt_token", rTok);
+            ed.putString("tok_" + orderId, rTok);
+        }
         if (!safe(data.get("customer_name")).isEmpty()) ed.putString("customer_name", safe(data.get("customer_name")));
         ed.putString("status", status);
         ed.putInt("step", step);
@@ -297,7 +309,7 @@ public class NfLiveOrderHelper {
         if (!safe(data.get("delivery_mode")).isEmpty()) ed.putString("delivery_mode", safe(data.get("delivery_mode")));
         if (!safe(data.get("reply_url")).isEmpty()) ed.putString("reply_url", safe(data.get("reply_url")));
         if (!safe(data.get("reply_apikey")).isEmpty()) ed.putString("reply_apikey", safe(data.get("reply_apikey")));
-        ed.apply();
+        ed.commit();
 
         if (!appInForeground) {
             showLiveOrderIfActive(ctx);
@@ -406,20 +418,7 @@ public class NfLiveOrderHelper {
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setContentIntent(pi);
 
-            if (!orderId.isEmpty() && !receiptToken.isEmpty()) {
-                NotificationCompat.Action replyAction = buildDirectReplyAction(
-                    ctx,
-                    orderId,
-                    receiptToken,
-                    "customer",
-                    customerName,
-                    replyUrl,
-                    replyApiKey,
-                    LIVE_ORDER_NOTIF_ID,
-                    true
-                );
-                if (replyAction != null) b.addAction(replyAction);
-            }
+            // Kartu Live Order bersih tanpa tombol Balas (ketuk untuk membuka Pesanan Saya)
 
             nm.notify(LIVE_ORDER_NOTIF_ID, b.build());
         } catch (Exception ignored) {}
@@ -475,22 +474,25 @@ public class NfLiveOrderHelper {
 
                 appendChatHistoryLine(ctx, cleanRef, senderName, chatText, false);
 
-                String receiptToken = data != null ? safe(data.get("receipt_token")) : "";
-                String replyUrl = data != null && !safe(data.get("reply_url")).isEmpty() ? safe(data.get("reply_url")) : DEFAULT_REPLY_URL;
+                String cleanOrdRef = cleanRef.replace("#", "");
                 SharedPreferences spKey = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-                String replyApiKey = data != null && !safe(data.get("reply_apikey")).isEmpty() ? safe(data.get("reply_apikey")) : spKey.getString("reply_apikey", "");
-                if (!replyApiKey.isEmpty()) spKey.edit().putString("reply_apikey", replyApiKey).apply();
+                String receiptToken = data != null ? safe(data.get("receipt_token")) : "";
+                if (!receiptToken.isEmpty()) {
+                    spKey.edit().putString("tok_" + cleanOrdRef, receiptToken).apply();
+                } else {
+                    receiptToken = spKey.getString("tok_" + cleanOrdRef, "");
+                    if (receiptToken.isEmpty() && cleanOrdRef.equals(spKey.getString("order_id", ""))) {
+                        receiptToken = spKey.getString("receipt_token", "");
+                    }
+                }
+                String replyUrl = data != null && !safe(data.get("reply_url")).isEmpty() ? safe(data.get("reply_url")) : DEFAULT_REPLY_URL;
+                String replyApiKey = data != null && !safe(data.get("reply_apikey")).isEmpty() ? safe(data.get("reply_apikey")) : spKey.getString("reply_apikey", DEFAULT_ANON_KEY);
+                if (replyApiKey == null || replyApiKey.trim().isEmpty()) replyApiKey = DEFAULT_ANON_KEY;
+                spKey.edit().putString("reply_apikey", replyApiKey).apply();
                 String myName = "customer".equals(APP_ROLE)
                     ? (data != null && !safe(data.get("customer_name")).isEmpty() ? safe(data.get("customer_name")) : "Pelanggan")
                     : ("staff".equals(APP_ROLE) ? "Kurir NutriFresh" : "Kasir NutriFresh");
                 String myRole = "customer".equals(APP_ROLE) ? "customer" : ("staff".equals(APP_ROLE) ? "courier" : "store");
-
-                if (receiptToken.isEmpty() && "customer".equals(APP_ROLE)) {
-                    SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-                    if (cleanRef.equals(sp.getString("order_id", ""))) {
-                        receiptToken = sp.getString("receipt_token", "");
-                    }
-                }
 
                 showChatNotification(ctx, notifId, cleanRef, title, receiptToken, myRole, myName, replyUrl, replyApiKey, false);
                 return;
@@ -683,9 +685,10 @@ public class NfDirectReplyReceiver extends BroadcastReceiver {
         final String replyUrl = intent.getStringExtra("reply_url");
         String tmpApiKey = intent.getStringExtra("reply_apikey");
         if (tmpApiKey == null || tmpApiKey.trim().isEmpty()) {
-            tmpApiKey = context.getSharedPreferences(NfLiveOrderHelper.PREFS, Context.MODE_PRIVATE).getString("reply_apikey", "");
+            tmpApiKey = context.getSharedPreferences(NfLiveOrderHelper.PREFS, Context.MODE_PRIVATE).getString("reply_apikey", NfLiveOrderHelper.DEFAULT_ANON_KEY);
         }
-        final String replyApiKey = tmpApiKey != null ? tmpApiKey.trim() : "";
+        if (tmpApiKey == null || tmpApiKey.trim().isEmpty()) tmpApiKey = NfLiveOrderHelper.DEFAULT_ANON_KEY;
+        final String replyApiKey = tmpApiKey.trim();
         final int notifId = intent.getIntExtra("notif_id", 700001);
         final boolean isLiveOrder = intent.getBooleanExtra("is_live_order", false);
 
@@ -695,34 +698,34 @@ public class NfDirectReplyReceiver extends BroadcastReceiver {
         new Thread(() -> {
             HttpURLConnection conn = null;
             boolean ok = false;
+            int httpCode = 0;
             try {
+                String cleanOid = orderId.replace("#", "").trim();
                 String endpoint = (replyUrl != null && replyUrl.startsWith("http")) ? replyUrl : NfLiveOrderHelper.DEFAULT_REPLY_URL;
                 JSONObject body = new JSONObject();
                 body.put("action", "direct_reply");
-                body.put("order_id", orderId);
-                body.put("receipt_token", receiptToken);
+                body.put("order_id", cleanOid);
+                body.put("receipt_token", receiptToken.trim());
                 body.put("sender_role", senderRole != null ? senderRole : "customer");
                 body.put("sender_name", senderName != null ? senderName : "Pelanggan");
                 body.put("message", replyText);
 
                 conn = (HttpURLConnection) new URL(endpoint).openConnection();
                 conn.setRequestMethod("POST");
-                conn.setConnectTimeout(12000);
-                conn.setReadTimeout(12000);
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
                 conn.setDoOutput(true);
                 conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-                if (!replyApiKey.isEmpty()) {
-                    conn.setRequestProperty("apikey", replyApiKey);
-                    conn.setRequestProperty("Authorization", "Bearer " + replyApiKey);
-                }
+                conn.setRequestProperty("apikey", replyApiKey);
+                conn.setRequestProperty("Authorization", "Bearer " + replyApiKey);
                 byte[] outBytes = body.toString().getBytes("UTF-8");
                 OutputStream os = conn.getOutputStream();
                 os.write(outBytes);
                 os.flush();
                 os.close();
 
-                int code = conn.getResponseCode();
-                ok = (code >= 200 && code < 300);
+                httpCode = conn.getResponseCode();
+                ok = (httpCode >= 200 && httpCode < 300);
             } catch (Exception ignored) {
                 ok = false;
             } finally {
@@ -751,7 +754,7 @@ public class NfDirectReplyReceiver extends BroadcastReceiver {
                     } else {
                         // Tampilkan status gagal sementara tanpa menyimpan permanen ke riwayat pesan
                         NfLiveOrderHelper.showChatNotification(
-                            context, notifId, orderId, "Gagal kirim • Ketuk Balas untuk coba lagi",
+                            context, notifId, orderId, (httpCode > 0 ? ("Gagal kirim (" + httpCode + ") • Coba lagi") : "Gagal kirim (Jaringan) • Coba lagi"),
                             receiptToken, senderRole != null ? senderRole : "customer",
                             senderName != null ? senderName : "Pelanggan", replyUrl, replyApiKey, true
                         );
@@ -822,7 +825,6 @@ public class NfFirebaseMessagingService extends FirebaseMessagingService {
 
         String eventType = data != null && data.get("event_type") != null ? data.get("event_type") : "general";
         String refId = data != null && data.get("ref_id") != null ? data.get("ref_id") : "";
-        boolean silentLiveOnly = data != null && "1".equals(data.get("silent_live_only"));
 
         // Jika pengguna sedang membuka aplikasi (foreground):
         // Langsung picu refresh WebView instan (< 1 detik) + banner in-app!
@@ -834,7 +836,6 @@ public class NfFirebaseMessagingService extends FirebaseMessagingService {
                 j.put("eventType", eventType);
                 j.put("refId", refId);
                 j.put("outboxId", dedupeKey != null ? dedupeKey : "");
-                j.put("silentLiveOnly", silentLiveOnly);
                 if (data != null) {
                     if (data.get("order_status") != null) j.put("orderStatus", data.get("order_status"));
                     if (data.get("sender_name") != null) j.put("senderName", data.get("sender_name"));
@@ -844,13 +845,8 @@ public class NfFirebaseMessagingService extends FirebaseMessagingService {
             return;
         }
 
-        // Jika hanya update senyap untuk kartu Live Order (misal: Sedang Ditimbang), tidak perlu bunyi bel besar
-        if (silentLiveOnly) {
-            return;
-        }
-
         // Pengguna sedang di luar aplikasi (Home Screen / WA / Layar Mati):
-        // Tampilkan 1 notifikasi presisi (ID deterministik, anti-duplikat 15 menit, + Direct Reply untuk chat!)
+        // Selalu tampilkan notifikasi IMPORTANCE_HIGH agar FCM Android tidak pernah menunda/throttle aplikasi!
         NfLiveOrderHelper.showAlertNotification(this, title, body, eventType, refId, data);
     }
 }
@@ -884,7 +880,7 @@ SMART_PERM_AND_UPDATER_FIELDS = r"""
             conn.setInstanceFollowRedirects(false);
             conn.setConnectTimeout(timeoutMs);
             conn.setReadTimeout(timeoutMs);
-            conn.setRequestProperty("User-Agent", "NutriFresh-Android-Updater/1.49");
+            conn.setRequestProperty("User-Agent", "NutriFresh-Android-Updater/1.50");
             conn.setRequestProperty("Cache-Control", "no-cache");
             int code = conn.getResponseCode();
             if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308) {
@@ -1330,7 +1326,7 @@ def main():
     # 1. Auto-increment versionCode & versionName so Android allows direct in-place Update!
     run_num = int(os.environ.get("GITHUB_RUN_NUMBER", "1") or "1")
     ver_code = 100 + run_num
-    ver_name = f"1.49.{run_num}"
+    ver_name = f"1.50.{run_num}"
 
     gh_repo = (os.environ.get("GITHUB_REPOSITORY") or "nutrifresh-create/nutrifresh-apps").strip()
     update_manifest_url = f"https://github.com/{gh_repo}/releases/download/latest-apks/update-{app_role}.json"
@@ -1421,6 +1417,7 @@ def main():
             '<uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />',
             '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />',
             '<uses-permission android:name="android.permission.VIBRATE" />',
+            '<uses-permission android:name="android.permission.WAKE_LOCK" />',
         ]
         missing_perms = [p for p in req_perms if p.split('"')[1] not in m_txt]
         if missing_perms:

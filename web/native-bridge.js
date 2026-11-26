@@ -1661,7 +1661,7 @@
                 }
                 renderAppUpdateModal(local, remote);
             } else if (wasManual) {
-                showUpdateNoticeToast(`Aplikasi sudah versi terbaru (v${local.versionName || '1.49'}) ✓`);
+                showUpdateNoticeToast(`Aplikasi sudah versi terbaru (v${local.versionName || '1.50'}) ✓`);
             }
         } catch (_) {
             if (wasManual) showUpdateNoticeToast("Gagal membaca info versi terbaru.");
@@ -1862,10 +1862,6 @@
                 window.staffApp.loadAllData();
             }
 
-            // Jika hanya update senyap kartu Live Order (misal: Sedang Ditimbang), cukup refresh diam-diam
-            if (p.silentLiveOnly === true || p.silent_live_only === "1") {
-                return;
-            }
 
             // 2. Jika pelanggan sedang menatap layar Pesanan Saya, cukup bunyikan chime lembut tanpa banner menumpuk
             const custOrdModal = document.getElementById("customerOrdersModal");

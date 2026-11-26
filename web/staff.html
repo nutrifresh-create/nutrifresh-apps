@@ -1624,8 +1624,13 @@
                 try {
                     await courierUpdateDeliveryRpc({ orderId, newStatus: 'Diantar Kurir', courierName: cname });
                     const ord = (this.state.onlineOrders || []).find(o => o.id === orderId);
+                    const grandNow = (Number(ord?.finalTotal) || Number(ord?.estimatedTotal) || 0) + (Number(ord?.shippingFee) || 0);
                     this.dispatchOrderPushNow({
                         order_id: orderId,
+                        order_status: 'Diantar Kurir',
+                        courier_name: cname,
+                        receipt_token: ord?.receiptToken || '',
+                        total_text: this.rp(grandNow),
                         target_roles: ['customer'],
                         target_phone: ord?.customerPhone || '',
                         event_type: 'order_status',
@@ -1634,6 +1639,8 @@
                     });
                     this.dispatchOrderPushNow({
                         order_id: orderId,
+                        order_status: 'Diantar Kurir',
+                        courier_name: cname,
                         target_roles: ['pos'],
                         event_type: 'order_status',
                         title: `🛵 Kurir Berangkat Antar #${ord?.orderCode || orderId}`,
@@ -1657,8 +1664,13 @@
                     const nextSt = isCod ? 'Terkirim • Tunggu Setor COD' : 'Terkirim • Lunas';
                     await courierUpdateDeliveryRpc({ orderId, newStatus: nextSt, courierName: cname, proofUrl });
                     const ord = (this.state.onlineOrders || []).find(o => o.id === orderId);
+                    const grandDeliv = (Number(ord?.finalTotal) || Number(ord?.estimatedTotal) || 0) + (Number(ord?.shippingFee) || 0);
                     this.dispatchOrderPushNow({
                         order_id: orderId,
+                        order_status: nextSt,
+                        courier_name: cname,
+                        receipt_token: ord?.receiptToken || '',
+                        total_text: this.rp(grandDeliv),
                         target_roles: ['customer'],
                         target_phone: ord?.customerPhone || '',
                         event_type: 'order_status',
@@ -1667,6 +1679,8 @@
                     });
                     this.dispatchOrderPushNow({
                         order_id: orderId,
+                        order_status: nextSt,
+                        courier_name: cname,
                         target_roles: ['pos'],
                         event_type: 'order_status',
                         title: isCod ? `💵 Antaran COD Selesai #${ord?.orderCode || orderId}` : `✅ Antaran Lunas Selesai #${ord?.orderCode || orderId}`,
@@ -1695,6 +1709,9 @@
                     const ord = (this.state.onlineOrders || []).find(o => o.id === orderId);
                     this.dispatchOrderPushNow({
                         order_id: orderId,
+                        order_status: ord?.orderStatus || 'Diantar Kurir',
+                        courier_name: cName,
+                        receipt_token: ord?.receiptToken || '',
                         target_roles: ['customer'],
                         target_phone: ord?.customerPhone || '',
                         event_type: 'chat',

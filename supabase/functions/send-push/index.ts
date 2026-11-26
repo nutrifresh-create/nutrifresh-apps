@@ -1,4 +1,4 @@
-// Supabase Edge Function: send-push (NutriFresh v149 — Instant Direct Push, Fixed Direct Reply + Live Order + Phone Variants!)
+// Supabase Edge Function: send-push (NutriFresh v150 — Exact Relational Columns + Official RPC Direct Reply + Zero-Throttle Instant Push!)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS_HEADERS: Record<string, string> = {
@@ -114,6 +114,31 @@ function extractOrderId(...sources: Array<unknown>): string {
   return "";
 }
 
+function normalizeChatDedupe(rawText: string): string {
+  let s = String(rawText || "").trim();
+  // Buang awalan "Nama Pengirim: " jika berasal dari trigger outbox agar identik dengan dispatch_order_push
+  const colonIdx = s.indexOf(":");
+  if (colonIdx > 0 && colonIdx < 32) {
+    s = s.slice(colonIdx + 1).trim();
+  }
+  return s.toLowerCase().replace(/\s+/g, " ").slice(0, 60);
+}
+
+function inferStatusFromText(title: string, body: string): string {
+  const t = `${title || ""} ${body || ""}`.toLowerCase();
+  if (t.includes("pesanan selesai") || t.includes("antaran lunas selesai")) return "Selesai";
+  if (t.includes("dibatalkan")) return "Dibatalkan";
+  if (t.includes("telah diterima")) return "Terkirim • Lunas";
+  if (t.includes("sedang diantar") || t.includes("berangkat antar")) return "Diantar Kurir";
+  if (t.includes("siap diantar kurir") || t.includes("siap diambil kurir")) return "Siap Diambil Kurir";
+  if (t.includes("siap diambil di toko")) return "Siap Diambil";
+  if (t.includes("setujui timbangan") || t.includes("acc timbangan")) return "Disetujui — Siap Kirim";
+  if (t.includes("bukti bayar masuk")) return "Menunggu Verifikasi Bayar";
+  if (t.includes("selesai ditimbang") || t.includes("hasil timbangan siap")) return "Menunggu Pembayaran";
+  if (t.includes("sedang ditimbang")) return "Sedang Ditimbang";
+  return "";
+}
+
 function getOrderStep(st: string): number {
   if (st === "Selesai") return 5;
   if ([
@@ -130,61 +155,115 @@ function getOrderStep(st: string): number {
   return 1;
 }
 
-function buildItemsSummary(ordData: Record<string, unknown>): string {
-  const weighed = Array.isArray(ordData?.weighedItems) && ordData.weighedItems.length > 0
-    ? ordData.weighedItems
-    : (Array.isArray(ordData?.items) ? ordData.items : []);
-  if (!Array.isArray(weighed) || weighed.length === 0) return "Pesanan buah segar NutriFresh";
-  const parts = weighed.slice(0, 4).map((it: Record<string, unknown>) => {
+interface MergedOrder {
+  id: string;
+  tenantId: string;
+  orderCode: string;
+  receiptToken: string;
+  customerName: string;
+  customerPhone: string;
+  deliveryMode: string;
+  orderStatus: string;
+  estimatedTotal: number;
+  finalTotal: number;
+  shippingFee: number;
+  courierName: string;
+  items: Array<Record<string, unknown>>;
+  orderChat: Array<Record<string, unknown>>;
+  rawData: Record<string, unknown>;
+}
+
+function buildItemsSummary(items: Array<Record<string, unknown>>): string {
+  if (!Array.isArray(items) || items.length === 0) return "Pesanan buah segar NutriFresh";
+  const parts = items.slice(0, 4).map((it) => {
     const q = formatQtyShort(Number(it?.qty) || 0, String(it?.unit || "Gram"));
     const nm = String(it?.name || "Buah").replace("[OBRAL]", "").trim();
     return `${q} ${nm}`;
   });
-  if (weighed.length > 4) parts.push(`+${weighed.length - 4} item lainnya`);
+  if (items.length > 4) parts.push(`+${items.length - 4} item lainnya`);
   return parts.join(", ").slice(0, 260);
 }
 
+// Baca seluruh kolom relasional nf_online_orders + gabungkan dengan JSONB `data`
+// (Kolom teratas SELALU menang atas `data` — 100% identik dengan rowToItem di supabase-adapter.js!)
 // deno-lint-ignore no-explicit-any
-async function fetchOrderJson(sb: any, orderId: string): Promise<{ id: string; data: Record<string, unknown> } | null> {
+async function fetchOrderRecord(sb: any, orderId: string, tenantId = "nutrifresh"): Promise<MergedOrder | null> {
   if (!sb || !orderId) return null;
   const cleanId = orderId.replace(/^#/, "").trim();
-  const { data: ord } = await sb
+  let { data: row } = await sb
     .from("nf_online_orders")
-    .select("id, data")
+    .select("*")
+    .eq("tenant_id", tenantId)
     .eq("id", cleanId)
     .maybeSingle();
-  if (!ord) return null;
-  const oData = (ord.data && typeof ord.data === "object") ? (ord.data as Record<string, unknown>) : {};
-  return { id: String(ord.id || cleanId), data: oData };
+
+  if (!row) {
+    const alt = await sb
+      .from("nf_online_orders")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .eq("order_code", cleanId)
+      .maybeSingle();
+    row = alt.data || null;
+  }
+  if (!row) return null;
+
+  const d = (row.data && typeof row.data === "object") ? (row.data as Record<string, unknown>) : {};
+  const est = Number(row.estimated_total ?? d.estimatedTotal) || 0;
+  const fin = Number(row.final_total ?? d.finalTotal ?? est) || 0;
+  const ship = Number(row.shipping_fee ?? d.shippingFee) || 0;
+  const weighed = Array.isArray(d.weighedItems) && d.weighedItems.length > 0
+    ? (d.weighedItems as Array<Record<string, unknown>>)
+    : (Array.isArray(row.items) && row.items.length > 0
+      ? (row.items as Array<Record<string, unknown>>)
+      : (Array.isArray(d.items) ? (d.items as Array<Record<string, unknown>>) : []));
+  const chat = Array.isArray(row.order_chat)
+    ? (row.order_chat as Array<Record<string, unknown>>)
+    : (Array.isArray(d.orderChat) ? (d.orderChat as Array<Record<string, unknown>>) : []);
+
+  return {
+    id: String(row.id || cleanId),
+    tenantId: String(row.tenant_id || tenantId),
+    orderCode: String(row.order_code || d.orderCode || row.id || cleanId),
+    receiptToken: String(row.receipt_token || d.receiptToken || d.receipt_token || "").trim().toUpperCase(),
+    customerName: String(row.customer_name || d.customerName || "Pelanggan"),
+    customerPhone: String(row.customer_phone || d.customerPhone || ""),
+    deliveryMode: String(row.delivery_mode || d.deliveryMode || "Kirim ke Rumah"),
+    orderStatus: String(row.order_status || d.orderStatus || "Menunggu Timbang"),
+    estimatedTotal: est,
+    finalTotal: fin,
+    shippingFee: ship,
+    courierName: String(row.courier_name || d.courierName || ""),
+    items: weighed,
+    orderChat: chat,
+    rawData: d,
+  };
 }
 
 function populateOrderEnrichment(
   fcmData: Record<string, string>,
-  ordId: string,
-  oData: Record<string, unknown>,
+  ord: MergedOrder,
   targetRole: string,
   isChatNotif: boolean,
   fallbackBody: string,
+  overrides: Record<string, unknown> = {},
 ) {
-  const status = String(oData.orderStatus || oData.order_status || "Menunggu Timbang");
-  const grand = (Number(oData.finalTotal) || Number(oData.estimatedTotal) || 0)
-    + (Number(oData.shippingFee) || 0);
-  const rTok = String(oData.receiptToken || oData.receipt_token || "");
+  const status = String(overrides.order_status || ord.orderStatus || "Menunggu Timbang");
+  const grand = (ord.finalTotal || ord.estimatedTotal || 0) + (ord.shippingFee || 0);
 
-  fcmData.order_id = ordId;
-  fcmData.order_code = String(oData.orderCode || oData.order_code || ordId);
+  fcmData.order_id = ord.id;
+  fcmData.order_code = ord.orderCode;
   fcmData.order_status = status;
   fcmData.step = String(getOrderStep(status));
-  fcmData.items_summary = buildItemsSummary(oData);
-  fcmData.total_text = formatRp(grand);
-  fcmData.receipt_token = rTok;
-  fcmData.customer_name = String(oData.customerName || oData.customer_name || "Pelanggan");
-  fcmData.courier_name = String(oData.courierName || oData.courier_name || "");
-  fcmData.delivery_mode = String(oData.deliveryMode || oData.delivery_mode || "Kirim ke Rumah");
+  fcmData.items_summary = String(overrides.items_summary || buildItemsSummary(ord.items));
+  fcmData.total_text = String(overrides.total_text || formatRp(grand));
+  fcmData.receipt_token = String(overrides.receipt_token || ord.receiptToken || "");
+  fcmData.customer_name = String(overrides.customer_name || ord.customerName || "Pelanggan");
+  fcmData.courier_name = String(overrides.courier_name || ord.courierName || "");
+  fcmData.delivery_mode = String(overrides.delivery_mode || ord.deliveryMode || "Kirim ke Rumah");
 
   if (isChatNotif) {
-    const chatArr = Array.isArray(oData.orderChat) ? oData.orderChat : [];
-    const lastMsg = chatArr.length > 0 ? (chatArr[chatArr.length - 1] as Record<string, unknown>) : null;
+    const lastMsg = ord.orderChat.length > 0 ? ord.orderChat[ord.orderChat.length - 1] : null;
     if (!fcmData.sender_name) {
       fcmData.sender_name = String(lastMsg?.name || (targetRole === "customer" ? "Toko NutriFresh" : fcmData.customer_name));
     }
@@ -192,6 +271,19 @@ function populateOrderEnrichment(
       fcmData.chat_text = String(lastMsg?.text || fallbackBody);
     }
   }
+}
+
+// deno-lint-ignore no-explicit-any
+async function markOutboxSent(sb: any, orderId: string, targetRoles: string[]) {
+  if (!sb || !orderId || targetRoles.length === 0) return;
+  try {
+    await sb
+      .from("nf_push_outbox")
+      .update({ sent_at: new Date().toISOString() })
+      .eq("ref_id", orderId)
+      .in("target_role", targetRoles)
+      .is("sent_at", null);
+  } catch (_) {}
 }
 
 // deno-lint-ignore no-explicit-any
@@ -216,7 +308,7 @@ async function sendToRoleTargets(opts: {
   const { sb, fcmSaRaw, tgToken, tgChatId, tenantId, targetRole, targetPhone, targetEmail, title, body, fcmData } = opts;
 
   const tgTask = (async () => {
-    if (tgToken && tgChatId && ["pos", "staff", "office"].includes(targetRole) && fcmData.silent_live_only !== "1") {
+    if (tgToken && tgChatId && ["pos", "staff", "office"].includes(targetRole)) {
       const roleTag = targetRole === "pos" ? "🖥️ POS KASIR" : (targetRole === "staff" ? "🛵 KURIR / STAFF" : "💼 OFFICE");
       const tgText = `<b>[${roleTag}] ${title}</b>\n${body}`;
       const tgRes = await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
@@ -316,9 +408,10 @@ Deno.serve(async (req: Request) => {
       : null;
 
     const replyUrl = supabaseUrl ? `${supabaseUrl}/functions/v1/send-push` : "";
+    const tenantId = String(payload?.tenant_id || "nutrifresh");
 
     // =========================================================================
-    // 1. DIRECT REPLY CHAT DARI NOTIFIKASI ANDROID (v149 — SAVES + INSTANT PUSH)
+    // 1. DIRECT REPLY CHAT DARI NOTIFIKASI ANDROID (v150 — OFFICIAL RPC + DUAL COLUMN!)
     // =========================================================================
     if (payload?.action === "direct_reply") {
       if (!sb) return jsonRes({ ok: false, error: "Supabase service unavailable" }, 500);
@@ -337,80 +430,100 @@ Deno.serve(async (req: Request) => {
         return jsonRes({ ok: false, error: "Data balasan tidak lengkap" }, 400);
       }
 
-      const ordRec = await fetchOrderJson(sb, orderId);
-      if (!ordRec) {
+      const ord = await fetchOrderRecord(sb, orderId, tenantId);
+      if (!ord) {
         return jsonRes({ ok: false, error: "Pesanan tidak ditemukan" }, 404);
       }
 
-      const curData = { ...ordRec.data };
-      const expectedTok = String(curData.receiptToken || curData.receipt_token || "").trim().toUpperCase();
-      if (!expectedTok || expectedTok !== receiptToken) {
+      if (!ord.receiptToken || ord.receiptToken !== receiptToken) {
         return jsonRes({ ok: false, error: "Token pesanan tidak valid" }, 403);
       }
 
-      const curChat = Array.isArray(curData.orderChat) ? [...curData.orderChat] : [];
-      const custNameFromData = String(curData.customerName || curData.customer_name || senderName);
-      const finalSenderName = senderRole === "customer" ? custNameFromData : senderName;
-      const msgObj = {
-        id: "MSG-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6).toUpperCase(),
-        sender: senderRole,
-        name: finalSenderName,
-        text: message,
-        at: new Date().toISOString(),
-      };
-      curChat.push(msgObj);
-      curData.orderChat = curChat;
-      curData.updatedAt = new Date().toISOString();
+      const finalSenderName = senderRole === "customer" ? (ord.customerName || senderName) : senderName;
+      let savedViaRpc = false;
 
-      const { error: updErr } = await sb
-        .from("nf_online_orders")
-        .update({ data: curData, updated_at: new Date().toISOString() })
-        .eq("id", ordRec.id);
-
-      if (updErr) {
-        return jsonRes({ ok: false, error: updErr.message }, 500);
+      // Jalur 1 (Pelanggan): Panggil RPC resmi nf_customer_send_order_chat agar 100% identik dengan aplikasi!
+      if (senderRole === "customer") {
+        const { error: rpcErr } = await sb.rpc("nf_customer_send_order_chat", {
+          p_order_id: ord.id,
+          p_token: receiptToken,
+          p_message: message,
+          p_sender_name: finalSenderName,
+          p_tenant_id: ord.tenantId,
+        });
+        if (!rpcErr) {
+          savedViaRpc = true;
+        }
       }
 
-      // Langsung kirim push notifikasi ke lawan bicara (< 1 detik!)
+      // Jalur 2 (Kasir/Kurir atau cadangan): Perbarui KEDUA kolom `order_chat` DAN `data.orderChat`!
+      if (!savedViaRpc) {
+        const curChat = [...ord.orderChat];
+        const msgObj = {
+          id: "MSG-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6).toUpperCase(),
+          sender: senderRole,
+          name: finalSenderName,
+          text: message,
+          at: new Date().toISOString(),
+        };
+        curChat.push(msgObj);
+        const nextData = { ...ord.rawData, orderChat: curChat, updatedAt: new Date().toISOString() };
+        const { error: updErr } = await sb
+          .from("nf_online_orders")
+          .update({
+            order_chat: curChat,
+            data: nextData,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("tenant_id", ord.tenantId)
+          .eq("id", ord.id);
+
+        if (updErr) {
+          return jsonRes({ ok: false, error: updErr.message }, 500);
+        }
+      }
+
+      // Ambil ulang data terbaru & kirim push instan (< 1 detik) ke lawan bicara
+      const freshOrd = (await fetchOrderRecord(sb, ord.id, ord.tenantId)) || ord;
       const targetRoles = senderRole === "customer" ? ["pos", "staff"] : ["customer"];
-      const custPhone = String(curData.customerPhone || curData.customer_phone || "");
       const notifTitle = senderRole === "customer"
-        ? `💬 Chat dari ${finalSenderName} (#${ordRec.id})`
-        : `💬 Pesan dari ${finalSenderName} (#${ordRec.id})`;
-      const notifBody = message;
+        ? `💬 Chat dari ${finalSenderName} (#${freshOrd.orderCode})`
+        : `💬 Pesan dari ${finalSenderName} (#${freshOrd.orderCode})`;
+      const dedupeKey = `chat:${freshOrd.id}:${normalizeChatDedupe(message)}`;
 
       await Promise.allSettled(targetRoles.map(async (tRole) => {
         const fcmData: Record<string, string> = {
           title: notifTitle,
-          body: notifBody,
+          body: message,
           target_role: tRole,
-          ref_id: ordRec.id,
-          outbox_id: `chat:${ordRec.id}:${msgObj.id}`,
-          dedupe_key: `chat:${ordRec.id}:${msgObj.id}`,
+          ref_id: freshOrd.id,
+          outbox_id: dedupeKey,
+          dedupe_key: dedupeKey,
           event_type: "chat",
           sender_name: finalSenderName,
           chat_text: message,
           reply_url: replyUrl,
           reply_apikey: anonKey,
         };
-        populateOrderEnrichment(fcmData, ordRec.id, curData, tRole, true, notifBody);
+        populateOrderEnrichment(fcmData, freshOrd, tRole, true, message);
         await sendToRoleTargets({
           sb, fcmSaRaw, tgToken, tgChatId,
-          tenantId: "nutrifresh",
+          tenantId: freshOrd.tenantId,
           targetRole: tRole,
-          targetPhone: tRole === "customer" ? custPhone : "",
+          targetPhone: tRole === "customer" ? freshOrd.customerPhone : "",
           targetEmail: "",
           title: notifTitle,
-          body: notifBody,
+          body: message,
           fcmData,
         });
       }));
 
-      return jsonRes({ ok: true, messageId: msgObj.id, chatCount: curChat.length });
+      await markOutboxSent(sb, freshOrd.id, targetRoles);
+      return jsonRes({ ok: true, savedViaRpc, orderId: freshOrd.id });
     }
 
     // =========================================================================
-    // 2. DIRECT PUSH INSTAN DARI POS / STAFF / CUSTOMER (v149 — ZERO DELAY!)
+    // 2. DIRECT PUSH INSTAN DARI POS / STAFF / CUSTOMER (v150 — ZERO THROTTLE!)
     // =========================================================================
     if (payload?.action === "dispatch_order_push") {
       if (!sb) return jsonRes({ ok: false, error: "Supabase service unavailable" }, 500);
@@ -418,9 +531,8 @@ Deno.serve(async (req: Request) => {
       const orderId = extractOrderId(payload.order_id, payload.ref_id, payload.title);
       if (!orderId) return jsonRes({ ok: false, error: "order_id diperlukan" }, 400);
 
-      const ordRec = await fetchOrderJson(sb, orderId);
-      const oData = ordRec ? ordRec.data : {};
-      const custPhone = String(payload.target_phone || oData.customerPhone || oData.customer_phone || "");
+      const ord = await fetchOrderRecord(sb, orderId, tenantId);
+      const custPhone = String(payload.target_phone || ord?.customerPhone || "");
       const rolesRaw = Array.isArray(payload.target_roles)
         ? payload.target_roles
         : [payload.target_role || "customer"];
@@ -430,11 +542,15 @@ Deno.serve(async (req: Request) => {
       const isChat = eventType === "chat";
       const title = String(payload.title || `Update Pesanan #${orderId}`);
       const body = String(payload.body || "");
-      const silentLiveOnly = payload.silent_live_only === true ? "1" : "0";
-      const statusNow = String(oData.orderStatus || oData.order_status || "");
+      const effectiveStatus = String(
+        payload.order_status || ord?.orderStatus || inferStatusFromText(title, body) || ""
+      );
+
       const dedupeKey = String(
         payload.dedupe_key ||
-        (isChat ? `chat:${orderId}:${String(payload.chat_text || body).slice(0, 40)}` : `st:${orderId}:${statusNow}`)
+        (isChat
+          ? `chat:${orderId}:${normalizeChatDedupe(String(payload.chat_text || body))}`
+          : `st:${orderId}:${(effectiveStatus || title).toLowerCase().trim()}`)
       );
 
       const perRoleResults: Record<string, unknown> = {};
@@ -444,21 +560,34 @@ Deno.serve(async (req: Request) => {
           body,
           target_role: tRole,
           ref_id: orderId,
+          order_id: orderId,
+          order_code: String(ord?.orderCode || orderId),
           outbox_id: dedupeKey,
           dedupe_key: dedupeKey,
           event_type: eventType,
-          silent_live_only: silentLiveOnly,
           reply_url: replyUrl,
           reply_apikey: anonKey,
         };
         if (payload.sender_name) fcmData.sender_name = String(payload.sender_name);
         if (payload.chat_text) fcmData.chat_text = String(payload.chat_text);
-        if (ordRec) {
-          populateOrderEnrichment(fcmData, ordRec.id, oData, tRole, isChat, body);
+
+        if (ord) {
+          populateOrderEnrichment(fcmData, ord, tRole, isChat, body, payload);
+        } else {
+          if (effectiveStatus) {
+            fcmData.order_status = effectiveStatus;
+            fcmData.step = String(getOrderStep(effectiveStatus));
+          }
+          if (payload.receipt_token) fcmData.receipt_token = String(payload.receipt_token).toUpperCase();
+          if (payload.items_summary) fcmData.items_summary = String(payload.items_summary);
+          if (payload.total_text) fcmData.total_text = String(payload.total_text);
+          if (payload.courier_name) fcmData.courier_name = String(payload.courier_name);
+          if (payload.customer_name) fcmData.customer_name = String(payload.customer_name);
         }
+
         perRoleResults[tRole] = await sendToRoleTargets({
           sb, fcmSaRaw, tgToken, tgChatId,
-          tenantId: String(payload.tenant_id || "nutrifresh"),
+          tenantId,
           targetRole: tRole,
           targetPhone: tRole === "customer" ? custPhone : "",
           targetEmail: String(payload.target_email || "").trim().toLowerCase(),
@@ -468,17 +597,8 @@ Deno.serve(async (req: Request) => {
         });
       }));
 
-      // Tandai outbox tertunda untuk order & role yang sama agar cron 10 menit tidak kirim ulang dobel!
-      try {
-        await sb
-          .from("nf_push_outbox")
-          .update({ sent_at: new Date().toISOString() })
-          .eq("ref_id", orderId)
-          .in("target_role", targetRoles)
-          .is("sent_at", null);
-      } catch (_) {}
-
-      return jsonRes({ ok: true, orderId, results: perRoleResults });
+      await markOutboxSent(sb, orderId, targetRoles);
+      return jsonRes({ ok: true, orderId, effectiveStatus, results: perRoleResults });
     }
 
     // =========================================================================
@@ -492,6 +612,7 @@ Deno.serve(async (req: Request) => {
       return jsonRes({ ok: true, skipped: "already_sent", recId: rec.id ?? null });
     }
 
+    const recTenant = String(rec.tenant_id || "nutrifresh");
     const targetRole = String(rec.target_role || "").toLowerCase();
     let targetPhone = String(rec.target_phone || "").replace(/\D/g, "");
     const targetEmail = String(rec.target_email || "").trim().toLowerCase();
@@ -516,17 +637,27 @@ Deno.serve(async (req: Request) => {
 
     let orderEnriched = false;
     if (orderId && sb) {
-      const ordRec = await fetchOrderJson(sb, orderId);
-      if (ordRec) {
-        populateOrderEnrichment(fcmData, ordRec.id, ordRec.data, targetRole, isChatNotif, body);
+      const ord = await fetchOrderRecord(sb, orderId, recTenant);
+      if (ord) {
+        populateOrderEnrichment(fcmData, ord, targetRole, isChatNotif, body);
         orderEnriched = true;
         if (!targetPhone && targetRole === "customer") {
-          targetPhone = String(ordRec.data.customerPhone || ordRec.data.customer_phone || "").replace(/\D/g, "");
+          targetPhone = ord.customerPhone.replace(/\D/g, "");
         }
-        const statusNow = fcmData.order_status || "";
+        const statusNow = fcmData.order_status || inferStatusFromText(title, body) || title;
         fcmData.dedupe_key = isChatNotif
-          ? `chat:${ordRec.id}:${(fcmData.chat_text || body).slice(0, 40)}`
-          : `st:${ordRec.id}:${statusNow}`;
+          ? `chat:${ord.id}:${normalizeChatDedupe(fcmData.chat_text || body)}`
+          : `st:${ord.id}:${statusNow.toLowerCase().trim()}`;
+      } else {
+        const inferred = inferStatusFromText(title, body);
+        if (inferred) {
+          fcmData.order_id = orderId;
+          fcmData.order_status = inferred;
+          fcmData.step = String(getOrderStep(inferred));
+        }
+        fcmData.dedupe_key = isChatNotif
+          ? `chat:${orderId}:${normalizeChatDedupe(body)}`
+          : `st:${orderId}:${(inferred || title).toLowerCase().trim()}`;
       }
     }
     if (!fcmData.dedupe_key) {
@@ -535,7 +666,7 @@ Deno.serve(async (req: Request) => {
 
     const sendRes = await sendToRoleTargets({
       sb, fcmSaRaw, tgToken, tgChatId,
-      tenantId: String(rec.tenant_id || "nutrifresh"),
+      tenantId: recTenant,
       targetRole,
       targetPhone,
       targetEmail,
