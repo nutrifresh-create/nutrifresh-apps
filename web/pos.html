@@ -3030,8 +3030,12 @@
 
     <div id="parcelBuilderModal" class="fixed inset-0 bg-black/60 z-[76] hidden flex items-center justify-center fade-in backdrop-blur-sm p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-auto overflow-hidden border border-purple-200 max-h-[92vh] flex flex-col">
-            <div class="p-4 border-b bg-gradient-to-r from-purple-600 to-indigo-600 text-white flex justify-between items-center flex-shrink-0"><h3 class="text-sm font-extrabold flex items-center"><i class="fa-solid fa-gift mr-2"></i> Rakit Parsel Ritel & Hitung HPP</h3><button type="button" onclick="document.getElementById('parcelBuilderModal').classList.add('hidden')" class="text-white/80 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button></div>
+            <div class="p-4 border-b bg-gradient-to-r from-purple-600 to-indigo-600 text-white flex justify-between items-center flex-shrink-0"><h3 class="text-sm font-extrabold flex items-center"><i class="fa-solid fa-gift mr-2"></i> <span id="parcelModalHeaderTitle">Rakit Parsel Ritel &amp; Hitung HPP</span></h3><button type="button" onclick="app._activePoBuildId=null; document.getElementById('parcelBuilderModal').classList.add('hidden')" class="text-white/80 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button></div>
             <div class="p-5 space-y-3.5 text-xs overflow-y-auto">
+                <div id="parcelBuildPoBanner" class="hidden bg-purple-100 border-2 border-purple-400 rounded-2xl p-3 text-purple-950 space-y-1">
+                    <div class="font-black text-xs flex items-center gap-1.5"><i class="fa-solid fa-lock text-purple-700"></i> <span id="parcelBuildPoBannerTitle">Merakit Khusus PO Parsel</span></div>
+                    <p class="text-[11px] text-purple-900 leading-snug">Masukkan seluruh buah, keranjang &amp; pita yang dipakai lalu klik <strong>Simpan Rakitan &amp; Potong Stok Isi</strong>. Status PO otomatis berubah menjadi <strong>Selesai Dirakit</strong> dan siap diserahkan ke kurir.</p>
+                </div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><div class="sm:col-span-2"><label class="block font-bold text-gray-700 mb-1">Produk Parsel Tujuan *</label><select id="parcelTargetSelect" onchange="app.handleParcelTargetChange()" class="w-full px-3 py-2 border rounded-xl bg-white font-bold outline-none"><option value="__NEW__">+ Buat Nama Parsel Baru...</option></select></div><div><label class="block font-bold text-gray-700 mb-1">Jumlah Dirakit *</label><input type="number" min="1" step="1" id="parcelQtyBuildInput" value="1" oninput="app.recalculateParcelCost()" class="w-full px-3 py-2 border rounded-xl font-black text-center outline-none"></div></div>
                 <div id="parcelNewNameBox" class="grid grid-cols-2 gap-3 bg-purple-50/70 p-3 rounded-2xl border border-purple-200"><div><label class="block font-bold text-purple-900 mb-1">Nama Parsel Baru *</label><input type="text" id="parcelNewNameInput" class="w-full px-3 py-1.5 border rounded-xl bg-white font-bold outline-none"></div><div><label class="block font-bold text-purple-900 mb-1">Harga Jual Parsel (Rp) *</label><input type="number" id="parcelNewPriceInput" class="w-full px-3 py-1.5 border rounded-xl bg-white font-extrabold text-nutri-brown outline-none"></div></div>
                 <div class="space-y-2 border-t pt-3">
@@ -4981,42 +4985,70 @@
                     body: `Jadwal ${po.deliveryDate} ${po.deliveryTime} sudah tercatat di NutriFresh. Anda bisa chat langsung di menu Pesanan Saya.`
                 });
             },
+            isPoAssembledVerified(po) {
+                if (!po) return false;
+                return !!(po.assembledVerified || po.assembledAt || ['Selesai Dirakit', 'Siap Diambil Kurir', 'Siap Diambil', 'Diantar Kurir', 'Terkirim • Tunggu Setor COD', 'Terkirim • Lunas', 'Selesai'].includes(po.orderStatus));
+            },
+            isPoNotYetInOnlineQueue(ord) {
+                if (!ord) return false;
+                const isPo = !!(ord.isParcelOrder || String(ord.id || ord.orderCode || '').startsWith('PO-'));
+                if (!isPo) return false;
+                const st = String(ord.orderStatus || '').trim();
+                if (['PO Menunggu Konfirmasi', 'Menunggu Konfirmasi', 'PO Dikonfirmasi', 'Dikonfirmasi', 'PO Sedang Dirakit', 'Sedang Dirakit'].includes(st)) return true;
+                const po = (this.state.parcelOrders || []).find(p => p.id === ord.id);
+                if (po && !po.assembledVerified && !['Selesai Dirakit', 'Siap Diambil Kurir', 'Siap Diambil', 'Diantar Kurir', 'Terkirim • Tunggu Setor COD', 'Terkirim • Lunas', 'Selesai'].includes(po.orderStatus)) {
+                    return true;
+                }
+                return false;
+            },
             async startBuildParcelFromPo(poId) {
                 const po = this.state.parcelOrders.find(x => x.id === poId);
                 if (!po) return;
-                po.orderStatus = 'Sedang Dirakit';
-                await this.persistParcelOrderRecord(po);
-                const ord = await this.syncPoToOnlineOrderMirror(po, 'PO Sedang Dirakit');
-                this.dispatchOrderPushNow({
-                    ...this.buildOrderPushMeta(ord, 'PO Sedang Dirakit'),
-                    order_id: po.id, target_roles: ['customer'], target_phone: po.customerPhone || '',
-                    event_type: 'order_status', skip_live_order: true,
-                    title: `🧺 Parsel Mulai Dirakit! #${po.orderCode}`,
-                    body: `Tim NutriFresh sedang merakit parsel pesanan Anda. Foto parsel jadi akan dikirim segera setelah selesai.`
-                });
-                // Tawarkan buka modal Rakit Parsel (potong stok asli)
-                this._activePoBuildId = po.id;
+                const wasAlreadyBuilding = po.orderStatus === 'Sedang Dirakit';
+                if (!wasAlreadyBuilding) {
+                    po.orderStatus = 'Sedang Dirakit';
+                    await this.persistParcelOrderRecord(po);
+                    const ord = await this.syncPoToOnlineOrderMirror(po, 'PO Sedang Dirakit');
+                    this.dispatchOrderPushNow({
+                        ...this.buildOrderPushMeta(ord, 'PO Sedang Dirakit'),
+                        order_id: po.id, target_roles: ['customer'], target_phone: po.customerPhone || '',
+                        event_type: 'order_status', skip_live_order: true,
+                        title: `🧺 Parsel Mulai Dirakit! #${po.orderCode}`,
+                        body: `Tim NutriFresh sedang merakit parsel pesanan Anda. Foto parsel jadi akan dikirim segera setelah selesai.`
+                    });
+                }
                 const firstItem = (po.items || [])[0];
-                this.showConfirm(`Status PO ${po.orderCode} diubah ke "Sedang Dirakit".
-
-Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah asli?`, () => {
-                    this.openParcelModal();
-                    if (firstItem) {
-                        const nmInp = document.getElementById('parcelNewNameInput');
-                        const prInp = document.getElementById('parcelNewPriceInput');
-                        const qtyInp = document.getElementById('parcelQtyBuildInput');
-                        if (nmInp) nmInp.value = `${firstItem.parcelType || 'Parcel'} (${po.customerName})`;
-                        if (prInp) prInp.value = String(Number(firstItem.unitPrice) || 0);
-                        if (qtyInp) qtyInp.value = String(Math.max(1, parseInt(firstItem.qty, 10) || 1));
-                    }
-                });
+                const totalQty = (po.items || []).reduce((s, it) => s + Math.max(1, parseInt(it.qty, 10) || 1), 0) || 1;
+                this.openParcelModal(po);
+                if (firstItem) {
+                    const nmInp = document.getElementById('parcelNewNameInput');
+                    const prInp = document.getElementById('parcelNewPriceInput');
+                    const qtyInp = document.getElementById('parcelQtyBuildInput');
+                    if (nmInp) nmInp.value = `${firstItem.parcelType || 'Parcel'} (${po.customerName})`;
+                    if (prInp) prInp.value = String(Number(firstItem.unitPrice) || 0);
+                    if (qtyInp) qtyInp.value = String(totalQty);
+                }
             },
-            async markParcelAssembled(poId) {
+            async markParcelAssembled(poId, buildMeta = null) {
                 const po = this.state.parcelOrders.find(x => x.id === poId);
                 if (!po) return;
+                if (!buildMeta && !po.assembledVerified) {
+                    return this.showAlert('DITOLAK DEMI KEAMANAN STOK!\n\nParsel belum dirakit. Klik "🧺 Rakit Parsel" lalu pilih isi buah/wadah dan tekan "Simpan Rakitan & Potong Stok Isi" terlebih dahulu.');
+                }
+                po.assembledVerified = true;
+                po.assembledAt = new Date().toISOString();
+                po.assembledBy = this.state.currentCashier || 'Petugas';
+                if (buildMeta) {
+                    po.assembledUnitCost = Number(buildMeta.unitCost) || 0;
+                    po.assembledTotalCost = Number(buildMeta.totalCost) || 0;
+                    po.assembledRecipe = Array.isArray(buildMeta.recipe) ? buildMeta.recipe : [];
+                }
                 po.orderStatus = 'Selesai Dirakit';
                 await this.persistParcelOrderRecord(po);
-                const ord = await this.syncPoToOnlineOrderMirror(po, 'PO Selesai Dirakit');
+                const ord = await this.syncPoToOnlineOrderMirror(po, 'PO Selesai Dirakit', {
+                    assembledVerified: true,
+                    assembledAt: po.assembledAt
+                });
                 this.dispatchOrderPushNow({
                     ...this.buildOrderPushMeta(ord, 'PO Selesai Dirakit'),
                     order_id: po.id, target_roles: ['customer'], target_phone: po.customerPhone || '',
@@ -5028,6 +5060,9 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
             async releaseParcelOrderToDelivery(poId) {
                 const po = this.state.parcelOrders.find(x => x.id === poId);
                 if (!po) return;
+                if (!po.assembledVerified && !['Selesai Dirakit'].includes(po.orderStatus)) {
+                    return this.showAlert('DITOLAK: PO Parsel belum selesai dirakit (stok belum dipotong)! Wajib rakit parsel terlebih dahulu sebelum diserahkan ke kurir.');
+                }
                 const hasDelivery = (po.items || []).some(it => it.deliveryMode !== 'Diambil');
                 const nextStatus = hasDelivery ? 'Siap Diambil Kurir' : 'Siap Diambil';
                 po.orderStatus = nextStatus;
@@ -5089,28 +5124,67 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                     await this.syncPoToOnlineOrderMirror(po, 'Selesai', { linkedTxId: trxId });
                 }
             },
-            sendParcelOrderToPos(poId) {
+            sendParcelOrderToPos(poId, confirmedCodHandover = false) {
                 const po = this.state.parcelOrders.find(x => x.id === poId);
                 if (!po) return;
                 if (this.state.shift.status !== 'open') {
                     this.showAlert('Kasir masih TUTUP! Silakan klik "Buka Kasir" terlebih dahulu sebelum menyelesaikan pembayaran PO di kasir.');
                     return;
                 }
+                if (!po.assembledVerified && !['Selesai Dirakit', 'Siap Diambil Kurir', 'Siap Diambil', 'Diantar Kurir', 'Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(po.orderStatus)) {
+                    return this.showAlert(`DITOLAK DEMI KEAMANAN!\n\nPO ${po.orderCode} BELUM DIRAKIT (stok buah & wadah belum dipotong).\nKlik tombol "🧺 Rakit Parsel" terlebih dahulu.`);
+                }
+                const linkedOrd = (this.state.onlineOrders || []).find(o => o.id === po.id);
+                const effStatus = linkedOrd?.orderStatus || po.orderStatus;
+                const hasDelivery = (po.items || []).some(it => it.deliveryMode !== 'Diambil');
+
+                if (hasDelivery) {
+                    if (!['Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(effStatus)) {
+                        return this.showAlert(`TRANSAKSI DIKUNCI DEMI KEAMANAN!\n\nPO ${po.orderCode} saat ini berstatus "${effStatus}".\n\nKasir baru boleh menyelesaikan pembayaran setelah Kurir mengambil parsel dan menekan "Sudah Diterima" di Aplikasi Staff.`);
+                    }
+                    if (effStatus === 'Terkirim • Tunggu Setor COD' && !confirmedCodHandover) {
+                        const remCod = Math.max(0, (Number(po.totalAmount) || 0) - (po.paymentStatus === 'Lunas' ? (Number(po.totalAmount) || 0) : (Number(po.dpAmount) || 0)));
+                        const cName = linkedOrd?.courierName || 'Kurir';
+                        this.showConfirm(
+                            `KONFIRMASI SETOR UANG COD DARI KURIR\n\nPO: ${po.orderCode} (${po.customerName})\nKurir: ${cName}\nNominal COD: ${this.formatCurrency(remCod)}\n\nApakah Kurir SUDAH menyerahkan uang tunai tersebut ke Kasir?`,
+                            () => this.sendParcelOrderToPos(poId, true)
+                        );
+                        return;
+                    }
+                } else if (!['Siap Diambil', 'Terkirim • Lunas', 'Terkirim • Tunggu Setor COD'].includes(effStatus)) {
+                    return this.showAlert(`TRANSAKSI DIKUNCI!\n\nPO Ambil di Toko ${po.orderCode} harus ditandai "Siap Diambil" terlebih dahulu setelah selesai dirakit.`);
+                }
+
                 const items = Array.isArray(po.items) ? po.items : [];
                 if (items.length === 0) return;
 
-                // Masukkan tiap baris parsel PO ke keranjang kasir dengan skipStockDeduction: true
+                if (linkedOrd) {
+                    this.state.activeLinkedOnlineOrder = {
+                        id: linkedOrd.id,
+                        orderCode: linkedOrd.orderCode || linkedOrd.id,
+                        receiptToken: linkedOrd.receiptToken || '',
+                        customerName: linkedOrd.customerName || po.customerName,
+                        customerPhone: linkedOrd.customerPhone || po.customerPhone || '-',
+                        paymentMethod: linkedOrd.paymentMethod || 'Cash / Tunai (COD)',
+                        deliveryMode: linkedOrd.deliveryMode || (hasDelivery ? 'Kirim ke Rumah' : 'Ambil di Toko'),
+                        orderStatus: effStatus,
+                        isParcelOrder: true
+                    };
+                    this.renderActiveOnlineOrderBanner();
+                }
+
+                this.state.posCart = [];
+                const unitCostVal = Number(po.assembledUnitCost) || 0;
                 items.forEach((it, idx) => {
                     const cartId = `POITEM-${po.id}-${idx}`;
                     const addonTxt = (it.addons || []).length > 0 ? ` [${it.addons.join(', ')}]` : '';
                     const noteParts = [po.orderCode, it.note || '', (it.deliveryMode === 'Diantar' ? (it.destinations || []).map(d => d.address).join(', ') : 'Ambil Toko')].filter(Boolean);
-                    this.state.posCart = this.state.posCart.filter(c => c.id !== cartId);
                     this.state.posCart.push({
                         id: cartId,
                         name: `[PO] ${it.parcelType}${addonTxt}`,
                         category: 'Parsel & Gift',
                         price: Number(it.unitPrice) || 0,
-                        cost: 0,
+                        cost: unitCostVal,
                         unit: 'Pcs',
                         qty: Math.max(1, parseInt(it.qty, 10) || 1),
                         discount: { type: 'nominal', value: 0 },
@@ -5475,19 +5549,30 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                             `).join('')}</div>`
                             : `<div class="text-[11px] font-bold text-blue-700 pt-0.5"><i class="fa-solid fa-store mr-1"></i>Diambil di Toko NutriFresh</div>`;
 
-                        // 1 Tombol Aksi Utama Bertahap sesuai alur kerja toko (Konfirmasi -> Rakit -> Foto/Selesai Rakit -> Serahkan Kurir -> Bayar & Selesai)
+                        const effPoStatus = linkedOrd?.orderStatus || po.orderStatus;
+                        const isAssembled = !!(po.assembledVerified || ['Selesai Dirakit', 'Siap Diambil Kurir', 'Siap Diambil', 'Diantar Kurir', 'Terkirim • Tunggu Setor COD', 'Terkirim • Lunas', 'Selesai'].includes(effPoStatus));
                         let primaryPoBtnHtml = '';
                         if (!isClosedPo) {
-                            if (po.orderStatus === 'Menunggu Konfirmasi') {
+                            if (effPoStatus === 'Menunggu Konfirmasi' || effPoStatus === 'PO Menunggu Konfirmasi') {
                                 primaryPoBtnHtml = `<button type="button" onclick="app.confirmParcelOrderStep('${this.escapeHtml(po.id)}')" class="px-3.5 py-1.5 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] shadow-sm transition">✅ Terima &amp; Konfirmasi PO</button>`;
-                            } else if (po.orderStatus === 'Dikonfirmasi') {
-                                primaryPoBtnHtml = `<button type="button" onclick="app.startBuildParcelFromPo('${this.escapeHtml(po.id)}')" class="px-3.5 py-1.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-[11px] shadow-sm transition">🧺 Rakit Parsel</button>`;
-                            } else if (po.orderStatus === 'Sedang Dirakit') {
-                                primaryPoBtnHtml = `<button type="button" onclick="app.markParcelAssembled('${this.escapeHtml(po.id)}')" class="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-sm transition">✨ Tandai Selesai Dirakit</button>`;
-                            } else if (po.orderStatus === 'Selesai Dirakit') {
+                            } else if (effPoStatus === 'Dikonfirmasi' || effPoStatus === 'PO Dikonfirmasi') {
+                                primaryPoBtnHtml = `<button type="button" onclick="app.startBuildParcelFromPo('${this.escapeHtml(po.id)}')" class="px-3.5 py-1.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-[11px] shadow-sm transition">🧺 Rakit Parsel (Potong Stok)</button>`;
+                            } else if (effPoStatus === 'Sedang Dirakit' || effPoStatus === 'PO Sedang Dirakit') {
+                                primaryPoBtnHtml = `<button type="button" onclick="app.startBuildParcelFromPo('${this.escapeHtml(po.id)}')" class="px-3.5 py-1.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-[11px] shadow-sm transition">🧺 Lanjutkan Rakit (Wajib Potong Stok)</button>`;
+                            } else if ((effPoStatus === 'Selesai Dirakit' || effPoStatus === 'PO Selesai Dirakit') && isAssembled) {
                                 primaryPoBtnHtml = `<button type="button" onclick="app.releaseParcelOrderToDelivery('${this.escapeHtml(po.id)}')" class="px-3.5 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] shadow-sm transition">${hasDeliveryMode ? '🛵 Serahkan ke Kurir' : '🛍️ Tandai Siap Diambil'}</button>`;
-                            } else if (!po.linkedTxId) {
-                                primaryPoBtnHtml = `<button type="button" onclick="app.sendParcelOrderToPos('${this.escapeHtml(po.id)}')" class="px-3.5 py-1.5 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] shadow-sm transition"><i class="fa-solid fa-cash-register mr-1"></i> Terima Bayar &amp; Selesai${remBill > 0 && po.paymentStatus === 'DP' ? ' (' + this.formatCurrency(remBill) + ')' : ''}</button>`;
+                            } else if (effPoStatus === 'Siap Diambil Kurir') {
+                                primaryPoBtnHtml = `<span class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200 font-extrabold text-[10.5px]">🔒 Menunggu Kurir Terima di App Staff</span>`;
+                            } else if (effPoStatus === 'Diantar Kurir') {
+                                primaryPoBtnHtml = `<span class="px-3 py-1.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 font-extrabold text-[10.5px]">🛵 Sedang Diantar (${this.escapeHtml(linkedOrd?.courierName || 'Kurir')}) — Menunggu Diterima Pembeli</span>`;
+                            } else if (!po.linkedTxId && (
+                                (hasDeliveryMode && ['Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(effPoStatus)) ||
+                                (!hasDeliveryMode && effPoStatus === 'Siap Diambil')
+                            )) {
+                                const settleLbl = effPoStatus === 'Terkirim • Tunggu Setor COD'
+                                    ? `💵 Terima Setor COD &amp; Selesai${remBill > 0 ? ' (' + this.formatCurrency(remBill) + ')' : ''}`
+                                    : (effPoStatus === 'Terkirim • Lunas' ? '✅ Selesaikan &amp; Terbitkan Resi' : `💵 Pembeli Ambil — Bayar &amp; Selesai${remBill > 0 ? ' (' + this.formatCurrency(remBill) + ')' : ''}`);
+                                primaryPoBtnHtml = `<button type="button" onclick="app.sendParcelOrderToPos('${this.escapeHtml(po.id)}')" class="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-sm transition">${settleLbl}</button>`;
                             }
                         }
 
@@ -5501,7 +5586,7 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                                             </span>
                                             ${isPrepTonight ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-900 text-amber-300 border border-indigo-400">🌙 Rakit Malam Ini</span>' : ''}
                                             <span class="font-mono text-[10px] font-extrabold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">${this.escapeHtml(po.orderCode)}</span>
-                                            <span class="text-[10px] font-black bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">${this.escapeHtml(po.orderStatus)}</span>
+                                            <span class="text-[10px] font-black px-2 py-0.5 rounded-full ${po.isVoided ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-slate-100 text-slate-700'}">${this.escapeHtml(po.isVoided ? '❌ VOID / Dibatalkan' : effPoStatus)}</span>
                                             ${po.source === 'web' ? '<span class="text-[9px] font-black bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">📲 WEB</span>' : '<span class="text-[9px] font-black bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">💬 WA</span>'}
                                             ${(po.items || []).length > 1 ? `<span class="text-[9px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">Bagian dari ${(po.items || []).length} jadwal PO</span>` : ''}
                                         </div>
@@ -5540,7 +5625,7 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                                         ${!isClosedPo && ['Sedang Dirakit', 'Selesai Dirakit', 'Dikonfirmasi'].includes(po.orderStatus) ? `<button type="button" onclick="app.triggerPosOrderPhoto('${this.escapeHtml(po.id)}', 'parcel')" class="px-2.5 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-[11px] transition">📷 Foto Parsel</button>` : ''}
                                         <button type="button" onclick="app.openPoOrderChat('${this.escapeHtml(po.id)}')" class="px-2.5 py-1.5 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold text-[11px] transition">💬 Chat${poChatCnt > 0 ? ' (' + poChatCnt + ')' : ''}</button>
                                         <button type="button" onclick="app.printParcelOrderStickers('${this.escapeHtml(po.id)}')" class="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-[11px] transition"><i class="fa-solid fa-tag mr-1"></i> Stiker</button>
-                                        ${!isClosedPo && !po.linkedTxId && !['Siap Diambil Kurir', 'Siap Diambil', 'Diantar Kurir', 'Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(po.orderStatus) ? `<button type="button" onclick="app.sendParcelOrderToPos('${this.escapeHtml(po.id)}')" class="px-2.5 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-extrabold text-[11px] transition"><i class="fa-solid fa-cash-register mr-1"></i> Kasir</button>` : ''}
+                                        
                                         ${po.linkedTxId ? `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">✓ Kasir (${this.escapeHtml(po.linkedTxId)})</span>` : ''}
                                         <button type="button" onclick="app.openPoCustomerWa('${this.escapeHtml(po.id)}')" class="px-2.5 py-1.5 rounded-full bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 font-extrabold text-[11px] transition"><i class="fa-brands fa-whatsapp"></i></button>
                                     </div>
@@ -5911,7 +5996,7 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                 }
             },
             updateOnlineOrdersBadge() {
-                const pendingCnt = (this.state.onlineOrders || []).filter(o => !['Selesai', 'Dibatalkan'].includes(o.orderStatus)).length;
+                const pendingCnt = (this.state.onlineOrders || []).filter(o => o && !o.isVoided && !['Selesai', 'Dibatalkan', 'Dibatalkan (VOID)'].includes(o.orderStatus) && !this.isPoNotYetInOnlineQueue(o)).length;
                 const badge = document.getElementById('onlineOrdersCountBadge');
                 if (badge) {
                     badge.textContent = String(pendingCnt);
@@ -6050,12 +6135,22 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                         : 'Mode Lokal — Jalankan SQL v131 di Supabase untuk sinkron lintas HP & PC';
                 }
                 const mode = this.state.onlineOrdersFilter || 'active';
-                // TAB 3: RIWAYAT TRANSAKSI OFFLINE KASIR (RINGKAS & BISA DIBUKA DETAILNYA)
+                const onlineLinkedTxIds = new Set();
+                (this.state.onlineOrders || []).forEach(o => { if (o && o.linkedTxId) onlineLinkedTxIds.add(o.linkedTxId); });
+                (this.state.parcelOrders || []).forEach(p => { if (p && p.linkedTxId) onlineLinkedTxIds.add(p.linkedTxId); });
+
+                // TAB 3: RIWAYAT TRANSAKSI OFFLINE KASIR (MURNI BELANJA DI TOKO + TANDA VOID JELAS!)
                 if (mode === 'offline') {
-                    const offTx = (this.state.transactions || []).filter(t => t && t.status !== 'void' && !String(t.id || '').startsWith('VOID')).slice(0, 60);
-                    if (cntEl) cntEl.textContent = `${offTx.length} nota`;
+                    const offTx = (this.state.transactions || []).filter(t => {
+                        if (!t || !t.id) return false;
+                        if (t.linkedOnlineOrderId) return false;
+                        if (onlineLinkedTxIds.has(t.id)) return false;
+                        if (Array.isArray(t.items) && t.items.some(it => it && it.linkedPoId)) return false;
+                        return true;
+                    }).slice(0, 60);
+                    if (cntEl) cntEl.textContent = `${offTx.length} nota toko`;
                     if (offTx.length === 0) {
-                        box.innerHTML = `<div class="py-10 text-center text-gray-400"><i class="fa-solid fa-receipt text-3xl text-gray-300 mb-2"></i><br>Belum ada riwayat transaksi kasir offline.</div>`;
+                        box.innerHTML = `<div class="py-10 text-center text-gray-400"><i class="fa-solid fa-receipt text-3xl text-gray-300 mb-2"></i><br>Belum ada riwayat transaksi belanja langsung di toko (Offline).</div>`;
                         return;
                     }
                     box.innerHTML = offTx.map(tx => {
@@ -6064,24 +6159,26 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                         const items = Array.isArray(tx.items) ? tx.items : [];
                         const dtStr = tx.date ? this.formatDate(new Date(tx.date)) : '-';
                         const sumNames = items.slice(0, 2).map(it => it.name).join(', ') + (items.length > 2 ? ` +${items.length - 2} lainnya` : '');
-                        return `<div class="bg-white rounded-2xl border border-gray-200 p-3 shadow-sm space-y-2">
+                        const isVoid = tx.status === 'cancelled' || tx.status === 'void' || String(tx.id || '').startsWith('VOID');
+                        return `<div class="bg-white rounded-2xl border ${isVoid ? 'border-red-300 bg-red-50/40' : 'border-gray-200'} p-3 shadow-sm space-y-2">
                             <div class="flex items-start justify-between gap-2 cursor-pointer" onclick="app.togglePosOrderHistoryDetail('${this.escapeHtml(key)}')">
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-1.5 flex-wrap">
                                         <span class="font-mono font-black text-[10.5px] bg-slate-100 text-slate-800 px-2 py-0.5 rounded-full">${this.escapeHtml(tx.id)}</span>
-                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-black bg-emerald-100 text-emerald-800">${this.escapeHtml(tx.paymentMethod || 'Tunai')}</span>
-                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-gray-100 text-gray-600">${this.escapeHtml(tx.salesChannel || 'Toko')}</span>
+                                        ${isVoid ? '<span class="px-2 py-0.5 rounded-full text-[9.5px] font-black bg-red-600 text-white">❌ VOID / DIBATALKAN</span>' : `<span class="px-2 py-0.5 rounded-full text-[9.5px] font-black bg-emerald-100 text-emerald-800">${this.escapeHtml(tx.paymentMethod || 'Tunai')}</span>`}
+                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-gray-100 text-gray-600">🏬 ${this.escapeHtml(tx.salesChannel || 'Toko')}</span>
                                     </div>
-                                    <div class="text-[11.5px] font-extrabold text-gray-900 truncate mt-1">${this.escapeHtml(tx.customerName || 'Pelanggan Umum')} • <span class="font-semibold text-gray-600">${this.escapeHtml(sumNames || 'Transaksi')}</span></div>
-                                    <div class="text-[10px] text-gray-400">${this.escapeHtml(dtStr)} • Kasir: ${this.escapeHtml(tx.cashier || '-')}</div>
+                                    <div class="text-[11.5px] font-extrabold ${isVoid ? 'text-red-900 line-through' : 'text-gray-900'} truncate mt-1">${this.escapeHtml(tx.customerName || 'Pelanggan Umum')} • <span class="font-semibold text-gray-600">${this.escapeHtml(sumNames || 'Transaksi')}</span></div>
+                                    <div class="text-[10px] text-gray-400">${this.escapeHtml(dtStr)} • Kasir: ${this.escapeHtml(tx.cashier || '-')}${isVoid && tx.voidReason ? ` • <span class="text-red-600 font-bold">Alasan: ${this.escapeHtml(tx.voidReason)}</span>` : ''}</div>
                                 </div>
                                 <div class="text-right flex-shrink-0">
-                                    <div class="font-black text-sm text-nutri-brown">${this.formatCurrency(tx.total || 0)}</div>
+                                    <div class="font-black text-sm ${isVoid ? 'text-red-500 line-through' : 'text-nutri-brown'}">${this.formatCurrency(tx.total || 0)}</div>
                                     <span class="text-[10px] font-extrabold text-blue-600">${isExp ? 'Tutup ▴' : 'Detail ▾'}</span>
                                 </div>
                             </div>
                             ${isExp ? `
                             <div class="pt-2 border-t border-gray-100 space-y-2">
+                                ${isVoid ? `<div class="bg-red-100/80 border border-red-200 rounded-xl px-2.5 py-1.5 text-[10.5px] text-red-900 font-bold">❌ Transaksi Dibatalkan (VOID)${tx.voidedBy ? ' oleh ' + this.escapeHtml(tx.voidedBy) : ''}${tx.voidReason ? ' — Alasan: ' + this.escapeHtml(tx.voidReason) : ''}</div>` : ''}
                                 <div class="bg-gray-50 rounded-xl p-2 space-y-1 text-[11px] border border-gray-100">
                                     ${items.map(it => `<div class="flex justify-between gap-2"><span>▪️ <strong>${this.formatStockDisplay(it.qty, it.unit)}</strong> ${this.escapeHtml(it.name)}</span><span class="font-bold text-gray-800">${this.formatCurrency(it.subtotal || 0)}</span></div>`).join('')}
                                 </div>
@@ -6097,16 +6194,21 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
 
                 const wantDone = mode === 'done';
                 const list = (this.state.onlineOrders || []).filter(o => {
-                    const closed = ['Selesai', 'Dibatalkan'].includes(o.orderStatus);
-                    return wantDone ? closed : !closed;
+                    if (!o) return false;
+                    const linkedTx = o.linkedTxId ? (this.state.transactions || []).find(t => t.id === o.linkedTxId) : null;
+                    const txVoided = !!(linkedTx && (linkedTx.status === 'cancelled' || linkedTx.status === 'void'));
+                    const closed = !!(o.isVoided || txVoided || ['Selesai', 'Dibatalkan', 'Dibatalkan (VOID)'].includes(o.orderStatus));
+                    if (wantDone) return closed;
+                    if (this.isPoNotYetInOnlineQueue(o)) return false;
+                    return !closed;
                 });
                 if (cntEl) cntEl.textContent = `${list.length} pesanan`;
                 if (list.length === 0) {
-                    box.innerHTML = `<div class="py-10 text-center text-gray-400"><i class="fa-solid fa-basket-shopping text-3xl text-gray-300 mb-2"></i><br>${wantDone ? 'Belum ada riwayat order online selesai / batal.' : 'Belum ada antrean order masuk dari katalog online.'}</div>`;
+                    box.innerHTML = `<div class="py-10 text-center text-gray-400"><i class="fa-solid fa-basket-shopping text-3xl text-gray-300 mb-2"></i><br>${wantDone ? 'Belum ada riwayat order online selesai / batal.' : 'Belum ada antrean order online siap diproses / diantar.<br><span class="text-[10.5px] text-gray-400">(PO Parsel yang belum selesai dirakit dikelola di tab <strong>PO Parsel</strong> terlebih dahulu.)</span>'}</div>`;
                     return;
                 }
 
-                // TAB 2: RIWAYAT ONLINE RINGKAS (PERSIS SEPERTI DI APP PELANGGAN!)
+                // TAB 2: RIWAYAT ONLINE RINGKAS (LENGKAP DENGAN PENANDA ❌ VOID / DIBATALKAN!)
                 if (wantDone) {
                     box.innerHTML = list.map(ord => {
                         const key = `onl_${ord.id}`;
@@ -6114,32 +6216,37 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                         const items = Array.isArray(ord.items) ? ord.items : [];
                         const dtStr = ord.createdAt ? this.formatDate(new Date(ord.createdAt)) : '-';
                         const grandTotal = (Number(ord.finalTotal) || Number(ord.estimatedTotal) || 0) + (Number(ord.shippingFee) || 0);
-                        const isCancelled = ord.orderStatus === 'Dibatalkan';
+                        const linkedTx = ord.linkedTxId ? (this.state.transactions || []).find(t => t.id === ord.linkedTxId) : null;
+                        const isVoided = !!(ord.isVoided || String(ord.orderStatus || '').includes('VOID') || (linkedTx && (linkedTx.status === 'cancelled' || linkedTx.status === 'void')));
+                        const isCancelled = isVoided || String(ord.orderStatus || '').startsWith('Dibatalkan');
+                        const voidReasonTxt = ord.voidReason || linkedTx?.voidReason || '';
+                        const badgeText = isVoided ? '❌ VOID / DIBATALKAN' : (isCancelled ? '❌ Dibatalkan' : ord.orderStatus);
                         const sumNames = items.slice(0, 2).map(it => it.name).join(', ') + (items.length > 2 ? ` +${items.length - 2} lainnya` : '');
                         const isPo = !!(ord.isParcelOrder || String(ord.id || '').startsWith('PO-'));
-                        return `<div class="bg-white rounded-2xl border border-gray-200 p-3 shadow-sm space-y-2">
+                        return `<div class="bg-white rounded-2xl border ${isCancelled ? 'border-red-300 bg-red-50/40' : 'border-gray-200'} p-3 shadow-sm space-y-2">
                             <div class="flex items-start justify-between gap-2 cursor-pointer" onclick="app.togglePosOrderHistoryDetail('${this.escapeHtml(key)}')">
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-1.5 flex-wrap">
                                         ${isPo ? '<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[9px] font-black">🎁 PO</span>' : ''}
                                         <span class="font-mono font-black text-[10.5px] bg-slate-100 text-slate-800 px-2 py-0.5 rounded-full">${this.escapeHtml(ord.orderCode || ord.id)}</span>
-                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-black ${isCancelled ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'}">${this.escapeHtml(ord.orderStatus)}</span>
+                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-black ${isVoided ? 'bg-red-600 text-white' : (isCancelled ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-emerald-100 text-emerald-800')}">${this.escapeHtml(badgeText)}</span>
                                     </div>
-                                    <div class="text-[11.5px] font-extrabold text-gray-900 truncate mt-1">${this.escapeHtml(ord.customerName)} • <span class="font-semibold text-gray-600">${this.escapeHtml(sumNames || 'Pesanan')}</span></div>
-                                    <div class="text-[10px] text-gray-400">${this.escapeHtml(dtStr)} • ${this.escapeHtml(ord.deliveryMode || 'Kirim')}${ord.courierName ? ' • 🛵 ' + this.escapeHtml(ord.courierName) : ''}</div>
+                                    <div class="text-[11.5px] font-extrabold ${isCancelled ? 'text-red-900 line-through' : 'text-gray-900'} truncate mt-1">${this.escapeHtml(ord.customerName)} • <span class="font-semibold text-gray-600">${this.escapeHtml(sumNames || 'Pesanan')}</span></div>
+                                    <div class="text-[10px] text-gray-400">${this.escapeHtml(dtStr)} • ${this.escapeHtml(ord.deliveryMode || 'Kirim')}${ord.courierName ? ' • 🛵 ' + this.escapeHtml(ord.courierName) : ''}${voidReasonTxt ? ` • <span class="text-red-600 font-bold">Alasan: ${this.escapeHtml(voidReasonTxt)}</span>` : ''}</div>
                                 </div>
                                 <div class="text-right flex-shrink-0">
-                                    <div class="font-black text-sm text-nutri-brown">${this.formatCurrency(grandTotal)}</div>
+                                    <div class="font-black text-sm ${isCancelled ? 'text-red-500 line-through' : 'text-nutri-brown'}">${this.formatCurrency(grandTotal)}</div>
                                     <span class="text-[10px] font-extrabold text-blue-600">${isExp ? 'Tutup ▴' : 'Detail ▾'}</span>
                                 </div>
                             </div>
                             ${isExp ? `
                             <div class="pt-2 border-t border-gray-100 space-y-2">
+                                ${isVoided ? `<div class="bg-red-100/80 border border-red-200 rounded-xl px-2.5 py-1.5 text-[10.5px] text-red-900 font-bold">❌ Nota Pesanan Dibatalkan (VOID)${voidReasonTxt ? ' — Alasan: ' + this.escapeHtml(voidReasonTxt) : ''}</div>` : ''}
                                 <div class="bg-gray-50 rounded-xl p-2 space-y-1 text-[11px] border border-gray-100">
                                     ${items.map(it => `<div class="flex justify-between gap-2"><span>▪️ <strong>${this.formatStockDisplay(it.qty, it.unit)}</strong> ${this.escapeHtml(it.name)}</span><span class="font-bold text-gray-800">${this.formatCurrency(it.subtotal || 0)}</span></div>`).join('')}
                                 </div>
                                 <div class="flex flex-wrap items-center gap-1.5">
-                                    ${ord.linkedTxId ? `<button type="button" onclick="document.getElementById('onlineOrdersModal').classList.add('hidden'); app.openDigitalReceiptModalById('${this.escapeHtml(ord.linkedTxId)}')" class="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-extrabold text-[11px]">🧾 Resi (${this.escapeHtml(ord.linkedTxId)})</button>` : ''}
+                                    ${ord.linkedTxId ? `<button type="button" onclick="document.getElementById('onlineOrdersModal').classList.add('hidden'); app.openDigitalReceiptModalById('${this.escapeHtml(ord.linkedTxId)}')" class="px-3 py-1.5 rounded-full ${isVoided ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'} border font-extrabold text-[11px]">🧾 Resi (${this.escapeHtml(ord.linkedTxId)})</button>` : ''}
                                     <button type="button" onclick="app.openPosFullChat('${this.escapeHtml(ord.id)}')" class="px-3 py-1.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 font-extrabold text-[11px]">💬 Riwayat Chat</button>
                                     <button type="button" onclick="app.openOnlineOrderWaChat('${this.escapeHtml(ord.id)}')" class="px-3 py-1.5 rounded-full bg-green-50 text-green-700 border border-green-200 font-extrabold text-[11px]">WA</button>
                                 </div>
@@ -6164,17 +6271,17 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                         : (ord.orderStatus === 'Menunggu Konfirmasi' || ord.orderStatus === 'Menunggu Verifikasi Bayar' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-900')))));
                     const chatArr = Array.isArray(ord.orderChat) ? ord.orderChat : [];
                     const isPickup = ord.deliveryMode === 'Ambil di Toko';
-                    // 1. Tombol "Serahkan ke Kurir" HANYA muncul setelah pelanggan ACC (COD) atau sudah upload bukti bayar (Non-Tunai)
-                    const canReleaseToCourier = !isClosed && !isPickup && ['Disetujui — Siap Kirim', 'Menunggu Verifikasi Bayar'].includes(ord.orderStatus);
-                    // 2. Untuk Ambil di Toko: tombol "Siap Diambil" muncul setelah ACC / Verifikasi Bayar
-                    const canMarkPickupReady = !isClosed && isPickup && ['Disetujui — Siap Diambil', 'Menunggu Verifikasi Bayar'].includes(ord.orderStatus);
-                    // 3. Tombol "Terima COD & Selesai" / "Bayar & Selesaikan" TIDAK BOLEH muncul di awal sebelum barang dikirim kurir (atau siap diambil di toko)!
+                    const isPoActive = !!(ord.isParcelOrder || String(ord.id || '').startsWith('PO-'));
+                    const canReleaseToCourier = !isClosed && !isPickup && ['Disetujui — Siap Kirim', 'Menunggu Verifikasi Bayar', 'PO Selesai Dirakit', 'Selesai Dirakit'].includes(ord.orderStatus);
+                    const canMarkPickupReady = !isClosed && isPickup && ['Disetujui — Siap Diambil', 'Menunggu Verifikasi Bayar', 'PO Selesai Dirakit', 'Selesai Dirakit'].includes(ord.orderStatus);
+                    // KEAMANAN KETAT: Untuk Kirim Kurir, kasir DILARANG menyelesaikan transaksi sebelum Kurir menandai Diterima Pembeli di Aplikasi Staff!
                     const canSettleOrder = !isClosed && (
                         isPickup
-                            ? ['Disetujui — Siap Diambil', 'Siap Diambil', 'Menunggu Verifikasi Bayar'].includes(ord.orderStatus)
-                            : ['Diantar Kurir', 'Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(ord.orderStatus)
+                            ? ord.orderStatus === 'Siap Diambil'
+                            : ['Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(ord.orderStatus)
                     );
                     const waitingCourierPickup = !isClosed && !isPickup && ord.orderStatus === 'Siap Diambil Kurir';
+                    const waitingCourierDeliver = !isClosed && !isPickup && ord.orderStatus === 'Diantar Kurir';
 
                     return `
                         <div class="bg-white rounded-2xl border ${isDelivered ? 'border-rose-400 ring-2 ring-rose-200' : 'border-gray-200'} p-3.5 shadow-sm space-y-2.5">
@@ -6237,12 +6344,13 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
 
                             <div class="pt-1 flex flex-wrap items-center justify-between gap-2">
                                 <div class="flex flex-wrap items-center gap-1.5">
-                                    ${canSettleOrder ? `<button type="button" onclick="app.settleOnlineOrderQuick('${this.escapeHtml(ord.id)}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-3 py-1.5 text-[11px] shadow-sm transition flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> <span>${isCod ? 'Terima COD &amp; Selesai' : 'Bayar &amp; Selesaikan'}</span></button>` : ''}
+                                    ${canSettleOrder ? `<button type="button" onclick="app.settleOnlineOrderQuick('${this.escapeHtml(ord.id)}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-3 py-1.5 text-[11px] shadow-sm transition flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> <span>${ord.orderStatus === 'Terkirim • Tunggu Setor COD' ? '💵 Terima Setor COD &amp; Selesai' : (ord.orderStatus === 'Terkirim • Lunas' ? '✅ Selesaikan &amp; Terbitkan Resi' : '💵 Bayar &amp; Selesaikan')}</span></button>` : ''}
                                     ${canReleaseToCourier ? `<button type="button" onclick="app.updateOnlineOrderQuickStatus('${this.escapeHtml(ord.id)}','Siap Diambil Kurir')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-3 py-1.5 text-[11px] shadow-sm transition flex items-center gap-1"><i class="fa-solid fa-motorcycle"></i> <span>Serahkan ke Kurir</span></button>` : ''}
                                     ${canMarkPickupReady ? `<button type="button" onclick="app.updateOnlineOrderQuickStatus('${this.escapeHtml(ord.id)}','Siap Diambil')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-3 py-1.5 text-[11px] shadow-sm transition">🛍️ Tandai Siap Diambil</button>` : ''}
-                                    ${waitingCourierPickup ? `<span class="px-2.5 py-1.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200 font-extrabold text-[10.5px]">⏳ Menunggu Kurir Ambil</span>` : ''}
+                                    ${waitingCourierPickup ? `<span class="px-2.5 py-1.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200 font-extrabold text-[10.5px]">🔒 Menunggu Kurir Terima di App Staff</span>` : ''}
+                                    ${waitingCourierDeliver ? `<span class="px-2.5 py-1.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 font-extrabold text-[10.5px]">🛵 Diantar (${this.escapeHtml(ord.courierName || 'Kurir')}) — Menunggu Diterima Pembeli</span>` : ''}
                                     ${isClosed && ord.linkedTxId ? `<button type="button" onclick="document.getElementById('onlineOrdersModal').classList.add('hidden'); app.openDigitalReceiptModalById('${this.escapeHtml(ord.linkedTxId)}')" class="bg-emerald-50 text-emerald-800 border border-emerald-200 font-extrabold px-3 py-1.5 text-[11px]">🧾 Lihat Resi (${this.escapeHtml(ord.linkedTxId)})</button>` : ''}
-                                    ${!isClosed ? `<button type="button" onclick="app.loadOnlineOrderToPosCart('${this.escapeHtml(ord.id)}')" class="bg-nutri-green hover:bg-nutri-dark text-white font-extrabold px-2.5 py-1.5 text-[11px] shadow-sm transition flex items-center gap-1"><i class="fa-solid fa-scale-balanced"></i> <span>Timbang / Edit</span></button>` : ''}
+                                    ${!isClosed && !isPoActive && !waitingCourierPickup && !waitingCourierDeliver && !canSettleOrder ? `<button type="button" onclick="app.loadOnlineOrderToPosCart('${this.escapeHtml(ord.id)}')" class="bg-nutri-green hover:bg-nutri-dark text-white font-extrabold px-2.5 py-1.5 text-[11px] shadow-sm transition flex items-center gap-1"><i class="fa-solid fa-scale-balanced"></i> <span>Timbang / Edit</span></button>` : ''}
                                     ${!isClosed ? `<button type="button" onclick="app.triggerPosOrderPhoto('${this.escapeHtml(ord.id)}', '${(ord.isParcelOrder || String(ord.id || '').startsWith('PO-')) ? 'parcel' : 'weigh'}')" class="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-extrabold px-2.5 py-1.5 text-[11px] transition flex items-center gap-1"><i class="fa-solid fa-camera"></i> <span>Foto</span></button>` : ''}
                                     ${ord.paymentProofUrl ? `<button type="button" onclick="document.getElementById('viewProofFullImg').src='${this.escapeHtml(ord.paymentProofUrl)}';document.getElementById('viewProofModal').classList.remove('hidden')" class="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold px-2.5 py-1.5 text-[11px]"><i class="fa-solid fa-image mr-1"></i> Bukti Bayar</button>` : ''}
                                     ${ord.deliveryProofUrl ? `<button type="button" onclick="document.getElementById('viewProofFullImg').src='${this.escapeHtml(ord.deliveryProofUrl)}';document.getElementById('viewProofModal').classList.remove('hidden')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-extrabold px-2.5 py-1.5 text-[11px]"><i class="fa-solid fa-camera mr-1"></i> Bukti Antar</button>` : ''}
@@ -6464,11 +6572,31 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                 reader.readAsDataURL(file);
                 ev.target.value = '';
             },
-            settleOnlineOrderQuick(orderId) {
+            settleOnlineOrderQuick(orderId, confirmedCodHandover = false) {
                 const ord = (this.state.onlineOrders || []).find(x => x.id === orderId);
                 if (!ord) return;
                 if (this.state.shift.status !== 'open') {
                     return this.showAlert('Kasir masih TUTUP! Silakan klik "Buka Kasir" terlebih dahulu sebelum menyelesaikan pembayaran order online.');
+                }
+                const isPo = !!(ord.isParcelOrder || String(ord.id || '').startsWith('PO-'));
+                if (isPo) {
+                    document.getElementById('onlineOrdersModal')?.classList.add('hidden');
+                    return this.sendParcelOrderToPos(ord.id, confirmedCodHandover);
+                }
+                const isPickup = ord.deliveryMode === 'Ambil di Toko';
+                if (!isPickup && !['Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(ord.orderStatus)) {
+                    return this.showAlert(`TRANSAKSI DIKUNCI DEMI KEAMANAN!\n\nPesanan #${ord.orderCode || ord.id} (${ord.orderStatus}) belum diterima pembeli di Aplikasi Staff Kurir.\nTunggu Kurir menyelesaikan pengantaran terlebih dahulu.`);
+                }
+                if (isPickup && ord.orderStatus !== 'Siap Diambil') {
+                    return this.showAlert(`TRANSAKSI DIKUNCI!\n\nTandai pesanan #${ord.orderCode || ord.id} sebagai "Siap Diambil" terlebih dahulu sebelum diselesaikan.`);
+                }
+                if (ord.orderStatus === 'Terkirim • Tunggu Setor COD' && !confirmedCodHandover) {
+                    const grandNow = (Number(ord.finalTotal) || Number(ord.estimatedTotal) || 0) + (Number(ord.shippingFee) || 0);
+                    this.showConfirm(
+                        `KONFIRMASI SETOR UANG COD DARI KURIR\n\nPesanan: #${ord.orderCode || ord.id} (${ord.customerName})\nKurir: ${ord.courierName || 'Kurir NutriFresh'}\nUang COD: ${this.formatCurrency(grandNow)}\n\nApakah Kurir SUDAH menyerahkan uang tunai tersebut secara fisik ke Kasir?`,
+                        () => this.settleOnlineOrderQuick(orderId, true)
+                    );
+                    return;
                 }
                 this.loadOnlineOrderToPosCart(orderId);
                 if (this.state.posCart.length === 0) return;
@@ -6675,6 +6803,8 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                 if (!ord) return;
                 ord.orderStatus = newStatus;
                 await this.persistOnlineOrderRecord(ord);
+                const uoqPo = (this.state.parcelOrders || []).find(p => p.id === ord.id);
+                if (uoqPo) { uoqPo.orderStatus = newStatus; await this.persistParcelOrderRecord(uoqPo).catch(() => {}); }
                 const grandNow = (Number(ord.finalTotal) || Number(ord.estimatedTotal) || 0) + (Number(ord.shippingFee) || 0);
                 if (newStatus === 'Siap Diambil Kurir') {
                     this.dispatchOrderPushNow({
@@ -6830,6 +6960,8 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                 this.showConfirm(`Batalkan Order Katalog ${ord.orderCode} a.n "${ord.customerName}"?`, async () => {
                     ord.orderStatus = 'Dibatalkan';
                     await this.persistOnlineOrderRecord(ord);
+                    const coPo = (this.state.parcelOrders || []).find(p => p.id === ord.id);
+                    if (coPo) { coPo.orderStatus = 'Dibatalkan'; await this.persistParcelOrderRecord(coPo).catch(() => {}); }
                     this.dispatchOrderPushNow({
                         ...this.buildOrderPushMeta(ord, 'Dibatalkan'),
                         order_id: ord.id,
@@ -8705,8 +8837,19 @@ isKepalaTokoRole() {
                 });
             },
 
-            openParcelModal() {
+            openParcelModal(poContext = null) {
+                this._activePoBuildId = (poContext && poContext.id) ? poContext.id : null;
                 this.state.parcelComponentsTemp = []; this.state.parcelFilterCat = 'Semua';
+                const poBanner = document.getElementById('parcelBuildPoBanner');
+                const poBannerTitle = document.getElementById('parcelBuildPoBannerTitle');
+                const hdrTitle = document.getElementById('parcelModalHeaderTitle');
+                if (poBanner) poBanner.classList.toggle('hidden', !this._activePoBuildId);
+                if (this._activePoBuildId && poContext) {
+                    if (poBannerTitle) poBannerTitle.textContent = `Merakit Khusus ${poContext.orderCode || poContext.id} — ${poContext.customerName || 'Pelanggan'}`;
+                    if (hdrTitle) hdrTitle.textContent = `Rakit PO Parsel #${poContext.orderCode || poContext.id}`;
+                } else if (hdrTitle) {
+                    hdrTitle.textContent = 'Rakit Parsel Ritel & Hitung HPP';
+                }
                 const targetSel = document.getElementById('parcelTargetSelect'); targetSel.innerHTML = '<option value="__NEW__">+ Buat Nama Parsel Baru...</option>';
                 this.state.inventory.filter(p => p.category === 'Parsel & Gift').forEach(p => { const opt = document.createElement('option'); opt.value = p.id; opt.textContent = `${p.name} (Stok: ${this.formatStockDisplay(p.stock, p.unit)})`; targetSel.appendChild(opt); });
                 document.getElementById('parcelQtyBuildInput').value = '1'; document.getElementById('parcelNewNameInput').value = ''; document.getElementById('parcelNewPriceInput').value = ''; document.getElementById('parcelCompSearchInput').value = '';
@@ -8777,7 +8920,12 @@ isKepalaTokoRole() {
                     realModalUnitCost += Math.round((comp.qty / this.getUnitDivisor(comp.unit)) * (Number(inv.cost) || 0));
                 }
                 let parcelName = '', finalProductId = targetVal; const recipeSnapshot = this.state.parcelComponentsTemp.map(c => ({ id: c.id, name: c.name, unit: c.unit, cost: c.cost, price: c.price, category: c.category, qty: c.qty }));
-                if (targetVal === '__NEW__') {
+                const activePoId = this._activePoBuildId || null;
+                if (activePoId) {
+                    const poObj = (this.state.parcelOrders || []).find(p => p.id === activePoId);
+                    parcelName = document.getElementById('parcelNewNameInput').value.trim() || (poObj ? `PO Parsel ${poObj.orderCode} (${poObj.customerName})` : 'PO Parsel');
+                    finalProductId = activePoId;
+                } else if (targetVal === '__NEW__') {
                     parcelName = document.getElementById('parcelNewNameInput').value.trim(); const sellPrice = this.roundToThousand(parseInt(document.getElementById('parcelNewPriceInput').value) || 0);
                     if (!parcelName || sellPrice <= 0) return this.showAlert("Nama parsel baru dan harga jualnya wajib diisi!");
                     finalProductId = this.generateUniqueId('PRD');
@@ -8787,9 +8935,22 @@ isKepalaTokoRole() {
                     await this.saveProductToCloud({ ...ex, active: true, parcelRecipe: recipeSnapshot });
                     await this.adjustStockAtomic(ex.id, buildCount, realModalUnitCost, false, 'Produksi Jus / Parsel');
                 }
-                for (const comp of this.state.parcelComponentsTemp) await this.adjustStockAtomic(comp.id, -(comp.qty * buildCount));
-                await this.saveWasteLogToCloud({ id: this.generateUniqueId('PRS'), date: new Date().toISOString(), cashier: this.state.currentCashier, productId: finalProductId, productName: parcelName, qty: buildCount, unit: 'Pcs', costPrice: realModalUnitCost, recipeComponents: recipeSnapshot, actionType: `🎁 Rakit Parsel (+${buildCount} Pcs | HPP Modal ${this.formatCurrency(realModalUnitCost)})`, totalLoss: 0 });
-                document.getElementById('parcelBuilderModal').classList.add('hidden'); await this.syncInventoryFromServer(false); this.showAlert(`Berhasil Merakit ${buildCount} ${parcelName}!`);
+                for (const comp of this.state.parcelComponentsTemp) await this.adjustStockAtomic(comp.id, -(comp.qty * buildCount), null, false, activePoId ? `Rakit PO Parsel ${activePoId}` : 'Rakit Parsel');
+                await this.saveWasteLogToCloud({ id: this.generateUniqueId('PRS'), date: new Date().toISOString(), cashier: this.state.currentCashier, productId: finalProductId, productName: parcelName, qty: buildCount, unit: 'Pcs', costPrice: realModalUnitCost, recipeComponents: recipeSnapshot, actionType: `🎁 ${activePoId ? 'Rakit PO Parsel ' + activePoId : 'Rakit Parsel'} (+${buildCount} Pcs | HPP Modal ${this.formatCurrency(realModalUnitCost)})`, totalLoss: 0 });
+                document.getElementById('parcelBuilderModal').classList.add('hidden');
+                this._activePoBuildId = null;
+                if (activePoId) {
+                    await this.markParcelAssembled(activePoId, {
+                        unitCost: realModalUnitCost,
+                        totalCost: realModalUnitCost * buildCount,
+                        recipe: recipeSnapshot
+                    });
+                    await this.syncInventoryFromServer(false);
+                    this.showAlert(`✅ Berhasil Merakit ${buildCount}x ${parcelName} & memotong stok buah/wadah asli!\n\nStatus PO sekarang "Selesai Dirakit" dan otomatis masuk ke Antrean Online untuk diserahkan ke Kurir.`);
+                } else {
+                    await this.syncInventoryFromServer(false);
+                    this.showAlert(`Berhasil Merakit ${buildCount} ${parcelName}!`);
+                }
                 });
             },
             async unpackSingleParcel(parcelId) {
@@ -9383,7 +9544,42 @@ isKepalaTokoRole() {
                 document.getElementById('nonCashPaymentSection').classList.toggle('hidden', method === 'Tunai');
                 if (method === 'Tunai') this.calculateChange(); else document.getElementById('btnProcessPayment').disabled = false;
             },
+            validateLinkedOnlineSettlementGuard() {
+                const poIds = Array.from(new Set((this.state.posCart || []).map(i => i.linkedPoId).filter(Boolean)));
+                for (const poId of poIds) {
+                    const po = (this.state.parcelOrders || []).find(p => p.id === poId);
+                    const ord = (this.state.onlineOrders || []).find(o => o.id === poId);
+                    if (po && !po.assembledVerified && !['Selesai Dirakit', 'Siap Diambil Kurir', 'Siap Diambil', 'Diantar Kurir', 'Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(po.orderStatus)) {
+                        return `TRANSAKSI DIKUNCI: PO Parsel ${po.orderCode} belum dirakit (stok belum dipotong)! Wajib rakit di tab PO Parsel terlebih dahulu.`;
+                    }
+                    const effSt = ord?.orderStatus || po?.orderStatus || '';
+                    const hasDeliv = po ? (po.items || []).some(it => it.deliveryMode !== 'Diambil') : (ord?.deliveryMode !== 'Ambil di Toko');
+                    if (hasDeliv && !['Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(effSt)) {
+                        return `TRANSAKSI DIKUNCI: PO Parsel ${po?.orderCode || poId} (${effSt}) belum diterima pembeli di Aplikasi Staff Kurir!`;
+                    }
+                    if (!hasDeliv && !['Siap Diambil', 'Terkirim • Lunas', 'Terkirim • Tunggu Setor COD'].includes(effSt)) {
+                        return `TRANSAKSI DIKUNCI: PO Ambil di Toko ${po?.orderCode || poId} harus berstatus "Siap Diambil" terlebih dahulu.`;
+                    }
+                }
+                const linked = this.state.activeLinkedOnlineOrder;
+                if (linked && linked.id && poIds.length === 0) {
+                    const liveOrd = (this.state.onlineOrders || []).find(o => o.id === linked.id) || linked;
+                    const isPickup = liveOrd.deliveryMode === 'Ambil di Toko';
+                    const st = liveOrd.orderStatus || 'Menunggu Timbang';
+                    if (!isPickup && !['Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(st)) {
+                        return `TRANSAKSI DIKUNCI DEMI KEAMANAN!\n\nOrder Online #${liveOrd.orderCode || liveOrd.id} saat ini berstatus "${st}".\n\n• Bila baru selesai menimbang buah, klik tombol biru "Kirim Total ke App" di atas keranjang.\n• Pembayaran kasir baru terbuka setelah Kurir menekan "Sudah Diterima" di Aplikasi Staff.`;
+                    }
+                    if (isPickup && st !== 'Siap Diambil') {
+                        return `TRANSAKSI DIKUNCI DEMI KEAMANAN!\n\nOrder Ambil di Toko #${liveOrd.orderCode || liveOrd.id} masih berstatus "${st}".\nKirim total timbangan ke App dulu, lalu tandai "Siap Diambil" setelah pelanggan menyetujui.`;
+                    }
+                }
+                return '';
+            },
             showPaymentModal() {
+                const lockErr = this.validateLinkedOnlineSettlementGuard();
+                if (lockErr) {
+                    return this.showAlert(lockErr);
+                }
                 if (this.state.posBuyerMode === 'karyawan' && !this.state.posSelectedEmployeeId) {
                     return this.showAlert("Mode Karyawan aktif: silakan pilih nama karyawan terdaftar di atas keranjang terlebih dahulu!");
                 }
@@ -11792,8 +11988,26 @@ Kirim PIN sementara ini ke WhatsApp pelanggan sekarang?`, () => {
                             payload: { total: t.total, cashier: t.cashier, itemCount: (t.items || []).length }
                         });
                     }
+                    const linkedOnline = (this.state.onlineOrders || []).find(o => o && (o.linkedTxId === id || (t.linkedOnlineOrderId && o.id === t.linkedOnlineOrderId)));
+                    if (linkedOnline) {
+                        linkedOnline.orderStatus = 'Dibatalkan (VOID)';
+                        linkedOnline.isVoided = true;
+                        linkedOnline.voidReason = reason;
+                        linkedOnline.voidedBy = voidMeta.voidedBy;
+                        linkedOnline.voidedAt = voidMeta.voidedAt;
+                        await this.persistOnlineOrderRecord(linkedOnline).catch(() => {});
+                    }
+                    const linkedPo = (this.state.parcelOrders || []).find(p => p && (p.linkedTxId === id || (t.linkedOnlineOrderId && p.id === t.linkedOnlineOrderId)));
+                    if (linkedPo) {
+                        linkedPo.orderStatus = 'Dibatalkan';
+                        linkedPo.isVoided = true;
+                        linkedPo.voidReason = reason;
+                        await this.persistParcelOrderRecord(linkedPo).catch(() => {});
+                    }
                     await this.syncInventoryFromServer(false);
-                    this.showAlert(`Nota ${id} berhasil dibatalkan (VOID), stok dikembalikan & tercatat di Audit Trail.`);
+                    this.renderOnlineOrdersList();
+                    if (this.state.currentAdminTab === 'po_parsel') this.renderParcelOrderBoard();
+                    this.showAlert(`Nota ${id} berhasil dibatalkan (VOID), stok dikembalikan, riwayat ditandai VOID & tercatat di Audit Trail.`);
                 }, false);
             },
 
@@ -12484,7 +12698,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v152.1';
+        window.__NF_APP_VERSION = 'v152.2';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;

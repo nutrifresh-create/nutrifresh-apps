@@ -1464,7 +1464,7 @@
                 const codTotalHold = [...onWayList, ...codWaitList]
                     .filter(o => {
                         const pm = String(o.paymentMethod || '').toLowerCase();
-                        return pm.includes('cash') || pm.includes('tunai');
+                        return (pm.includes('cash') || pm.includes('tunai') || pm.includes('cod')) && o.paymentStatus !== 'Lunas';
                     })
                     .reduce((s, o) => s + (Number(o.finalTotal) || Number(o.estimatedTotal) || 0) + (Number(o.shippingFee) || 0), 0);
 
@@ -1633,8 +1633,8 @@
                                     </button>
                                     ${pickedProof ? `<img src="${pickedProof}" alt="" class="w-10 h-10 rounded-lg object-cover border">` : ''}
                                 </div>
-                                <button type="button" onclick="staffApp.courierMarkDelivered('${this.esc(ord.id)}', ${isCod ? 'true' : 'false'})" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-3 rounded-2xl shadow-md transition text-xs flex items-center justify-center gap-1.5">
-                                    <i class="fa-solid fa-circle-check"></i> <span>${isCod ? 'Sudah Diterima &amp; Uang COD Diterima' : 'Sudah Diterima Pembeli'}</span>
+                                <button type="button" onclick="staffApp.courierMarkDelivered('${this.esc(ord.id)}', ${unpaidCod ? 'true' : 'false'})" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-3 rounded-2xl shadow-md transition text-xs flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-circle-check"></i> <span>${unpaidCod ? 'Sudah Diterima &amp; Uang COD Diterima' : 'Sudah Diterima Pembeli'}</span>
                                 </button>
                             </div>` : ''}
 

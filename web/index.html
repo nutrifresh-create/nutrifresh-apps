@@ -4892,7 +4892,7 @@
             syncNativeLiveOrderState() {
                 try {
                     if (!window.NfAndroidNative || typeof window.NfAndroidNative.syncActiveOrderState !== 'function') return;
-                    const active = (this.state.myOrdersList || []).filter(o => o && !['Selesai', 'Dibatalkan'].includes(o.orderStatus) && !this.isPoPreDeliveryStage(o));
+                    const active = (this.state.myOrdersList || []).filter(o => o && !o.isVoided && !['Selesai', 'Dibatalkan', 'Dibatalkan (VOID)'].includes(o.orderStatus) && !this.isPoPreDeliveryStage(o));
                     if (active.length === 0) {
                         window.NfAndroidNative.syncActiveOrderState(JSON.stringify({ active: false }));
                         return;
@@ -5112,7 +5112,7 @@
                 }
             },
             renderCustomerOrderIndicators() {
-                const active = (this.state.myOrdersList || []).filter(o => !['Selesai', 'Dibatalkan'].includes(o.orderStatus));
+                const active = (this.state.myOrdersList || []).filter(o => !o.isVoided && !['Selesai', 'Dibatalkan', 'Dibatalkan (VOID)'].includes(o.orderStatus));
                 const cnt = active.length;
                 ['deskActiveOrdersCount', 'mobActiveOrdersCount'].forEach(id => {
                     const el = document.getElementById(id);
@@ -5361,6 +5361,60 @@
             reorderCustomerOrder(orderId) {
                 const ord = (this.state.myOrdersList || []).find(o => o.id === orderId);
                 if (!ord) return;
+
+                // Jika ini PO Parsel Custom -> buka modal Pre-Order Parsel & isi ulang otomatis (tanggal default besok)
+                const isPo = !!(ord.isParcelOrder || String(ord.id || ord.orderCode || '').startsWith('PO-'));
+                if (isPo) {
+                    const tmr = new Date();
+                    tmr.setDate(tmr.getDate() + 1);
+                    const tmrIso = `${tmr.getFullYear()}-${String(tmr.getMonth() + 1).padStart(2, '0')}-${String(tmr.getDate()).padStart(2, '0')}`;
+                    const srcPoItems = Array.isArray(ord.parcelItems) && ord.parcelItems.length > 0
+                        ? ord.parcelItems
+                        : (Array.isArray(ord.items) ? ord.items.map(it => ({
+                            parcelType: it.name || 'Parcel Keranjang',
+                            unitPrice: Number(it.price) || Math.round((Number(it.subtotal) || 0) / Math.max(1, Number(it.qty) || 1)),
+                            qty: Math.max(1, parseInt(it.qty, 10) || 1),
+                            subtotal: Number(it.subtotal) || ((Number(it.price) || 0) * Math.max(1, parseInt(it.qty, 10) || 1)),
+                            addons: [],
+                            note: it.itemNote || '',
+                            deliveryDate: tmrIso,
+                            deliveryTime: it.deliveryTime || ord.deliveryTime || '08:00',
+                            deliveryMode: it.deliveryMode || (ord.deliveryMode === 'Ambil di Toko' ? 'Diambil' : 'Diantar'),
+                            destinations: Array.isArray(ord.destinations) && ord.destinations.length > 0
+                                ? ord.destinations.map(d => ({ address: d.address || '', qty: Math.max(1, parseInt(d.qty, 10) || 1) }))
+                                : [{ address: ord.address && ord.address !== 'Diambil di Toko NutriFresh' ? ord.address : '', qty: Math.max(1, parseInt(it.qty, 10) || 1) }]
+                        })) : []);
+
+                    if (srcPoItems.length === 0) return this.showAlert('Rincian parsel pada PO ini kosong.');
+
+                    document.getElementById('customerOrdersModal')?.classList.add('hidden');
+                    this.openParcelPreOrderModal();
+                    const nmEl = document.getElementById('poCustName');
+                    const phEl = document.getElementById('poCustPhone');
+                    const inEl = document.getElementById('poCustInstitution');
+                    if (nmEl && ord.customerName) nmEl.value = ord.customerName;
+                    if (phEl && ord.customerPhone && ord.customerPhone !== '-') phEl.value = this.formatLocalWaDisplay(ord.customerPhone);
+                    if (inEl && ord.institution) inEl.value = ord.institution;
+
+                    this.state.poDraftItems = srcPoItems.map(it => ({
+                        parcelType: it.parcelType || 'Parcel Keranjang',
+                        unitPrice: Number(it.unitPrice) || 100000,
+                        qty: Math.max(1, parseInt(it.qty, 10) || 1),
+                        subtotal: Number(it.subtotal) || ((Number(it.unitPrice) || 100000) * Math.max(1, parseInt(it.qty, 10) || 1)),
+                        addons: Array.isArray(it.addons) ? [...it.addons] : [],
+                        note: it.note || '',
+                        deliveryDate: tmrIso,
+                        deliveryTime: it.deliveryTime || '08:00',
+                        deliveryMode: it.deliveryMode || 'Diantar',
+                        destinations: Array.isArray(it.destinations) && it.destinations.length > 0
+                            ? it.destinations.map(d => ({ address: d.address || '', qty: Math.max(1, parseInt(d.qty, 10) || 1) }))
+                            : [{ address: '', qty: Math.max(1, parseInt(it.qty, 10) || 1) }]
+                    }));
+                    this.renderPoDraftItemsList();
+                    this.showCustomerToast('Rincian PO Parsel dimuat ulang! Cek tanggal kirim lalu klik Kirim.');
+                    return;
+                }
+
                 const srcItems = Array.isArray(ord.weighedItems) && ord.weighedItems.length > 0
                     ? ord.weighedItems
                     : (Array.isArray(ord.items) ? ord.items : []);
@@ -5413,7 +5467,7 @@
                 if (!box) return;
                 const wantDone = this.state.myOrdersTab === 'done';
                 const list = (this.state.myOrdersList || []).filter(o => {
-                    const closed = ['Selesai', 'Dibatalkan'].includes(o.orderStatus);
+                    const closed = !!(o.isVoided || ['Selesai', 'Dibatalkan', 'Dibatalkan (VOID)'].includes(o.orderStatus));
                     return wantDone ? closed : !closed;
                 });
                 if (list.length === 0) {
@@ -5426,8 +5480,9 @@
                 const bankInfo = payInfo.bankInfo || this.state.settings?.bankTransferInfo || '';
 
                 box.innerHTML = list.map(ord => {
-                    const isCancelled = ord.orderStatus === 'Dibatalkan';
-                    const isClosedOrd = ['Selesai', 'Dibatalkan'].includes(ord.orderStatus);
+                    const isVoidedOrd = !!(ord.isVoided || String(ord.orderStatus || '').includes('VOID'));
+                    const isCancelled = isVoidedOrd || String(ord.orderStatus || '').startsWith('Dibatalkan');
+                    const isClosedOrd = isCancelled || ord.orderStatus === 'Selesai';
                     const isCod = this.isCodOrder(ord);
                     const displayStatus = this.formatCustomerStatusLabel(ord);
                     const step = this.getOrderStepNumber(ord.orderStatus);
@@ -5451,19 +5506,22 @@
                     if (wantDone) {
                         const isExpanded = !!(this.state.expandedHistoryOrders && this.state.expandedHistoryOrders[ord.id]);
                         const summaryNames = items.slice(0, 2).map(it => it.name).join(', ') + (items.length > 2 ? ` +${items.length - 2} lainnya` : '');
+                        const isPoHist = !!(ord.isParcelOrder || String(ord.id || '').startsWith('PO-'));
+                        const badgeHistTxt = isVoidedOrd ? '❌ VOID / Dibatalkan' : (isCancelled ? '❌ Dibatalkan' : ord.orderStatus);
                         return `
-                        <div class="bg-white rounded-2xl border border-gray-200 p-3 shadow-sm space-y-2">
+                        <div class="bg-white rounded-2xl border ${isCancelled ? 'border-red-300 bg-red-50/30' : 'border-gray-200'} p-3 shadow-sm space-y-2">
                             <div class="flex items-start justify-between gap-2 cursor-pointer" onclick="app.toggleHistoryOrderDetail('${this.escapeHtml(ord.id)}')">
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-1.5 flex-wrap">
+                                        ${isPoHist ? '<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[9px] font-black">🎁 PO</span>' : ''}
                                         <span class="font-mono font-black text-[10.5px] bg-slate-100 text-slate-800 px-2 py-0.5 rounded-full">${this.escapeHtml(ord.orderCode || ord.id)}</span>
-                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-black ${isCancelled ? 'bg-red-100 text-red-700' : 'bg-green-100 text-nutri-dark'}">${this.escapeHtml(ord.orderStatus)}</span>
+                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-black ${isCancelled ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-nutri-dark'}">${this.escapeHtml(badgeHistTxt)}</span>
                                     </div>
                                     <div class="text-[11px] font-bold text-gray-800 truncate mt-1">${this.escapeHtml(summaryNames || 'Pesanan Buah')}</div>
-                                    <div class="text-[10px] text-gray-400">${dtShort} • ${items.length} item • ${this.escapeHtml(ord.deliveryMode || 'Kirim')}</div>
+                                    <div class="text-[10px] text-gray-400">${dtShort} • ${items.length} item • ${this.escapeHtml(ord.deliveryMode || 'Kirim')}${ord.voidReason ? ' • <span class="text-red-600 font-bold">Alasan: ' + this.escapeHtml(ord.voidReason) + '</span>' : ''}</div>
                                 </div>
                                 <div class="text-right flex-shrink-0">
-                                    <div class="font-black text-sm text-nutri-brown">${this.formatCurrency(grandTotal)}</div>
+                                    <div class="font-black text-sm ${isCancelled ? 'text-red-500 line-through' : 'text-nutri-brown'}">${this.formatCurrency(grandTotal)}</div>
                                     <span class="text-[10px] font-extrabold text-blue-600 inline-flex items-center gap-0.5 mt-0.5">${isExpanded ? 'Tutup ▴' : 'Detail ▾'}</span>
                                 </div>
                             </div>
@@ -7375,7 +7433,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v152.1';
+        window.__NF_APP_VERSION = 'v152.2';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 
