@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <script>
         (function() {
             try {
@@ -14,594 +14,219 @@
             }
         })();
     </script>
-    <title>Install Aplikasi NutriFresh (Android & iPhone)</title>
+    <title>Install Aplikasi NutriFresh (Android &amp; iPhone)</title>
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#7cb342">
 
     <!-- PRATINJAU KARTU LINK WHATSAPP -->
-    <meta name="description" content="Pasang aplikasi resmi NutriFresh di HP Android maupun iPhone untuk belanja buah segar, jus alami, dan cek promo harian lebih praktis.">
+    <meta name="description" content="Pasang aplikasi resmi NutriFresh di HP Android maupun iPhone untuk belanja buah segar, jus alami, dan kumpulkan poin Member Setia.">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="📲 Install Aplikasi Resmi NutriFresh (Android & iPhone)">
-    <meta property="og:description" content="Ringan & gratis! Belanja buah segar, jus alami, dan kumpulkan poin Member Setia langsung dari layar utama HP Anda.">
+    <meta property="og:title" content="📲 Install Aplikasi Resmi NutriFresh (Android &amp; iPhone)">
+    <meta property="og:description" content="Ringan &amp; gratis! Belanja buah segar, pantau timbangan langsung, dan kumpulkan poin Member Setia dari layar utama HP Anda.">
     <meta property="og:image" content="https://nutrifresh.my.id/og-banner.jpg">
     <meta property="og:url" content="https://nutrifresh.my.id/download">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'nutri-green': '#7cb342',
+                        'nutri-dark': '#558b2f',
+                        'nutri-brown': '#936C38',
+                        'nutri-light': '#f4f9f1'
+                    }
+                }
+            }
+        };
+    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
-        @keyframes nfOrbFloatA {
-            0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-            50% { transform: translate3d(24px, 18px, 0) scale(1.06); }
-        }
-        @keyframes nfOrbFloatB {
-            0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-            50% { transform: translate3d(-20px, 20px, 0) scale(1.05); }
-        }
-        @keyframes nfFadeUp {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        * { box-sizing: border-box; }
-        html, body { overscroll-behavior-y: none; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #e4efe8;
-            background-image: linear-gradient(155deg, #dfede4 0%, #ecf4ef 48%, #f5ede0 100%);
-            color: #1e293b;
-            position: relative;
-        }
-
-        /* Ambient Soft Botanical Mesh Orbs (selaras dengan index.html v121) */
-        .nf-liquid-bg {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        .nf-orb {
-            position: absolute;
-            border-radius: 9999px;
-            filter: blur(76px);
-            will-change: transform;
-        }
-        .nf-orb-1 {
-            width: 420px; height: 420px; top: -110px; left: -90px;
-            background: radial-gradient(circle, rgba(74, 222, 128, 0.42) 0%, rgba(167, 243, 208, 0.18) 58%, transparent 76%);
-            animation: nfOrbFloatA 16s ease-in-out infinite;
-        }
-        .nf-orb-2 {
-            width: 400px; height: 400px; top: -60px; right: -90px;
-            background: radial-gradient(circle, rgba(250, 204, 21, 0.34) 0%, rgba(254, 240, 138, 0.14) 58%, transparent 76%);
-            animation: nfOrbFloatB 19s ease-in-out infinite;
-        }
-        .nf-orb-3 {
-            width: 460px; height: 460px; bottom: -110px; right: -40px;
-            background: radial-gradient(circle, rgba(56, 189, 248, 0.30) 0%, rgba(167, 243, 208, 0.16) 60%, transparent 78%);
-            animation: nfOrbFloatA 21s ease-in-out infinite reverse;
-        }
-        .nf-orb-4 {
-            width: 380px; height: 380px; bottom: 10%; left: -100px;
-            background: radial-gradient(circle, rgba(251, 146, 60, 0.26) 0%, rgba(254, 205, 211, 0.14) 58%, transparent 78%);
-            animation: nfOrbFloatB 18s ease-in-out infinite reverse;
-        }
-
-        /* Kartu Utama Liquid Glass dengan Simetri Konsentris (Outer 32px, Padding 8px, Inner 24px) */
-        .nf-glass-card {
-            position: relative;
-            z-index: 2;
-            border-radius: 32px;
-            background: rgba(246, 251, 248, 0.72);
-            -webkit-backdrop-filter: blur(28px) saturate(185%);
-            backdrop-filter: blur(28px) saturate(185%);
-            border: 1px solid rgba(255, 255, 255, 0.76);
-            box-shadow:
-                inset 0 1px 1px rgba(255, 255, 255, 0.88),
-                0 24px 54px -16px rgba(15, 23, 42, 0.20);
-            animation: nfFadeUp 0.42s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        /* Hero Header Hijau Segar di dalam Kartu (Kontras tinggi, teks putih tajam) */
-        .nf-hero-glass {
-            border-radius: 24px;
-            background: linear-gradient(135deg, rgba(124, 179, 66, 0.94) 0%, rgba(85, 139, 47, 0.95) 60%, rgba(5, 122, 85, 0.92) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.42);
-            box-shadow:
-                inset 0 1px 1px rgba(255, 255, 255, 0.42),
-                0 12px 26px -10px rgba(85, 139, 47, 0.45);
-        }
-
-        /* Wadah Ikon Aplikasi */
-        .nf-app-icon-wrap {
-            border-radius: 22px;
-            background: rgba(255, 255, 255, 0.95);
-            border: 1.5px solid rgba(255, 255, 255, 0.98);
-            box-shadow:
-                inset 0 1px 0 #ffffff,
-                0 10px 22px -8px rgba(15, 23, 42, 0.24);
-        }
-
-        /* Sub-Kartu Frosted Glass */
-        .nf-sub-glass {
-            border-radius: 22px;
-            background: rgba(255, 255, 255, 0.64);
-            -webkit-backdrop-filter: blur(14px) saturate(160%);
-            backdrop-filter: blur(14px) saturate(160%);
-            border: 1px solid rgba(255, 255, 255, 0.84);
-            box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, 0.90),
-                0 6px 16px -10px rgba(15, 23, 42, 0.12);
-        }
-
-        /* Panduan Tinted Liquid Glass (Android Amber & iPhone Blue) */
-        .nf-guide-amber {
-            border-radius: 22px;
-            background: rgba(255, 251, 235, 0.72);
-            -webkit-backdrop-filter: blur(14px) saturate(160%);
-            backdrop-filter: blur(14px) saturate(160%);
-            border: 1px solid rgba(253, 230, 138, 0.85);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
-        }
-        .nf-guide-blue {
-            border-radius: 22px;
-            background: rgba(239, 246, 255, 0.74);
-            -webkit-backdrop-filter: blur(14px) saturate(160%);
-            backdrop-filter: blur(14px) saturate(160%);
-            border: 1px solid rgba(191, 219, 254, 0.88);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
-        }
-
-        /* Switcher Platform iOS 26 Sliding Liquid Glass (Simetris 5px di 4 sisi) */
-        .nf-slide-track {
-            position: relative;
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 4px;
-            padding: 5px;
-            border-radius: 9999px;
-            background: rgba(226, 238, 232, 0.56);
-            -webkit-backdrop-filter: blur(18px) saturate(170%);
-            backdrop-filter: blur(18px) saturate(170%);
-            border: 1px solid rgba(255, 255, 255, 0.78);
-            box-shadow:
-                inset 0 1px 1px rgba(255, 255, 255, 0.86),
-                0 6px 16px -10px rgba(15, 23, 42, 0.14);
-        }
-        html.nf-svg-refract .nf-slide-track {
-            background: rgba(226, 238, 232, 0.40);
-            backdrop-filter: blur(2.5px) saturate(148%) url(#nf-glass-pill);
-            -webkit-backdrop-filter: blur(2.5px) saturate(148%) url(#nf-glass-pill);
-        }
-        .nf-slide-track > button {
-            position: relative;
-            z-index: 2;
-            height: 38px;
-            border-radius: 9999px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-size: 12px;
-            font-weight: 700;
-            color: #475569;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            transition: color 0.22s ease, transform 0.16s ease;
-        }
-        .nf-slide-track > button:active { transform: scale(0.97); }
-        .nf-slide-track > button.nf-slide-active {
-            color: #14532d;
-            font-weight: 800;
-        }
-        .nf-slide-lens {
-            position: absolute;
-            top: 0;
-            left: 0;
-            border-radius: 9999px;
-            pointer-events: none;
-            z-index: 1;
-            opacity: 0;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 253, 250, 0.92) 100%);
-            border: 1px solid #ffffff;
-            box-shadow:
-                inset 0 1.5px 1px #ffffff,
-                0 4px 12px -4px rgba(15, 23, 42, 0.16),
-                0 0 0 1px rgba(124, 179, 66, 0.22);
-            transition: transform 0.38s cubic-bezier(0.28, 1.14, 0.36, 1), width 0.32s cubic-bezier(0.28, 1.10, 0.36, 1), height 0.32s cubic-bezier(0.28, 1.10, 0.36, 1), opacity 0.2s ease;
-            will-change: transform, width, height;
-        }
-
-        /* Tombol Utama Kapsul Liquid */
-        .nf-btn-primary {
-            border-radius: 9999px;
-            background: linear-gradient(135deg, #7cb342 0%, #558b2f 100%);
-            border: 1px solid rgba(255, 255, 255, 0.42);
-            box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, 0.38),
-                0 10px 22px -8px rgba(85, 139, 47, 0.48);
-            transition: transform 0.18s cubic-bezier(0.25, 1, 0.5, 1), filter 0.18s ease;
-        }
-        .nf-btn-primary:hover { filter: brightness(1.04); }
-        .nf-btn-primary:active { transform: scale(0.97); }
-
-        /* Tombol Sekunder Kapsul Kaca */
-        .nf-btn-ghost-pill {
-            border-radius: 9999px;
-            background: rgba(255, 255, 255, 0.62);
-            border: 1px solid rgba(255, 255, 255, 0.86);
-            box-shadow: inset 0 1px 0 #ffffff, 0 4px 12px -6px rgba(15, 23, 42, 0.12);
-            transition: background-color 0.2s ease, transform 0.16s ease;
-        }
-        .nf-btn-ghost-pill:hover { background: rgba(255, 255, 255, 0.88); }
-        .nf-btn-ghost-pill:active { transform: scale(0.97); }
-
-        /* MODE NATURAL (BERSIH, SOLID & RINGAN) */
-        html[data-theme="natural"] body {
-            background-color: #f4f7f5 !important;
-            background-image: none !important;
-        }
-        html[data-theme="natural"] .nf-liquid-bg { display: none !important; }
-        html[data-theme="natural"] .nf-glass-card {
-            background: #ffffff !important;
-            -webkit-backdrop-filter: none !important;
-            backdrop-filter: none !important;
-            border: 1px solid #e2e8f0 !important;
-            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08) !important;
-        }
-        html[data-theme="natural"] .nf-sub-glass {
-            background: #f8fafc !important;
-            -webkit-backdrop-filter: none !important;
-            backdrop-filter: none !important;
-            border: 1px solid #e2e8f0 !important;
-            box-shadow: none !important;
-        }
-        html[data-theme="natural"] .nf-guide-amber {
-            background: #fffbeb !important;
-            -webkit-backdrop-filter: none !important;
-            backdrop-filter: none !important;
-        }
-        html[data-theme="natural"] .nf-guide-blue {
-            background: #eff6ff !important;
-            -webkit-backdrop-filter: none !important;
-            backdrop-filter: none !important;
-        }
-        html[data-theme="natural"] .nf-slide-track {
-            background: #edf2ee !important;
-            -webkit-backdrop-filter: none !important;
-            backdrop-filter: none !important;
-            border: 1px solid #dce5df !important;
-            box-shadow: none !important;
-        }
-        html[data-theme="natural"] .nf-slide-lens {
-            background: #ffffff !important;
-            border: 1px solid #d9ebd0 !important;
-            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08) !important;
-        }
-
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(160deg, #f4f9f1 0%, #ffffff 55%, #eef7e8 100%); }
+        html[data-theme="dark"] body { background: linear-gradient(160deg, #0b1120 0%, #0f172a 100%); color: #f1f5f9; }
+        html[data-theme="dark"] .dl-card { background: #111827 !important; border-color: #1f2937 !important; color: #f1f5f9; }
+        html[data-theme="dark"] .dl-soft { background: #1e293b !important; border-color: #334155 !important; }
+        html[data-theme="dark"] .dl-muted { color: #94a3b8 !important; }
+        html[data-theme="dark"] .dl-title { color: #f8fafc !important; }
     </style>
-    <link rel="stylesheet" href="nutri-theme.css">
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-    
-
-    <!-- LAPISAN AURA CAIR CERAH -->
-    <div class="nf-liquid-bg" aria-hidden="true">
-        <div class="nf-orb nf-orb-1"></div>
-        <div class="nf-orb nf-orb-2"></div>
-        <div class="nf-orb nf-orb-3"></div>
-        <div class="nf-orb nf-orb-4"></div>
-    </div>
-
-    <main class="max-w-md w-full nf-glass-card p-2">
-        <!-- Header Hijau Segar Konsentris -->
-        <div class="nf-hero-glass px-6 py-6 text-center text-white relative overflow-hidden">
-            <div class="nf-app-icon-wrap w-20 h-20 mx-auto flex items-center justify-center p-2.5 mb-3 relative z-10">
-                <img src="icon.png" alt="Logo NutriFresh" class="w-full h-full object-contain" onerror="this.src='logo.png'">
+<body class="min-h-screen text-slate-800 py-6 px-4 flex flex-col items-center justify-center">
+    <main class="w-full max-w-md space-y-4">
+        <!-- HERO CARD -->
+        <div class="dl-card bg-white rounded-3xl shadow-xl border border-green-100 overflow-hidden">
+            <div class="bg-gradient-to-br from-nutri-dark via-nutri-green to-emerald-600 p-6 text-white text-center relative overflow-hidden">
+                <div class="w-20 h-20 mx-auto rounded-3xl bg-white shadow-lg p-2.5 flex items-center justify-center mb-3 relative z-10">
+                    <img src="icon.png" alt="NutriFresh" class="w-full h-full object-contain" onerror="this.src='logo.png'">
+                </div>
+                <span class="inline-block text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-sm border border-white/30 px-3 py-0.5 rounded-full mb-1.5 relative z-10">Aplikasi Resmi Pelanggan</span>
+                <h1 class="text-2xl font-black tracking-tight relative z-10">NutriFresh</h1>
+                <p class="text-xs text-green-50 mt-1 leading-relaxed relative z-10">Pesan buah segar &amp; jus alami, pantau timbangan secara real-time, chat kasir/kurir, dan kumpulkan poin Member Setia.</p>
+                <div id="deviceDetectedPill" class="mt-3 inline-flex items-center gap-1.5 bg-black/20 border border-white/25 px-3 py-1 rounded-full text-[11px] font-bold relative z-10">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                    <span id="deviceDetectedText">Mendeteksi perangkat Anda...</span>
+                </div>
             </div>
-            <span class="inline-flex items-center gap-1.5 bg-white/20 border border-white/35 text-white text-[10px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full mb-2 relative z-10">
-                <span class="w-1.5 h-1.5 rounded-full bg-lime-300 animate-pulse"></span> Aplikasi Resmi NutriFresh
-            </span>
-            <h1 class="text-xl font-black tracking-tight relative z-10">Aplikasi NutriFresh</h1>
-            <p class="text-xs text-green-50/95 mt-1 font-medium relative z-10" id="deviceSubtitle">Fresh &amp; Premium Fruits • Android &amp; iPhone</p>
-            <i class="fa-solid fa-apple-whole text-[110px] text-white/10 absolute -right-5 -bottom-6 rotate-12 pointer-events-none"></i>
+
+            <!-- SWITCH TAB ANDROID / IPHONE -->
+            <div class="p-4 pb-2">
+                <div class="dl-soft grid grid-cols-2 gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80">
+                    <button type="button" id="tabBtn-android" onclick="selectPlatformTab('android')" class="py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 bg-nutri-green text-white shadow-sm transition">
+                        <i class="fa-brands fa-android text-base"></i> <span>Android (.APK)</span>
+                    </button>
+                    <button type="button" id="tabBtn-ios" onclick="selectPlatformTab('ios')" class="py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 transition">
+                        <i class="fa-brands fa-apple text-base"></i> <span>iPhone / iPad</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PANEL ANDROID -->
+            <section id="pane-android" class="p-5 pt-3 space-y-4 text-xs">
+                <div class="text-center space-y-2">
+                    <a id="btnDownloadApk" href="https://github.com/nutrifresh-create/nutrifresh-apps/releases/download/latest-apks/NutriFresh.apk"
+                       class="w-full inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-nutri-dark to-nutri-green hover:opacity-95 active:scale-[0.98] text-white font-black text-sm py-3.5 px-5 rounded-2xl shadow-lg shadow-green-600/25 transition">
+                        <i class="fa-solid fa-download text-base"></i>
+                        <span>Download NutriFresh.apk (Terbaru)</span>
+                    </a>
+                    <p class="dl-muted text-[11px] text-slate-500">Gratis • Otomatis mengunduh versi rilis terbaru &amp; bisa update langsung dari dalam aplikasi.</p>
+                </div>
+
+                <div class="space-y-2.5 pt-1">
+                    <h2 class="dl-title font-black text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-list-ol text-nutri-green"></i> Langkah Pemasangan di Android
+                    </h2>
+
+                    <div class="dl-soft bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-nutri-green text-white font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                        <div>
+                            <div class="dl-title font-extrabold text-slate-900">Unduh File APK</div>
+                            <p class="dl-muted text-slate-600 mt-0.5 leading-relaxed">Ketuk tombol hijau <strong>Download NutriFresh.apk</strong> di atas. Jika muncul konfirmasi <em>"File mungkin berbahaya"</em>, ketuk <strong>Tetap download</strong> (aman — aplikasi resmi NutriFresh).</p>
+                        </div>
+                    </div>
+
+                    <div class="dl-soft bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-nutri-green text-white font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                        <div>
+                            <div class="dl-title font-extrabold text-slate-900">Buka &amp; Instal Aplikasi</div>
+                            <p class="dl-muted text-slate-600 mt-0.5 leading-relaxed">Ketuk file <strong>NutriFresh.apk</strong> yang selesai diunduh. Jika HP meminta izin, buka <strong>Setelan → aktifkan "Izinkan dari sumber ini"</strong> lalu tekan <strong>Instal</strong>.</p>
+                        </div>
+                    </div>
+
+                    <div class="dl-soft bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-nutri-green text-white font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                        <div>
+                            <div class="dl-title font-extrabold text-slate-900">Aktifkan Notifikasi Pesanan</div>
+                            <p class="dl-muted text-slate-600 mt-0.5 leading-relaxed">Buka <strong>NutriFresh</strong>. Saat login Member atau pesan buah pertama kali, izinkan <strong>Notifikasi Langsung</strong> &amp; <strong>Baterai (Tidak ada pembatasan)</strong> agar kabar timbangan dan kurir masuk seketika.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PANEL IPHONE / IPAD (SAFARI PWA) -->
+            <section id="pane-ios" class="hidden p-5 pt-3 space-y-4 text-xs">
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-amber-950 text-[11px] leading-relaxed">
+                    <strong><i class="fa-brands fa-apple mr-1"></i> Khusus iPhone &amp; iPad:</strong> Tidak perlu App Store dan 100% gratis! Pasang langsung dari browser <strong>Safari</strong> agar tampil layar penuh seperti aplikasi asli.
+                </div>
+
+                <div class="text-center">
+                    <a href="https://nutrifresh.my.id/"
+                       class="w-full inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-sm py-3.5 px-5 rounded-2xl shadow-lg transition">
+                        <i class="fa-brands fa-safari text-base text-sky-400"></i>
+                        <span>Buka NutriFresh di Safari</span>
+                    </a>
+                </div>
+
+                <div class="space-y-2.5 pt-1">
+                    <h2 class="dl-title font-black text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-list-ol text-nutri-green"></i> Langkah Pasang di iPhone (10 Detik)
+                    </h2>
+
+                    <div class="dl-soft bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-slate-900 text-white font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                        <div>
+                            <div class="dl-title font-extrabold text-slate-900">Buka di Browser Safari</div>
+                            <p class="dl-muted text-slate-600 mt-0.5 leading-relaxed">Ketuk tombol <strong>Buka NutriFresh di Safari</strong> di atas. Jika link ini dibuka dari WhatsApp/Instagram, ketuk ikon <strong>Kompas Safari</strong> di pojok kanan bawah terlebih dahulu.</p>
+                        </div>
+                    </div>
+
+                    <div class="dl-soft bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-slate-900 text-white font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                        <div>
+                            <div class="dl-title font-extrabold text-slate-900">Ketuk Tombol Bagikan (Share)</div>
+                            <p class="dl-muted text-slate-600 mt-0.5 leading-relaxed">Ketuk ikon <strong>Bagikan</strong> <i class="fa-solid fa-arrow-up-from-bracket text-blue-600 mx-0.5"></i> (kotak dengan panah ke atas) di bagian tengah bawah layar Safari.</p>
+                        </div>
+                    </div>
+
+                    <div class="dl-soft bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-slate-900 text-white font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                        <div>
+                            <div class="dl-title font-extrabold text-slate-900">Tambah ke Layar Utama</div>
+                            <p class="dl-muted text-slate-600 mt-0.5 leading-relaxed">Geser menu ke bawah lalu pilih <strong>Tambah ke Layar Utama (Add to Home Screen)</strong> → ketuk <strong>Tambah</strong>. Ikon NutriFresh langsung muncul di layar depan iPhone Anda!</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FOOTER QUICK LINK -->
+            <div class="px-5 pb-5 pt-1 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-100 text-xs">
+                <a href="index.html" class="w-full sm:w-auto text-center py-2.5 px-4 rounded-xl bg-nutri-light hover:bg-green-100 text-nutri-dark font-extrabold border border-green-200 transition">
+                    <i class="fa-solid fa-store mr-1.5"></i> Buka Katalog Web Langsung
+                </a>
+                <button type="button" onclick="copyShareLink()" id="btnCopyLink" class="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">
+                    <i class="fa-solid fa-share-nodes mr-1.5"></i> Salin Link Ini
+                </button>
+            </div>
         </div>
 
-        <!-- Isi Utama -->
-        <div class="p-4 sm:p-5 space-y-4">
-            <!-- 3 Pilar Ringkas Simetris -->
-            <div class="nf-sub-glass grid grid-cols-3 text-center py-3 px-2">
-                <div class="px-1">
-                    <p class="text-xs font-extrabold text-slate-900" id="sizeLabel">2,0 MB</p>
-                    <p class="text-[10px] text-slate-500 font-medium mt-0.5">Hemat Memori</p>
-                </div>
-                <div class="border-x border-slate-200/80 px-1">
-                    <p class="text-xs font-extrabold text-[#558b2f]">Gratis</p>
-                    <p class="text-[10px] text-slate-500 font-medium mt-0.5">Tanpa Iklan</p>
-                </div>
-                <div class="px-1">
-                    <p class="text-xs font-extrabold text-amber-600">Real-Time</p>
-                    <p class="text-[10px] text-slate-500 font-medium mt-0.5">Stok &amp; Promo</p>
-                </div>
-            </div>
-
-            <!-- Daftar Keunggulan -->
-            <ul class="nf-sub-glass p-3.5 space-y-2.5 text-xs text-slate-700 font-medium">
-                <li class="flex items-center gap-2.5">
-                    <span class="w-5 h-5 rounded-full bg-[#7cb342]/15 text-[#558b2f] flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[10px]"></i></span>
-                    <span>Cek katalog buah segar &amp; harga promo setiap hari</span>
-                </li>
-                <li class="flex items-center gap-2.5">
-                    <span class="w-5 h-5 rounded-full bg-[#7cb342]/15 text-[#558b2f] flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[10px]"></i></span>
-                    <span>Pesan antar atau ambil di toko langsung ke WhatsApp</span>
-                </li>
-                <li class="flex items-center gap-2.5">
-                    <span class="w-5 h-5 rounded-full bg-[#7cb342]/15 text-[#558b2f] flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[10px]"></i></span>
-                    <span>Simpan alamat otomatis &amp; kumpulkan poin Member</span>
-                </li>
-            </ul>
-
-            <!-- Switcher Platform iOS 26 Sliding Liquid Glass (Otomatis deteksi HP & bisa diklik) -->
-            <div id="platformSwitchTrack" class="nf-slide-track" role="tablist" aria-label="Pilih Perangkat">
-                <div id="platformSlideLens" class="nf-slide-lens" aria-hidden="true"></div>
-                <button type="button" id="btnPlatformAndroid" role="tab" aria-selected="true" onclick="window.selectPlatform('android')">
-                    <i class="fa-brands fa-android text-base text-[#558b2f]"></i>
-                    <span>Android (.APK)</span>
-                </button>
-                <button type="button" id="btnPlatformIos" role="tab" aria-selected="false" onclick="window.selectPlatform('ios')">
-                    <i class="fa-brands fa-apple text-base text-slate-800"></i>
-                    <span>iPhone / iPad</span>
-                </button>
-            </div>
-
-            <!-- BLOK KHUSUS ANDROID -->
-            <div id="androidSection" class="space-y-3.5">
-                <a href="NutriFresh.apk" download="NutriFresh.apk"
-                   class="nf-btn-primary w-full flex items-center justify-center gap-2.5 text-white font-extrabold text-sm py-3.5 px-5">
-                    <i class="fa-brands fa-android text-xl"></i>
-                    <span>Download Aplikasi Android (.APK)</span>
-                </a>
-                <div class="nf-guide-amber p-4 text-[11px] text-amber-950 space-y-2">
-                    <p class="font-extrabold flex items-center gap-1.5 text-xs text-amber-900">
-                        <i class="fa-solid fa-circle-info text-amber-600"></i>
-                        <span>Cara Pemasangan di Android:</span>
-                    </p>
-                    <div class="flex items-start gap-2.5">
-                        <span class="w-5 h-5 rounded-full bg-amber-500 text-white font-black text-[10px] flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
-                        <p class="leading-relaxed">Tekan tombol hijau <b>Download Aplikasi Android</b> di atas.</p>
-                    </div>
-                    <div class="flex items-start gap-2.5">
-                        <span class="w-5 h-5 rounded-full bg-amber-500 text-white font-black text-[10px] flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
-                        <p class="leading-relaxed">Buka file <b>NutriFresh.apk</b> yang selesai diunduh, lalu pilih <b>Instal / Tetap Instal</b>.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- BLOK KHUSUS IPHONE / IPAD -->
-            <div id="iosSection" class="hidden space-y-3.5">
-                <div class="nf-guide-blue p-4 text-xs text-blue-950 space-y-2.5">
-                    <div class="flex items-center gap-2 font-extrabold text-blue-900">
-                        <i class="fa-brands fa-apple text-lg"></i>
-                        <span>Cara Pasang di iPhone (Tanpa App Store):</span>
-                    </div>
-                    <div class="flex items-start gap-2.5">
-                        <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-black text-[10px] flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
-                        <p class="leading-relaxed">Pastikan halaman ini dibuka lewat browser <b>Safari</b> (jika dari WhatsApp, ketuk ikon kompas Safari di pojok kanan bawah).</p>
-                    </div>
-                    <div class="flex items-start gap-2.5">
-                        <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-black text-[10px] flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
-                        <p class="leading-relaxed">Ketuk ikon <b>Bagikan / Share</b> <span class="inline-flex items-center justify-center bg-white border border-blue-200 px-1.5 py-0.5 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-arrow-up-from-bracket text-blue-600"></i></span> di bagian bawah layar.</p>
-                    </div>
-                    <div class="flex items-start gap-2.5">
-                        <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-black text-[10px] flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
-                        <p class="leading-relaxed">Pilih <b>"Tambahkan ke Layar Utama"</b> (<i>Add to Home Screen</i>) lalu ketuk <b>Tambah</b>.</p>
-                    </div>
-                </div>
-                <a href="/"
-                   class="nf-btn-primary w-full flex items-center justify-center gap-2 text-white font-extrabold text-sm py-3.5 px-5">
-                    <i class="fa-solid fa-store"></i>
-                    <span>Buka Katalog Sekarang untuk Pasang</span>
-                </a>
-            </div>
-
-            <!-- Pemilih Tema Ringkas (Natural / Glass / Dark) -->
-            <div class="pt-1 flex flex-col items-center">
-                <div class="inline-flex items-center p-1 rounded-full bg-gray-100 border border-gray-200 gap-1">
-                    <button type="button" data-theme-pill="natural" onclick="window.setNutriTheme('natural')" class="nf-theme-pill px-3 py-1 text-[11px] font-extrabold flex items-center gap-1">
-                        <i class="fa-solid fa-leaf text-[10px]"></i> <span>Natural</span>
-                    </button>
-                    <button type="button" data-theme-pill="glass" onclick="window.setNutriTheme('glass')" class="nf-theme-pill px-3 py-1 text-[11px] font-extrabold flex items-center gap-1">
-                        <i class="fa-solid fa-sparkles text-[10px]"></i> <span>Glass</span>
-                    </button>
-                    <button type="button" data-theme-pill="dark" onclick="window.setNutriTheme('dark')" class="nf-theme-pill px-3 py-1 text-[11px] font-extrabold flex items-center gap-1">
-                        <i class="fa-solid fa-moon text-[10px]"></i> <span>Dark</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tautan Masuk Katalog Web -->
-            <div class="pt-1 text-center">
-                <a href="/" class="nf-btn-ghost-pill inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-extrabold text-[#558b2f]">
-                    <span>Langsung masuk ke Katalog Web NutriFresh</span>
-                    <i class="fa-solid fa-arrow-right text-[10px]"></i>
-                </a>
-            </div>
-        </div>
+        <p class="text-center text-[11px] text-slate-400 font-semibold">NutriFresh • Fresh &amp; Premium Fruits</p>
     </main>
 
     <script>
-        (function() {
-            try {
-                var ua = navigator.userAgent || '';
-                var isBlink = /Chrome|Chromium|Edg/i.test(ua) && !/Firefox|FxiOS/i.test(ua);
-                if (isBlink && window.CSS && CSS.supports && CSS.supports('backdrop-filter', 'blur(2px) saturate(145%) url(#nf-glass-pill)')) {
-                    /* nf-svg-refract disabled in v134 for 60fps lightweight Glass */
-                }
-            } catch (e) {}
+        function selectPlatformTab(platform) {
+            var isIos = platform === 'ios';
+            document.getElementById('pane-android').classList.toggle('hidden', isIos);
+            document.getElementById('pane-ios').classList.toggle('hidden', !isIos);
+            var bAnd = document.getElementById('tabBtn-android');
+            var bIos = document.getElementById('tabBtn-ios');
+            bAnd.className = !isIos
+                ? 'py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 bg-nutri-green text-white shadow-sm transition'
+                : 'py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 transition';
+            bIos.className = isIos
+                ? 'py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 bg-slate-900 text-white shadow-sm transition'
+                : 'py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 transition';
+        }
 
-            var track = document.getElementById('platformSwitchTrack');
-            var lens = document.getElementById('platformSlideLens');
-            var btnAnd = document.getElementById('btnPlatformAndroid');
-            var btnIos = document.getElementById('btnPlatformIos');
-            var currentPlatform = 'android';
-
-            function moveLens(activeBtn, instant) {
-                if (!track || !lens || !activeBtn) return;
-                var cRect = track.getBoundingClientRect();
-                var aRect = activeBtn.getBoundingClientRect();
-                var x = (aRect.left - cRect.left) - (track.clientLeft || 0);
-                var y = (aRect.top - cRect.top) - (track.clientTop || 0);
-                if (aRect.width <= 0 || aRect.height <= 0) return;
-
-                if (instant) {
-                    var prev = lens.style.transition;
-                    lens.style.transition = 'none';
-                    lens.style.width = aRect.width + 'px';
-                    lens.style.height = aRect.height + 'px';
-                    lens.style.transform = 'translate3d(' + x + 'px, ' + y + 'px, 0)';
-                    lens.style.opacity = '1';
-                    void lens.offsetWidth;
-                    lens.style.transition = prev || '';
-                } else {
-                    lens.style.width = aRect.width + 'px';
-                    lens.style.height = aRect.height + 'px';
-                    lens.style.transform = 'translate3d(' + x + 'px, ' + y + 'px, 0)';
-                    lens.style.opacity = '1';
-                }
+        function copyShareLink() {
+            var url = window.location.href;
+            var btn = document.getElementById('btnCopyLink');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function() {
+                    btn.innerHTML = '<i class="fa-solid fa-check text-green-600 mr-1.5"></i> Link Tersalin!';
+                    setTimeout(function() { btn.innerHTML = '<i class="fa-solid fa-share-nodes mr-1.5"></i> Salin Link Ini'; }, 2000);
+                }).catch(function() { prompt('Salin link ini:', url); });
+            } else {
+                prompt('Salin link ini:', url);
             }
+        }
 
-            window.selectPlatform = function(platform, instant) {
-                currentPlatform = platform === 'ios' ? 'ios' : 'android';
-                var isIos = currentPlatform === 'ios';
-
-                document.getElementById('androidSection').classList.toggle('hidden', isIos);
-                document.getElementById('iosSection').classList.toggle('hidden', !isIos);
-                document.getElementById('deviceSubtitle').textContent = isIos
-                    ? 'Fresh & Premium Fruits • Versi iPhone / iPad'
-                    : 'Fresh & Premium Fruits • Versi Android';
-                document.getElementById('sizeLabel').textContent = isIos ? 'Instan' : '2,0 MB';
-
-                btnAnd.classList.toggle('nf-slide-active', !isIos);
-                btnIos.classList.toggle('nf-slide-active', isIos);
-                btnAnd.setAttribute('aria-selected', String(!isIos));
-                btnIos.setAttribute('aria-selected', String(isIos));
-
-                moveLens(isIos ? btnIos : btnAnd, !!instant);
-            };
-
-            var detectedIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-            window.selectPlatform(detectedIOS ? 'ios' : 'android', true);
-            window.addEventListener('resize', function() {
-                moveLens(currentPlatform === 'ios' ? btnIos : btnAnd, true);
-            });
-            window.addEventListener('load', function() {
-                moveLens(currentPlatform === 'ios' ? btnIos : btnAnd, true);
-            });
+        (function() {
+            var ua = navigator.userAgent || '';
+            var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            var isAndroid = /Android/i.test(ua);
+            var det = document.getElementById('deviceDetectedText');
+            if (isIOS) {
+                det.textContent = 'Terdeteksi: iPhone / iPad (iOS)';
+                selectPlatformTab('ios');
+            } else if (isAndroid) {
+                det.textContent = 'Terdeteksi: HP Android • Siap Unduh APK';
+                selectPlatformTab('android');
+            } else {
+                det.textContent = 'Pilih panduan Android atau iPhone di bawah';
+                selectPlatformTab('android');
+            }
         })();
     </script>
-
-    <script>
-        /* ==============================================================
-           NUTRIFRESH THEME ENGINE v134 (NATURAL [DEFAULT] | GLASS | DARK)
-           - Sinkron lintas halaman (Katalog, POS, Office, Download, Staff)
-           ============================================================== */
-        (function() {
-            function normalizeTheme(val) {
-                return (val === 'glass' || val === 'dark' || val === 'natural') ? val : 'natural';
-            }
-
-            function getTheme() {
-                try {
-                    return normalizeTheme(localStorage.getItem('nutri_ui_theme'));
-                } catch (e) { return 'natural'; }
-            }
-
-            function updateMetaThemeColor(mode) {
-                try {
-                    var meta = document.querySelector('meta[name="theme-color"]');
-                    if (!meta) return;
-                    var isOffice = document.body && document.body.classList.contains('nf-office-page');
-                    meta.setAttribute('content', (mode === 'dark' || isOffice) ? '#0b1120' : '#7cb342');
-                } catch (e) {}
-            }
-
-            function syncThemeControls(mode) {
-                document.querySelectorAll('[data-theme-card]').forEach(function(el) {
-                    var target = el.getAttribute('data-theme-card');
-                    var active = (target === mode);
-                    el.classList.toggle('nf-theme-card-active', active);
-                    el.setAttribute('aria-pressed', active ? 'true' : 'false');
-                    var checkEl = el.querySelector('.nf-theme-check');
-                    if (checkEl) checkEl.classList.toggle('hidden', !active);
-                });
-                document.querySelectorAll('[data-theme-pill]').forEach(function(btn) {
-                    var target = btn.getAttribute('data-theme-pill');
-                    var active = (target === mode);
-                    btn.classList.toggle('nf-theme-pill-active', active);
-                    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-                });
-                var offBtn = document.getElementById('btnOfficeThemeToggle');
-                if (offBtn) {
-                    if (mode === 'glass') {
-                        offBtn.innerHTML = '<i class="fa-solid fa-sparkles text-sky-300 sm:mr-1"></i><span class="hidden sm:inline">Glass</span>';
-                        offBtn.title = 'Tema: Glass (klik untuk ganti ke Natural / Dark)';
-                    } else if (mode === 'dark') {
-                        offBtn.innerHTML = '<i class="fa-solid fa-moon text-amber-300 sm:mr-1"></i><span class="hidden sm:inline">Dark</span>';
-                        offBtn.title = 'Tema: Dark (klik untuk ganti ke Glass / Natural)';
-                    } else {
-                        offBtn.innerHTML = '<i class="fa-solid fa-leaf text-lime-300 sm:mr-1"></i><span class="hidden sm:inline">Natural</span>';
-                        offBtn.title = 'Tema: Natural (klik untuk ganti ke Dark / Glass)';
-                    }
-                }
-                updateMetaThemeColor(mode);
-            }
-
-            window.getNutriTheme = getTheme;
-
-            window.setNutriTheme = function(mode, silent) {
-                var clean = normalizeTheme(mode);
-                document.documentElement.setAttribute('data-theme', clean);
-                try { localStorage.setItem('nutri_ui_theme', clean); } catch (e) {}
-                syncThemeControls(clean);
-                setTimeout(function() {
-                    try { window.dispatchEvent(new Event('resize')); } catch (e) {}
-                }, 60);
-                if (!silent && window.app && typeof window.app.showCustomerToast === 'function') {
-                    var label = clean === 'dark' ? 'Tema Dark aktif' : (clean === 'glass' ? 'Tema Glass (Ringan) aktif' : 'Tema Natural aktif');
-                    window.app.showCustomerToast(label);
-                }
-            };
-
-            window.toggleNutriTheme = function() {
-                var cur = getTheme();
-                var next = cur === 'natural' ? 'dark' : (cur === 'dark' ? 'glass' : 'natural');
-                window.setNutriTheme(next, false);
-            };
-
-            window.addEventListener('storage', function(ev) {
-                if (ev && ev.key === 'nutri_ui_theme') {
-                    var next = normalizeTheme(ev.newValue);
-                    document.documentElement.setAttribute('data-theme', next);
-                    syncThemeControls(next);
-                }
-            });
-
-            function initSync() {
-                var cur = getTheme();
-                document.documentElement.setAttribute('data-theme', cur);
-                syncThemeControls(cur);
-            }
-            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initSync);
-            else initSync();
-            window.addEventListener('load', initSync);
-        })();
-    </script>
-
 </body>
 </html>

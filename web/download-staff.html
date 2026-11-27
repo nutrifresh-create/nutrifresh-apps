@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script>
+        (function() {
+            try {
+                var raw = localStorage.getItem('nutri_ui_theme');
+                var savedTheme = (raw === 'glass' || raw === 'dark' || raw === 'natural') ? raw : 'natural';
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'natural');
+            }
+        })();
+    </script>
+    <title>Install NutriFresh Staff — Absensi, Jadwal &amp; Antaran Kurir</title>
+    <link rel="icon" type="image/png" href="icon-staff.png">
+    <link rel="apple-touch-icon" href="icon-staff.png">
+    <meta name="theme-color" content="#0f766e">
+
+    <!-- PRATINJAU KARTU LINK WHATSAPP KHUSUS TIM / KARYAWAN -->
+    <meta name="description" content="Pasang aplikasi NutriFresh Staff di HP Android atau iPhone untuk absensi GPS, pengajuan HR, jadwal shift, slip gaji &amp; antaran kurir.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="📲 Install NutriFresh Staff (Android &amp; iPhone)">
+    <meta property="og:description" content="Portal resmi tim NutriFresh: Absensi GPS + Foto, Dzikir &amp; Pengingat Shift, Pengajuan HR, Slip Gaji, dan Antaran Kurir.">
+    <meta property="og:image" content="https://nutrifresh.my.id/icon-staff.png">
+    <meta property="og:url" content="https://nutrifresh.my.id/download-staff">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(160deg, #f0fdfa 0%, #ffffff 55%, #ecfdf5 100%); }
+        html[data-theme="dark"] body { background: linear-gradient(160deg, #0b1120 0%, #0f172a 100%); color: #f1f5f9; }
+        html[data-theme="dark"] .dl-card { background: #111827 !important; border-color: #1f2937 !important; color: #f1f5f9; }
+        html[data-theme="dark"] .dl-soft { background: #1e293b !important; border-color: #334155 !important; }
+        html[data-theme="dark"] .dl-muted { color: #94a3b8 !important; }
+        html[data-theme="dark"] .dl-title { color: #f8fafc !important; }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 py-6 px-4 flex flex-col items-center justify-center">
+    <main class="w-full max-w-md space-y-4">
+        <div class="dl-card bg-white rounded-3xl shadow-xl border border-teal-100 overflow-hidden">
+            <!-- HERO HEADER STAFF -->
+            <div class="bg-gradient-to-br from-teal-800 via-teal-700 to-emerald-700 p-6 text-white text-center relative overflow-hidden">
+                <div class="w-20 h-20 mx-auto rounded-3xl bg-white shadow-lg p-2 flex items-center justify-center mb-3 relative z-10">
+                    <img src="icon-staff.png" alt="NutriFresh Staff" class="w-full h-full object-contain rounded-2xl" onerror="this.src='icon.png'">
+                </div>
+                <span class="inline-block text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-sm border border-white/30 px-3 py-0.5 rounded-full mb-1.5 relative z-10">Portal Resmi Karyawan &amp; Kurir</span>
+                <h1 class="text-2xl font-black tracking-tight relative z-10">NutriFresh Staff</h1>
+                <p class="text-xs text-teal-50 mt-1 leading-relaxed relative z-10">Absensi GPS + Foto, Pengingat Shift &amp; Dzikir, Antaran Kurir (COD), Pengajuan HR, dan Slip Gaji Bulanan.</p>
+                <div id="deviceDetectedPill" class="mt-3 inline-flex items-center gap-1.5 bg-black/20 border border-white/25 px-3 py-1 rounded-full text-[11px] font-bold relative z-10">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                    <span id="deviceDetectedText">Mendeteksi perangkat Anda...</span>
+                </div>
+            </div>
+
+            <!-- SWITCH TAB ANDROID / IPHONE -->
+            <div class="p-4 pb-2">
+                <div class="dl-soft grid grid-cols-2 gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80">
+                    <button type="button" id="tabBtn-android" onclick="selectPlatformTab('android')" class="py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 bg-teal-700 text-white shadow-sm transition">
+                        <i class="fa-brands fa-android text-base"></i> <span>Android (.APK)</span>
+                    </button>
+                    <button type="button" id="tabBtn-ios" onclick="selectPlatformTab('ios')" class="py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 transition">
+                        <i class="fa-brands fa-apple text-base"></i> <span>iPhone / iPad</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PANEL ANDROID -->
+            <section id="pane-android" class="p-5 pt-3 space-y-4 text-xs">
+                <div class="text-center space-y-2">
+                    <a id="btnDownloadStaffApk" href="https://github.com/nutrifresh-create/nutrifresh-apps/releases/download/latest-apks/NutriFresh_Staff.apk"
+                       class="w-full inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-teal-800 to-teal-600 hover:opacity-95 active:scale-[0.98] text-white font-black text-sm py-3.5 px-5 rounded-2xl shadow-lg shadow-teal-700/25 transition">
+                        <i class="fa-solid fa-download text-base"></i>
+                        <span>Download NutriFresh Staff (.APK)</span>
+                    </a>
+                    <p class="dl-muted text-[11px] text-slate-500">Otomatis mengunduh versi resmi terbaru • Pembaruan selanjutnya langsung dari dalam aplikasi.</p>
+                </div>
+
+                <div class="space-y-2.5 pt-1">
+                    <h2 class="dl-title font-black text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-list-ol text-teal-600"></i> Langkah Pemasangan di Android
+                    </h2>
+
+                    <div class="dl-soft bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-teal-700 text-white font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                        <div>
+                            <div class="dl-title font-extrabold text-slate-900">Unduh &amp; Pasang APK Staff</div>
+                            <p class="dl-muted text-slate-600 mt-0.5 leading-relaxed">Ketuk tombol <strong>Download NutriFresh Staff (.APK)</strong> di atas. Jika muncul peringatan browser, pilih <strong>Tetap download</strong> lalu buka file <strong>NutriFresh_Staff.apk</strong> → aktifkan <em>"Izinkan dari sumber ini"</em> → <strong>Instal</strong>.</p>
+                        </div>
+                    </div>
+
+                    <div class="dl-soft bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-teal-700 text-white font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                        <div>
+                            <div class="dl-title font-extrabold text-slate-900">Masuk dengan Gmail Karyawan</div>
+                            <p class="dl-muted text-slate-600 mt-0.5 leading-relaxed">Buka <strong>NutriFresh Staff</strong> lalu ketuk <strong>Masuk dengan Akun Gmail</strong> menggunakan email yang sudah didaftarkan HR / Owner di NutriFresh Office.</p>
+                        </div>
+                    </div>
+
+                    <div class="dl-soft bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-teal-700 text-white font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                        <div>
+                            <div class="dl-title font-extrabold text-slate-900">Aktifkan Semua Izin Ceklis</div>
+                            <p class="dl-muted text-slate-600 mt-0.5 leading-relaxed">Aktifkan 4 izin yang muncul setelah login: <strong>Notifikasi</strong>, <strong>Baterai (Tidak ada pembatasan)</strong>, <strong>Lokasi GPS</strong>, dan <strong>Kamera</strong> agar alarm shift, dzikir &amp; notifikasi antaran kurir masuk instan.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-2xl p-3 text-blue-950 text-[11px] leading-relaxed">
+                        <strong><i class="fa-solid fa-bolt text-blue-600 mr-1"></i> Tip HP Xiaomi / Oppo / Vivo / Realme:</strong> Masuk ke menu <em>Profil → Cek Izin → Info App</em> lalu nyalakan <strong>Mulai Otomatis (Autostart)</strong> agar notifikasi tetap cepat walau layar HP mati.
+                    </div>
+                </div>
+            </section>
+
+            <!-- PANEL IPHONE / IPAD (SAFARI PWA) -->
+            <section id="pane-ios" class="hidden p-5 pt-3 space-y-4 text-xs">
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-amber-950 text-[11px] leading-relaxed">
+                    <strong><i class="fa-brands fa-apple mr-1"></i> Khusus Tim Pengguna iPhone:</strong> Pasang <strong>NF Staff</strong> sebagai ikon terpisah lewat <strong>Safari</strong> (gratis selamanya, tanpa kadaluarsa &amp; tidak perlu login ulang tiap hari).
+                </div>
+
+                <div class="text-center">
+                    <a href="https://nutrifresh.my.id/staff.html"
+                       class="w-full inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-sm py-3.5 px-5 rounded-2xl shadow-lg transition">
+                        <i class="fa-brands fa-safari text-base text-teal-400"></i>
+                        <span>Buka NutriFresh Staff di Safari</span>
+                    </a>
+                </div>
+
+                <div class="space-y-2.5 pt-1">
+                    <h2 class="dl-title font-black text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-list-ol text-teal-600"></i> Langkah Pasang di iPhone (10 Detik)
+                    </h2>
+
+                    <div class="dl-soft bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-slate-900 text-white font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                        <div>
+                            <div class="dl-title font-extrabold text-slate-900">Buka Portal Staff di Safari</div>
+                            <p class="dl-muted text-slate-600 mt-0.5 leading-relaxed">Ketuk tombol <strong>Buka NutriFresh Staff di Safari</strong> di atas. Jika membuka link ini dari dalam WhatsApp, ketuk dulu ikon <strong>Kompas Safari</strong> di pojok kanan bawah layar.</p>
+                        </div>
+                    </div>
+
+                    <div class="dl-soft bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-slate-900 text-white font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                        <div>
+                            <div class="dl-title font-extrabold text-slate-900">Ketuk Ikon Bagikan (Share)</div>
+                            <p class="dl-muted text-slate-600 mt-0.5 leading-relaxed">Ketuk ikon <strong>Bagikan</strong> <i class="fa-solid fa-arrow-up-from-bracket text-blue-600 mx-0.5"></i> (kotak dengan panah ke atas) di bagian bawah browser Safari.</p>
+                        </div>
+                    </div>
+
+                    <div class="dl-soft bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex items-start gap-3">
+                        <span class="w-6 h-6 rounded-full bg-slate-900 text-white font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                        <div>
+                            <div class="dl-title font-extrabold text-slate-900">Tambah ke Layar Utama &amp; Login Gmail</div>
+                            <p class="dl-muted text-slate-600 mt-0.5 leading-relaxed">Pilih <strong>Tambah ke Layar Utama (Add to Home Screen)</strong> → ketuk <strong>Tambah</strong>. Buka ikon <strong>NF Staff</strong> dari layar utama, login dengan Gmail karyawan, lalu izinkan <strong>Lokasi (GPS)</strong>, <strong>Kamera</strong>, dan <strong>Notifikasi</strong>.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FOOTER QUICK LINK -->
+            <div class="px-5 pb-5 pt-1 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-100 text-xs">
+                <a href="staff.html" class="w-full sm:w-auto text-center py-2.5 px-4 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 font-extrabold border border-teal-200 transition">
+                    <i class="fa-solid fa-id-badge mr-1.5"></i> Buka Web Staff Langsung
+                </a>
+                <button type="button" onclick="copyShareLink()" id="btnCopyLink" class="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">
+                    <i class="fa-solid fa-share-nodes mr-1.5"></i> Salin Link Staff
+                </button>
+            </div>
+        </div>
+
+        <p class="text-center text-[11px] text-slate-400 font-semibold">NutriFresh Internal • Khusus Tim &amp; Kurir</p>
+    </main>
+
+    <script>
+        function selectPlatformTab(platform) {
+            var isIos = platform === 'ios';
+            document.getElementById('pane-android').classList.toggle('hidden', isIos);
+            document.getElementById('pane-ios').classList.toggle('hidden', !isIos);
+            var bAnd = document.getElementById('tabBtn-android');
+            var bIos = document.getElementById('tabBtn-ios');
+            bAnd.className = !isIos
+                ? 'py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 bg-teal-700 text-white shadow-sm transition'
+                : 'py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 transition';
+            bIos.className = isIos
+                ? 'py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 bg-slate-900 text-white shadow-sm transition'
+                : 'py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 transition';
+        }
+
+        function copyShareLink() {
+            var url = window.location.href;
+            var btn = document.getElementById('btnCopyLink');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function() {
+                    btn.innerHTML = '<i class="fa-solid fa-check text-teal-600 mr-1.5"></i> Link Tersalin!';
+                    setTimeout(function() { btn.innerHTML = '<i class="fa-solid fa-share-nodes mr-1.5"></i> Salin Link Staff'; }, 2000);
+                }).catch(function() { prompt('Salin link ini:', url); });
+            } else {
+                prompt('Salin link ini:', url);
+            }
+        }
+
+        (function() {
+            var ua = navigator.userAgent || '';
+            var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            var isAndroid = /Android/i.test(ua);
+            var det = document.getElementById('deviceDetectedText');
+            if (isIOS) {
+                det.textContent = 'Terdeteksi: iPhone / iPad (iOS)';
+                selectPlatformTab('ios');
+            } else if (isAndroid) {
+                det.textContent = 'Terdeteksi: HP Android • Siap Unduh APK Staff';
+                selectPlatformTab('android');
+            } else {
+                det.textContent = 'Pilih panduan Android atau iPhone di bawah';
+                selectPlatformTab('android');
+            }
+        })();
+    </script>
+</body>
+</html>

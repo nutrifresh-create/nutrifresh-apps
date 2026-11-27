@@ -5673,6 +5673,7 @@
                 const grand = (Number(ord.finalTotal) || Number(ord.estimatedTotal) || 0) + (Number(ord.shippingFee) || 0);
                 return {
                     order_status: overrideStatus || ord.orderStatus || 'Menunggu Timbang',
+                    payment_method: ord.paymentMethod || '',
                     receipt_token: ord.receiptToken || '',
                     customer_name: ord.customerName || 'Pelanggan',
                     courier_name: ord.courierName || '',
@@ -5818,7 +5819,7 @@
                                 <div class="min-w-0">
                                     <div class="flex items-center flex-wrap gap-1.5">
                                         <span class="font-mono font-black text-[11px] bg-slate-100 text-slate-800 px-2 py-0.5 rounded-full">${this.escapeHtml(ord.orderCode || ord.id)}</span>
-                                        <span class="text-[10px] font-black px-2 py-0.5 rounded-full ${badgeCls}">${this.escapeHtml(ord.orderStatus || 'Menunggu Timbang')}</span>
+                                        <span class="text-[10px] font-black px-2 py-0.5 rounded-full ${badgeCls}">${this.escapeHtml((isCod && ord.orderStatus === 'Menunggu Pembayaran') ? 'Menunggu Persetujuan (COD)' : (ord.orderStatus || 'Menunggu Timbang'))}</span>
                                         <span class="text-[10px] text-gray-400">${this.escapeHtml(dtStr)}</span>
                                     </div>
                                     <div class="font-black text-sm text-gray-900 mt-1">${this.escapeHtml(ord.customerName)} <span class="font-mono text-xs font-semibold text-gray-500">(${this.escapeHtml(this.formatLocalWaDisplay(ord.customerPhone))})</span></div>
@@ -6205,15 +6206,16 @@
                 ord.orderChat = chatArr;
                 await this.persistOnlineOrderRecord(ord);
                 const grandFinal = totalBuah + shippingFee;
+                const isCodOrd = /cash|tunai|cod/i.test(String(ord.paymentMethod || ''));
                 this.dispatchOrderPushNow({
-                    ...this.buildOrderPushMeta(ord, 'Menunggu Pembayaran'),
+                    ...this.buildOrderPushMeta(ord, isCodOrd ? 'Menunggu Persetujuan' : 'Menunggu Pembayaran'),
                     order_id: ord.id,
                     target_roles: ['customer'],
                     target_phone: ord.customerPhone || '',
                     event_type: 'order_status',
                     dedupe_key: `weigh:${ord.id}:${grandFinal}`,
                     title: `⚖️ Buah Selesai Ditimbang! #${ord.orderCode || ord.id}`,
-                    body: `Total final ${this.formatCurrency(grandFinal)}${shippingFee === 0 ? ' (Gratis Ongkir)' : ''}.${cleanNote ? ' ' + cleanNote : ''} Ketuk untuk ACC / bayar.`
+                    body: `Total final ${this.formatCurrency(grandFinal)}${shippingFee === 0 ? ' (Gratis Ongkir)' : ''}.${cleanNote ? ' ' + cleanNote : ''} ${isCodOrd ? 'Ketuk untuk menyetujui pengiriman (COD).' : 'Ketuk untuk bayar / upload bukti.'}`
                 });
                 this.showAlert(`Total Final (${this.formatCurrency(totalBuah + shippingFee)}) berhasil dikirim ke HP pelanggan!\n\nJika dalam 5-10 menit pelanggan belum upload bukti bayar, klik tombol hijau "WA" untuk mengingatkan cepat.`);
             },
@@ -11927,7 +11929,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v150';
+        window.__NF_APP_VERSION = 'v151.1';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;

@@ -377,7 +377,7 @@ public class NfLiveOrderHelper {
             String replyUrl = sp.getString("reply_url", DEFAULT_REPLY_URL);
             String replyApiKey = sp.getString("reply_apikey", "");
 
-            String emoji = step >= 4 ? "🛵" : (step == 3 ? "💳" : (step == 2 ? "⚖️" : "🍐"));
+            String emoji = (step >= 5 || status.startsWith("Pesanan Diterima")) ? "✅" : (step == 4 ? "🛵" : (step == 3 ? ((status.contains("Persetujuan") || status.contains("Konfirmasi")) ? "⚖️" : "💳") : (step == 2 ? "⚖️" : "🍐")));
             String title = emoji + " " + status + " • #" + orderCode;
             String shortLine = totalText + " • " + itemsSummary;
             StringBuilder big = new StringBuilder();
@@ -880,7 +880,7 @@ SMART_PERM_AND_UPDATER_FIELDS = r"""
             conn.setInstanceFollowRedirects(false);
             conn.setConnectTimeout(timeoutMs);
             conn.setReadTimeout(timeoutMs);
-            conn.setRequestProperty("User-Agent", "NutriFresh-Android-Updater/1.50");
+            conn.setRequestProperty("User-Agent", "NutriFresh-Android-Updater/1.51");
             conn.setRequestProperty("Cache-Control", "no-cache");
             int code = conn.getResponseCode();
             if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308) {
@@ -1326,7 +1326,7 @@ def main():
     # 1. Auto-increment versionCode & versionName so Android allows direct in-place Update!
     run_num = int(os.environ.get("GITHUB_RUN_NUMBER", "1") or "1")
     ver_code = 100 + run_num
-    ver_name = f"1.50.{run_num}"
+    ver_name = f"1.51.{run_num}"
 
     gh_repo = (os.environ.get("GITHUB_REPOSITORY") or "nutrifresh-create/nutrifresh-apps").strip()
     update_manifest_url = f"https://github.com/{gh_repo}/releases/download/latest-apks/update-{app_role}.json"

@@ -1,4 +1,4 @@
-// Supabase Edge Function: send-push (NutriFresh v150 — Exact Relational Columns + Official RPC Direct Reply + Zero-Throttle Instant Push!)
+// Supabase Edge Function: send-push (NutriFresh v151 — COD Menunggu Persetujuan + Direct Reply RPC + Smart Staff Filter)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS_HEADERS: Record<string, string> = {
@@ -139,18 +139,42 @@ function inferStatusFromText(title: string, body: string): string {
   return "";
 }
 
+function isCourierStageStatus(st: string): boolean {
+  return [
+    "Siap Diambil Kurir",
+    "Siap Kirim",
+    "Diantar Kurir",
+    "Terkirim • Tunggu Setor COD",
+  ].includes(String(st || "").trim());
+}
+
+function isCodPayment(pm: string): boolean {
+  return /cash|tunai|cod/i.test(String(pm || ""));
+}
+
+function formatStatusForRole(st: string, targetRole: string, paymentMethod = ""): string {
+  const s = String(st || "").trim();
+  if (targetRole === "customer") {
+    if (["Menunggu Pembayaran", "Menunggu Konfirmasi"].includes(s) && isCodPayment(paymentMethod)) {
+      return "Menunggu Persetujuan";
+    }
+    if (s.startsWith("Terkirim")) {
+      return "Pesanan Diterima • Menunggu Resi";
+    }
+  }
+  return s;
+}
+
 function getOrderStep(st: string): number {
-  if (st === "Selesai") return 5;
+  if (st === "Selesai" || st.startsWith("Terkirim") || st.startsWith("Pesanan Diterima")) return 5;
   if ([
     "Diantar Kurir",
     "Siap Diambil",
     "Disetujui — Siap Kirim",
     "Disetujui — Siap Diambil",
     "Siap Diambil Kurir",
-    "Terkirim • Tunggu Setor COD",
-    "Terkirim • Lunas",
   ].includes(st)) return 4;
-  if (["Menunggu Pembayaran", "Menunggu Konfirmasi", "Menunggu Verifikasi Bayar"].includes(st)) return 3;
+  if (["Menunggu Pembayaran", "Menunggu Persetujuan", "Menunggu Konfirmasi", "Menunggu Verifikasi Bayar"].includes(st)) return 3;
   if (st === "Sedang Ditimbang") return 2;
   return 1;
 }
@@ -163,6 +187,7 @@ interface MergedOrder {
   customerName: string;
   customerPhone: string;
   deliveryMode: string;
+  paymentMethod: string;
   orderStatus: string;
   estimatedTotal: number;
   finalTotal: number;
@@ -190,12 +215,13 @@ function buildItemsSummary(items: Array<Record<string, unknown>>): string {
 async function fetchOrderRecord(sb: any, orderId: string, tenantId = "nutrifresh"): Promise<MergedOrder | null> {
   if (!sb || !orderId) return null;
   const cleanId = orderId.replace(/^#/, "").trim();
-  let { data: row } = await sb
+  let { data: row, error: qErr } = await sb
     .from("nf_online_orders")
     .select("*")
     .eq("tenant_id", tenantId)
     .eq("id", cleanId)
     .maybeSingle();
+  if (qErr) console.error("[send-push] fetchOrderRecord(id) error:", qErr.code, qErr.message);
 
   if (!row) {
     const alt = await sb
@@ -204,6 +230,7 @@ async function fetchOrderRecord(sb: any, orderId: string, tenantId = "nutrifresh
       .eq("tenant_id", tenantId)
       .eq("order_code", cleanId)
       .maybeSingle();
+    if (alt.error) console.error("[send-push] fetchOrderRecord(code) error:", alt.error.code, alt.error.message);
     row = alt.data || null;
   }
   if (!row) return null;
@@ -229,6 +256,7 @@ async function fetchOrderRecord(sb: any, orderId: string, tenantId = "nutrifresh
     customerName: String(row.customer_name || d.customerName || "Pelanggan"),
     customerPhone: String(row.customer_phone || d.customerPhone || ""),
     deliveryMode: String(row.delivery_mode || d.deliveryMode || "Kirim ke Rumah"),
+    paymentMethod: String(row.payment_method || d.paymentMethod || ""),
     orderStatus: String(row.order_status || d.orderStatus || "Menunggu Timbang"),
     estimatedTotal: est,
     finalTotal: fin,
@@ -248,13 +276,14 @@ function populateOrderEnrichment(
   fallbackBody: string,
   overrides: Record<string, unknown> = {},
 ) {
-  const status = String(overrides.order_status || ord.orderStatus || "Menunggu Timbang");
+  const rawStatus = String(overrides.order_status || ord.orderStatus || "Menunggu Timbang");
+  const status = formatStatusForRole(rawStatus, targetRole, String(overrides.payment_method || ord.paymentMethod || ""));
   const grand = (ord.finalTotal || ord.estimatedTotal || 0) + (ord.shippingFee || 0);
 
   fcmData.order_id = ord.id;
   fcmData.order_code = ord.orderCode;
   fcmData.order_status = status;
-  fcmData.step = String(getOrderStep(status));
+  fcmData.step = String(getOrderStep(rawStatus));
   fcmData.items_summary = String(overrides.items_summary || buildItemsSummary(ord.items));
   fcmData.total_text = String(overrides.total_text || formatRp(grand));
   fcmData.receipt_token = String(overrides.receipt_token || ord.receiptToken || "");
@@ -431,33 +460,38 @@ Deno.serve(async (req: Request) => {
       }
 
       const ord = await fetchOrderRecord(sb, orderId, tenantId);
-      if (!ord) {
-        return jsonRes({ ok: false, error: "Pesanan tidak ditemukan" }, 404);
-      }
-
-      if (!ord.receiptToken || ord.receiptToken !== receiptToken) {
-        return jsonRes({ ok: false, error: "Token pesanan tidak valid" }, 403);
-      }
-
-      const finalSenderName = senderRole === "customer" ? (ord.customerName || senderName) : senderName;
+      const finalSenderName = senderRole === "customer" ? (ord?.customerName || senderName) : senderName;
       let savedViaRpc = false;
 
-      // Jalur 1 (Pelanggan): Panggil RPC resmi nf_customer_send_order_chat agar 100% identik dengan aplikasi!
+      // Jalur 1 (Pelanggan): Panggil langsung RPC resmi nf_customer_send_order_chat (SECURITY DEFINER — validasi token langsung di Postgres!)
       if (senderRole === "customer") {
         const { error: rpcErr } = await sb.rpc("nf_customer_send_order_chat", {
-          p_order_id: ord.id,
+          p_order_id: ord?.id || orderId,
           p_token: receiptToken,
           p_message: message,
           p_sender_name: finalSenderName,
-          p_tenant_id: ord.tenantId,
+          p_tenant_id: ord?.tenantId || tenantId,
         });
         if (!rpcErr) {
           savedViaRpc = true;
+        } else {
+          console.error("[send-push] nf_customer_send_order_chat error:", rpcErr.message);
+          if (!ord) {
+            const msgLow = String(rpcErr.message || "").toLowerCase();
+            const code = msgLow.includes("token") ? 403 : (msgLow.includes("tidak ditemukan") ? 404 : 500);
+            return jsonRes({ ok: false, error: rpcErr.message }, code);
+          }
         }
       }
 
-      // Jalur 2 (Kasir/Kurir atau cadangan): Perbarui KEDUA kolom `order_chat` DAN `data.orderChat`!
+      // Jalur 2 (Kasir/Kurir atau cadangan): Validasi token + update KEDUA kolom `order_chat` & `data.orderChat`
       if (!savedViaRpc) {
+        if (!ord) {
+          return jsonRes({ ok: false, error: "Pesanan tidak ditemukan (cek GRANT nf_online_orders ke service_role)" }, 404);
+        }
+        if (!ord.receiptToken || ord.receiptToken !== receiptToken) {
+          return jsonRes({ ok: false, error: "Token pesanan tidak valid" }, 403);
+        }
         const curChat = [...ord.orderChat];
         const msgObj = {
           id: "MSG-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6).toUpperCase(),
@@ -484,19 +518,28 @@ Deno.serve(async (req: Request) => {
       }
 
       // Ambil ulang data terbaru & kirim push instan (< 1 detik) ke lawan bicara
-      const freshOrd = (await fetchOrderRecord(sb, ord.id, ord.tenantId)) || ord;
-      const targetRoles = senderRole === "customer" ? ["pos", "staff"] : ["customer"];
+      const freshOrd = (await fetchOrderRecord(sb, ord?.id || orderId, ord?.tenantId || tenantId)) || ord;
+      const ordCode = freshOrd?.orderCode || orderId;
+      const ordIdFinal = freshOrd?.id || orderId;
+      const ordTenant = freshOrd?.tenantId || tenantId;
+      const includeCourier = isCourierStageStatus(freshOrd?.orderStatus || "");
+      const targetRoles = senderRole === "customer"
+        ? (includeCourier ? ["pos", "staff"] : ["pos"])
+        : ["customer"];
       const notifTitle = senderRole === "customer"
-        ? `💬 Chat dari ${finalSenderName} (#${freshOrd.orderCode})`
-        : `💬 Pesan dari ${finalSenderName} (#${freshOrd.orderCode})`;
-      const dedupeKey = `chat:${freshOrd.id}:${normalizeChatDedupe(message)}`;
+        ? `💬 Chat dari ${finalSenderName} (#${ordCode})`
+        : `💬 Pesan dari ${finalSenderName} (#${ordCode})`;
+      const dedupeKey = `chat:${ordIdFinal}:${normalizeChatDedupe(message)}`;
 
       await Promise.allSettled(targetRoles.map(async (tRole) => {
         const fcmData: Record<string, string> = {
           title: notifTitle,
           body: message,
           target_role: tRole,
-          ref_id: freshOrd.id,
+          ref_id: ordIdFinal,
+          order_id: ordIdFinal,
+          order_code: ordCode,
+          receipt_token: freshOrd?.receiptToken || receiptToken,
           outbox_id: dedupeKey,
           dedupe_key: dedupeKey,
           event_type: "chat",
@@ -505,12 +548,14 @@ Deno.serve(async (req: Request) => {
           reply_url: replyUrl,
           reply_apikey: anonKey,
         };
-        populateOrderEnrichment(fcmData, freshOrd, tRole, true, message);
+        if (freshOrd) {
+          populateOrderEnrichment(fcmData, freshOrd, tRole, true, message);
+        }
         await sendToRoleTargets({
           sb, fcmSaRaw, tgToken, tgChatId,
-          tenantId: freshOrd.tenantId,
+          tenantId: ordTenant,
           targetRole: tRole,
-          targetPhone: tRole === "customer" ? freshOrd.customerPhone : "",
+          targetPhone: tRole === "customer" ? (freshOrd?.customerPhone || "") : "",
           targetEmail: "",
           title: notifTitle,
           body: message,
@@ -518,8 +563,8 @@ Deno.serve(async (req: Request) => {
         });
       }));
 
-      await markOutboxSent(sb, freshOrd.id, targetRoles);
-      return jsonRes({ ok: true, savedViaRpc, orderId: freshOrd.id });
+      await markOutboxSent(sb, ordIdFinal, targetRoles);
+      return jsonRes({ ok: true, savedViaRpc, orderId: ordIdFinal });
     }
 
     // =========================================================================
@@ -533,11 +578,6 @@ Deno.serve(async (req: Request) => {
 
       const ord = await fetchOrderRecord(sb, orderId, tenantId);
       const custPhone = String(payload.target_phone || ord?.customerPhone || "");
-      const rolesRaw = Array.isArray(payload.target_roles)
-        ? payload.target_roles
-        : [payload.target_role || "customer"];
-      const targetRoles = rolesRaw.map((r: unknown) => String(r || "").toLowerCase()).filter(Boolean);
-
       const eventType = String(payload.event_type || "order_status");
       const isChat = eventType === "chat";
       const title = String(payload.title || `Update Pesanan #${orderId}`);
@@ -545,6 +585,18 @@ Deno.serve(async (req: Request) => {
       const effectiveStatus = String(
         payload.order_status || ord?.orderStatus || inferStatusFromText(title, body) || ""
       );
+
+      const rolesRaw = Array.isArray(payload.target_roles)
+        ? payload.target_roles
+        : [payload.target_role || "customer"];
+      const targetRoles = rolesRaw
+        .map((r: unknown) => String(r || "").toLowerCase())
+        .filter((r: string) => {
+          if (!r) return false;
+          // Jangan kirim chat pelanggan ke HP Kurir/Staff jika paket belum diserahkan ke kurir!
+          if (isChat && r === "staff" && !isCourierStageStatus(effectiveStatus)) return false;
+          return true;
+        });
 
       const dedupeKey = String(
         payload.dedupe_key ||
@@ -575,7 +627,7 @@ Deno.serve(async (req: Request) => {
           populateOrderEnrichment(fcmData, ord, tRole, isChat, body, payload);
         } else {
           if (effectiveStatus) {
-            fcmData.order_status = effectiveStatus;
+            fcmData.order_status = formatStatusForRole(effectiveStatus, tRole, String(payload.payment_method || ""));
             fcmData.step = String(getOrderStep(effectiveStatus));
           }
           if (payload.receipt_token) fcmData.receipt_token = String(payload.receipt_token).toUpperCase();
@@ -636,15 +688,19 @@ Deno.serve(async (req: Request) => {
     };
 
     let orderEnriched = false;
+    let skipStaffEarlyChat = false;
     if (orderId && sb) {
       const ord = await fetchOrderRecord(sb, orderId, recTenant);
       if (ord) {
+        if (isChatNotif && targetRole === "staff" && !isCourierStageStatus(ord.orderStatus)) {
+          skipStaffEarlyChat = true;
+        }
         populateOrderEnrichment(fcmData, ord, targetRole, isChatNotif, body);
         orderEnriched = true;
         if (!targetPhone && targetRole === "customer") {
           targetPhone = ord.customerPhone.replace(/\D/g, "");
         }
-        const statusNow = fcmData.order_status || inferStatusFromText(title, body) || title;
+        const statusNow = ord.orderStatus || inferStatusFromText(title, body) || title;
         fcmData.dedupe_key = isChatNotif
           ? `chat:${ord.id}:${normalizeChatDedupe(fcmData.chat_text || body)}`
           : `st:${ord.id}:${statusNow.toLowerCase().trim()}`;
@@ -652,13 +708,19 @@ Deno.serve(async (req: Request) => {
         const inferred = inferStatusFromText(title, body);
         if (inferred) {
           fcmData.order_id = orderId;
-          fcmData.order_status = inferred;
+          fcmData.order_status = formatStatusForRole(inferred, targetRole);
           fcmData.step = String(getOrderStep(inferred));
         }
         fcmData.dedupe_key = isChatNotif
           ? `chat:${orderId}:${normalizeChatDedupe(body)}`
           : `st:${orderId}:${(inferred || title).toLowerCase().trim()}`;
       }
+    }
+    if (skipStaffEarlyChat) {
+      if (rec.id !== undefined && rec.id !== null && sb) {
+        await sb.from("nf_push_outbox").update({ sent_at: new Date().toISOString() }).eq("id", rec.id);
+      }
+      return jsonRes({ ok: true, skipped: "staff_not_in_courier_stage", orderId });
     }
     if (!fcmData.dedupe_key) {
       fcmData.dedupe_key = `outbox:${rec.id || title}`;

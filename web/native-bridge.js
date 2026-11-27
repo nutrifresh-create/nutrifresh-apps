@@ -1661,7 +1661,7 @@
                 }
                 renderAppUpdateModal(local, remote);
             } else if (wasManual) {
-                showUpdateNoticeToast(`Aplikasi sudah versi terbaru (v${local.versionName || '1.50'}) ✓`);
+                showUpdateNoticeToast(`Aplikasi sudah versi terbaru (v${local.versionName || '1.51'}) ✓`);
             }
         } catch (_) {
             if (wasManual) showUpdateNoticeToast("Gagal membaca info versi terbaru.");
