@@ -3175,18 +3175,44 @@
                                 </div>
                             </div>
 
-                            <!-- Pelengkap & Request Isi -->
-                            <div class="space-y-2">
-                                <label class="block font-bold text-gray-700">Request Isi &amp; Pelengkap (Opsional)</label>
-                                <div class="flex flex-wrap gap-2">
-                                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200 cursor-pointer text-[11px] font-bold text-gray-700">
-                                        <input type="checkbox" id="poAddonPita" class="rounded text-nutri-green"> <span>🎀 Tambah Pita</span>
-                                    </label>
-                                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200 cursor-pointer text-[11px] font-bold text-gray-700">
-                                        <input type="checkbox" id="poAddonAmplop" class="rounded text-nutri-green"> <span>✉️ Amplop / Kartu Ucapan</span>
-                                    </label>
+                            <!-- Pilihan Isi Buah (Terkunci ke Stok Tersedia) & Pelengkap -->
+                            <div class="space-y-2.5 pt-1 border-t border-gray-100">
+                                <div>
+                                    <label class="block font-bold text-gray-700 mb-1.5">Pilihan Isi Buah Parsel *</label>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                        <button type="button" id="poFruitModeStoreBtn" onclick="app.setPoFruitChoiceMode('store_pick')" class="py-2 px-3 rounded-xl text-[11px] font-extrabold bg-nutri-green text-white border border-nutri-green shadow-sm transition text-left flex items-center gap-1.5">
+                                            <span>✨ Dipilihkan Terbaik oleh Toko</span>
+                                        </button>
+                                        <button type="button" id="poFruitModePickBtn" onclick="app.setPoFruitChoiceMode('pick_stock')" class="py-2 px-3 rounded-xl text-[11px] font-bold bg-white text-gray-700 border border-gray-200 hover:border-nutri-green transition text-left flex items-center gap-1.5">
+                                            <span>🍎 Pilih dari Stok Tersedia (Maks. 5)</span>
+                                        </button>
+                                    </div>
+                                    <div id="poAvailableFruitsBox" class="hidden mt-2 bg-emerald-50/70 border border-emerald-200 rounded-2xl p-2.5 space-y-2">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-[10.5px] font-extrabold text-emerald-900">Hanya buah yang sedang tersedia di toko:</span>
+                                            <span id="poSelectedFruitsCountBadge" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-white text-emerald-800 border border-emerald-200">0/5 dipilih</span>
+                                        </div>
+                                        <div id="poAvailableFruitsChips" class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto"></div>
+                                        <label class="flex items-start gap-2 pt-1.5 border-t border-emerald-200/80 text-[10.5px] text-emerald-950 font-semibold cursor-pointer leading-snug">
+                                            <input type="checkbox" id="poAllowReplacement" checked class="mt-0.5 rounded text-nutri-green">
+                                            <span>Jika buah pilihan mendadak habis sebelum dirakit atau tidak ada respons saat dikonfirmasi, izinkan toko mengganti dengan buah segar sejenis/setara agar pengiriman tepat waktu.</span>
+                                        </label>
+                                    </div>
                                 </div>
-                                <input type="text" id="poItemNoteInput" placeholder="Contoh: Sunkist, Santang, Anggur, Yakult 2 pcs / Apel &amp; Long Crimson..." class="w-full px-3.5 py-2 text-xs outline-none">
+
+                                <div class="space-y-1.5">
+                                    <label class="block font-bold text-gray-700">Pelengkap, Warna Hiasan, Kartu Ucapan &amp; Pantangan (Opsional)</label>
+                                    <div class="flex flex-wrap gap-2">
+                                        <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200 cursor-pointer text-[11px] font-bold text-gray-700">
+                                            <input type="checkbox" id="poAddonPita" class="rounded text-nutri-green"> <span>🎀 Tambah Pita</span>
+                                        </label>
+                                        <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200 cursor-pointer text-[11px] font-bold text-gray-700">
+                                            <input type="checkbox" id="poAddonAmplop" class="rounded text-nutri-green"> <span>✉️ Amplop / Kartu Ucapan</span>
+                                        </label>
+                                    </div>
+                                    <textarea id="poItemNoteInput" rows="2" placeholder="Contoh: Pita warna biru, kartu ucapan 'Semoga lekas sembuh Bu Ani', pantangan buah terlalu asam / tidak suka melon..." class="w-full px-3.5 py-2 text-xs rounded-2xl border border-gray-200 outline-none resize-none leading-snug"></textarea>
+                                    <p class="text-[10px] text-gray-500">Khusus permintaan warna pita/hiasan, tulisan kartu ucapan, atau pantangan/alergi penerima (pilihan buah tetap mengikuti stok tersedia di atas).</p>
+                                </div>
                             </div>
 
                             <!-- Jadwal Tanggal & Jam -->
@@ -3438,7 +3464,9 @@
         </div>
     </div>
     <input type="file" id="custOrderProofFileInput" accept="image/*" class="hidden" onchange="app.handleCustomerProofFileSelected(event)">
+    <input type="file" id="custOrderProofCamInput" accept="image/*" capture="environment" class="hidden" onchange="app.handleCustomerProofFileSelected(event)">
     <input type="file" id="custChatPhotoInput" accept="image/*" class="hidden" onchange="app.handleCustomerChatPhotoSelected(event)">
+    <input type="file" id="custChatPhotoCamInput" accept="image/*" capture="environment" class="hidden" onchange="app.handleCustomerChatPhotoSelected(event)">
 
     <!-- MODAL CHAT PESANAN PENUH (v152 — LEGA & NYAMAN DI HP + KIRIM FOTO) -->
     <div id="custFullChatModal" class="fixed inset-0 bg-black/70 z-[94] hidden flex items-end sm:items-center justify-center fade-in backdrop-blur-sm sm:p-4">
@@ -3607,6 +3635,8 @@
                 selectedCartVoucher: null,
                 poDraftItems: [],
                 poCurrentType: 'Parcel Keranjang',
+                poFruitChoiceMode: 'store_pick',
+                poSelectedFruits: [],
                 poCurrentDeliveryMode: 'Diantar',
                 poDestinationsTemp: [{ address: '', qty: 1 }],
                 poLastSubmitted: null,
@@ -5288,8 +5318,16 @@
             triggerCustomerChatPhoto(orderId, token) {
                 this._pendingChatPhotoOrderId = orderId;
                 this._pendingChatPhotoToken = token;
-                const inp = document.getElementById('custChatPhotoInput');
-                if (inp) { inp.value = ''; inp.click(); }
+                const fire = (id) => { const el = document.getElementById(id); if (el) { el.value = ''; el.click(); } };
+                if (typeof window.nfShowPhotoSourcePicker === 'function') {
+                    window.nfShowPhotoSourcePicker({
+                        title: 'Kirim Foto ke Chat Toko',
+                        onCamera: () => fire('custChatPhotoCamInput'),
+                        onGallery: () => fire('custChatPhotoInput')
+                    });
+                } else {
+                    fire('custChatPhotoInput');
+                }
             },
             handleCustomerChatPhotoSelected(ev) {
                 const file = ev?.target?.files?.[0];
@@ -5396,20 +5434,27 @@
                     if (phEl && ord.customerPhone && ord.customerPhone !== '-') phEl.value = this.formatLocalWaDisplay(ord.customerPhone);
                     if (inEl && ord.institution) inEl.value = ord.institution;
 
-                    this.state.poDraftItems = srcPoItems.map(it => ({
-                        parcelType: it.parcelType || 'Parcel Keranjang',
-                        unitPrice: Number(it.unitPrice) || 100000,
-                        qty: Math.max(1, parseInt(it.qty, 10) || 1),
-                        subtotal: Number(it.subtotal) || ((Number(it.unitPrice) || 100000) * Math.max(1, parseInt(it.qty, 10) || 1)),
-                        addons: Array.isArray(it.addons) ? [...it.addons] : [],
-                        note: it.note || '',
-                        deliveryDate: tmrIso,
-                        deliveryTime: it.deliveryTime || '08:00',
-                        deliveryMode: it.deliveryMode || 'Diantar',
-                        destinations: Array.isArray(it.destinations) && it.destinations.length > 0
-                            ? it.destinations.map(d => ({ address: d.address || '', qty: Math.max(1, parseInt(d.qty, 10) || 1) }))
-                            : [{ address: '', qty: Math.max(1, parseInt(it.qty, 10) || 1) }]
-                    }));
+                    const availPoFruits = new Set(this.getAvailableFruitsForPo().map(p => p.name));
+                    this.state.poDraftItems = srcPoItems.map(it => {
+                        const keepFruits = Array.isArray(it.selectedFruits) ? it.selectedFruits.filter(f => availPoFruits.has(f)) : [];
+                        return {
+                            parcelType: it.parcelType || 'Parcel Keranjang',
+                            unitPrice: Number(it.unitPrice) || 100000,
+                            qty: Math.max(1, parseInt(it.qty, 10) || 1),
+                            subtotal: Number(it.subtotal) || ((Number(it.unitPrice) || 100000) * Math.max(1, parseInt(it.qty, 10) || 1)),
+                            addons: Array.isArray(it.addons) ? [...it.addons] : [],
+                            fruitChoiceMode: keepFruits.length > 0 ? 'pick_stock' : 'store_pick',
+                            selectedFruits: keepFruits,
+                            allowAutoReplace: it.allowAutoReplace !== false,
+                            note: it.note || '',
+                            deliveryDate: tmrIso,
+                            deliveryTime: it.deliveryTime || '08:00',
+                            deliveryMode: it.deliveryMode || 'Diantar',
+                            destinations: Array.isArray(it.destinations) && it.destinations.length > 0
+                                ? it.destinations.map(d => ({ address: d.address || '', qty: Math.max(1, parseInt(d.qty, 10) || 1) }))
+                                : [{ address: '', qty: Math.max(1, parseInt(it.qty, 10) || 1) }]
+                        };
+                    });
                     this.renderPoDraftItemsList();
                     this.showCustomerToast('Rincian PO Parsel dimuat ulang! Cek tanggal kirim lalu klik Kirim.');
                     return;
@@ -5711,8 +5756,16 @@
             triggerUploadCustomerOrderProof(orderId, token) {
                 this.state.uploadingProofOrderId = orderId;
                 this.state.uploadingProofOrderToken = token;
-                const inp = document.getElementById('custOrderProofFileInput');
-                if (inp) { inp.value = ''; inp.click(); }
+                const fire = (id) => { const el = document.getElementById(id); if (el) { el.value = ''; el.click(); } };
+                if (typeof window.nfShowPhotoSourcePicker === 'function') {
+                    window.nfShowPhotoSourcePicker({
+                        title: 'Unggah Bukti Pembayaran',
+                        onCamera: () => fire('custOrderProofCamInput'),
+                        onGallery: () => fire('custOrderProofFileInput')
+                    });
+                } else {
+                    fire('custOrderProofFileInput');
+                }
             },
             handleCustomerProofFileSelected(ev) {
                 const file = ev?.target?.files?.[0];
@@ -6839,10 +6892,71 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
                     this.state.poDestinationsTemp = [{ address: defAddr, qty: Number(document.getElementById('poQtyInput')?.value) || 1 }];
                 }
                 this.selectPoType(this.state.poCurrentType || 'Parcel Keranjang');
+                this.setPoFruitChoiceMode(this.state.poFruitChoiceMode || 'store_pick');
                 this.setPoDeliveryMode(this.state.poCurrentDeliveryMode || 'Diantar');
                 this.renderPoDestinationsUI();
                 this.updatePoItemPreview();
                 this.renderPoDraftItemsList();
+            },
+            getAvailableFruitsForPo() {
+                return (this.state.inventory || [])
+                    .filter(p => p && p.active !== false && !p.isObral
+                        && ['Buah Lokal', 'Buah Impor'].includes(p.category)
+                        && this.getEffectiveAvailableQty(p) > 0)
+                    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+            },
+            setPoFruitChoiceMode(mode) {
+                const clean = mode === 'pick_stock' ? 'pick_stock' : 'store_pick';
+                this.state.poFruitChoiceMode = clean;
+                const btnStore = document.getElementById('poFruitModeStoreBtn');
+                const btnPick = document.getElementById('poFruitModePickBtn');
+                const box = document.getElementById('poAvailableFruitsBox');
+                if (btnStore) {
+                    btnStore.className = clean === 'store_pick'
+                        ? 'py-2 px-3 rounded-xl text-[11px] font-extrabold bg-nutri-green text-white border border-nutri-green shadow-sm transition text-left flex items-center gap-1.5'
+                        : 'py-2 px-3 rounded-xl text-[11px] font-bold bg-white text-gray-700 border border-gray-200 hover:border-nutri-green transition text-left flex items-center gap-1.5';
+                }
+                if (btnPick) {
+                    btnPick.className = clean === 'pick_stock'
+                        ? 'py-2 px-3 rounded-xl text-[11px] font-extrabold bg-nutri-green text-white border border-nutri-green shadow-sm transition text-left flex items-center gap-1.5'
+                        : 'py-2 px-3 rounded-xl text-[11px] font-bold bg-white text-gray-700 border border-gray-200 hover:border-nutri-green transition text-left flex items-center gap-1.5';
+                }
+                if (box) box.classList.toggle('hidden', clean !== 'pick_stock');
+                if (clean === 'pick_stock') this.renderPoAvailableFruitsChips();
+            },
+            renderPoAvailableFruitsChips() {
+                const wrap = document.getElementById('poAvailableFruitsChips');
+                const badge = document.getElementById('poSelectedFruitsCountBadge');
+                if (!wrap) return;
+                const avail = this.getAvailableFruitsForPo();
+                const availNames = new Set(avail.map(p => p.name));
+                this.state.poSelectedFruits = (this.state.poSelectedFruits || []).filter(n => availNames.has(n));
+                if (badge) badge.textContent = `${this.state.poSelectedFruits.length}/5 dipilih`;
+                if (avail.length === 0) {
+                    wrap.innerHTML = '<span class="text-[11px] text-gray-500">Daftar buah segar sedang dimuat / seluruh isi akan dipilihkan terbaik oleh toko.</span>';
+                    return;
+                }
+                wrap.innerHTML = avail.map(p => {
+                    const selected = this.state.poSelectedFruits.includes(p.name);
+                    const safeJs = this.escapeHtml(p.name).replace(/'/g, "\'");
+                    return `<button type="button" onclick="app.togglePoSelectedFruit('${safeJs}')" class="px-2.5 py-1 rounded-full text-[11px] font-bold border transition ${selected ? 'bg-nutri-green text-white border-nutri-dark shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:border-nutri-green'}">${selected ? '✓ ' : '+ '}${this.escapeHtml(p.name)}</button>`;
+                }).join('');
+            },
+            togglePoSelectedFruit(name) {
+                if (!name) return;
+                const list = Array.isArray(this.state.poSelectedFruits) ? [...this.state.poSelectedFruits] : [];
+                const idx = list.indexOf(name);
+                if (idx >= 0) {
+                    list.splice(idx, 1);
+                } else {
+                    if (list.length >= 5) {
+                        this.showCustomerToast('Maksimal pilih 5 jenis buah agar komposisi parsel tetap proporsional.');
+                        return;
+                    }
+                    list.push(name);
+                }
+                this.state.poSelectedFruits = list;
+                this.renderPoAvailableFruitsChips();
             },
             closeParcelPreOrderModal() {
                 document.getElementById('parcelPreOrderModal')?.classList.add('hidden');
@@ -7014,6 +7128,13 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
                     destinations = [{ address: 'Diambil di Toko NutriFresh', qty, delivered: false }];
                 }
 
+                const fruitChoiceMode = this.state.poFruitChoiceMode === 'pick_stock' ? 'pick_stock' : 'store_pick';
+                const availSet = new Set(this.getAvailableFruitsForPo().map(p => p.name));
+                const selectedFruits = fruitChoiceMode === 'pick_stock'
+                    ? (this.state.poSelectedFruits || []).filter(n => availSet.has(n)).slice(0, 5)
+                    : [];
+                const allowAutoReplace = document.getElementById('poAllowReplacement') ? !!document.getElementById('poAllowReplacement').checked : true;
+
                 return {
                     itemId: 'POI-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(),
                     parcelType,
@@ -7021,6 +7142,9 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
                     qty,
                     subtotal: unitPrice * qty,
                     addons,
+                    fruitChoiceMode: selectedFruits.length > 0 ? 'pick_stock' : 'store_pick',
+                    selectedFruits,
+                    allowAutoReplace,
                     note,
                     deliveryDate,
                     deliveryTime,
@@ -7052,6 +7176,10 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
                 document.getElementById('poAddonPita').checked = false;
                 document.getElementById('poAddonAmplop').checked = false;
                 document.getElementById('poItemNoteInput').value = '';
+                this.state.poSelectedFruits = [];
+                this.setPoFruitChoiceMode('store_pick');
+                const repChk = document.getElementById('poAllowReplacement');
+                if (repChk) repChk.checked = true;
                 this.state.poDestinationsTemp = [{ address: '', qty: 1 }];
                 this.renderPoDestinationsUI();
                 this.updatePoItemPreview();
@@ -7087,6 +7215,10 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
                 document.getElementById('poAddonPita').checked = Array.isArray(it.addons) && it.addons.includes('Pita');
                 document.getElementById('poAddonAmplop').checked = Array.isArray(it.addons) && it.addons.includes('Amplop/Kartu');
                 document.getElementById('poItemNoteInput').value = it.note || '';
+                this.state.poSelectedFruits = Array.isArray(it.selectedFruits) ? [...it.selectedFruits] : [];
+                this.setPoFruitChoiceMode(this.state.poSelectedFruits.length > 0 ? 'pick_stock' : 'store_pick');
+                const repChkE = document.getElementById('poAllowReplacement');
+                if (repChkE) repChkE.checked = it.allowAutoReplace !== false;
                 document.getElementById('poDeliveryDateInput').value = it.deliveryDate || this.getTomorrowDateStr(1);
                 document.getElementById('poDeliveryTimeInput').value = it.deliveryTime || '08:00';
                 this.setPoDeliveryMode(it.deliveryMode || 'Diantar');
@@ -7132,6 +7264,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-700">${this.escapeHtml(it.deliveryMode)} ${this.escapeHtml(it.deliveryTime)}</span>
                                     </div>
                                     <p class="font-extrabold text-gray-900 text-xs mt-1">${it.qty}x ${this.escapeHtml(it.parcelType)} @${this.formatCurrency(it.unitPrice)}</p>
+                                    <p class="text-[10.5px] text-emerald-800 font-bold">${Array.isArray(it.selectedFruits) && it.selectedFruits.length > 0 ? '🍎 Buah: ' + this.escapeHtml(it.selectedFruits.join(', ')) + (it.allowAutoReplace !== false ? ' (boleh ganti setara)' : '') : '✨ Isi buah dipilihkan terbaik oleh toko'}</p>
                                     ${(addonStr || it.note) ? `<p class="text-[11px] text-amber-800">📝 ${this.escapeHtml([addonStr, it.note].filter(Boolean).join(' • '))}</p>` : ''}
                                     <p class="text-[11px] text-gray-500"><i class="fa-solid ${it.deliveryMode === 'Diantar' ? 'fa-truck-fast text-nutri-green' : 'fa-store text-blue-600'} mr-1"></i>${destSummary}</p>
                                 </div>
@@ -7166,6 +7299,11 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
                         const details = [];
                         if (it.deliveryMode === 'Diantar' && Array.isArray(it.destinations) && it.destinations.length > 0) {
                             details.push(it.destinations.map(d => it.destinations.length > 1 ? `${d.address} ${d.qty}` : d.address).join(', '));
+                        }
+                        if (Array.isArray(it.selectedFruits) && it.selectedFruits.length > 0) {
+                            details.push(`Buah: ${it.selectedFruits.join(', ')}${it.allowAutoReplace !== false ? ' (boleh ganti setara jika habis)' : ''}`);
+                        } else {
+                            details.push('Buah: Dipilihkan terbaik oleh toko');
                         }
                         if (Array.isArray(it.addons) && it.addons.length > 0) details.push(it.addons.join(', '));
                         if (it.note) details.push(it.note);
@@ -7433,7 +7571,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v152.2';
+        window.__NF_APP_VERSION = 'v152.3';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 

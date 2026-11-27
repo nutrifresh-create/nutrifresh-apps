@@ -329,6 +329,71 @@
     window.__nfOpenCameraScanner = openCameraScannerOverlay;
 
     // =========================================================================
+    // UNIVERSAL PHOTO SOURCE PICKER (KAMERA LANGSUNG vs GALERI — v152.3)
+    // =========================================================================
+    window.nfShowPhotoSourcePicker = function ({ title = "Ambil / Pilih Foto", onCamera, onGallery } = {}) {
+        document.getElementById("nfPhotoSourceModal")?.remove();
+        if (isAndroidNative()) {
+            try {
+                if (typeof window.NfAndroidNative.hasCameraPermission === "function" && !window.NfAndroidNative.hasCameraPermission()) {
+                    if (typeof window.NfAndroidNative.requestCameraPermission === "function") {
+                        window.NfAndroidNative.requestCameraPermission();
+                    }
+                }
+            } catch (_) {}
+        }
+
+        const isDark = document.documentElement.getAttribute("data-theme") === "dark" ||
+            document.body.classList.contains("nf-office-page");
+        const cardBg = isDark ? "#111827" : "#ffffff";
+        const cardBorder = isDark ? "rgba(255,255,255,.16)" : "#e2e8f0";
+        const textMain = isDark ? "#f8fafc" : "#0f172a";
+        const textSub = isDark ? "#94a3b8" : "#64748b";
+        const galBg = isDark ? "#1e293b" : "#f8fafc";
+
+        const modal = document.createElement("div");
+        modal.id = "nfPhotoSourceModal";
+        modal.style.cssText = "position:fixed;inset:0;z-index:100060;background:rgba(15,23,42,.68);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;padding:14px;font-family:Inter,system-ui,sans-serif;";
+        if (window.innerWidth >= 640) modal.style.alignItems = "center";
+
+        modal.innerHTML = `
+            <div style="width:100%;max-width:360px;background:${cardBg};border:1px solid ${cardBorder};border-radius:26px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.45);">
+                <div style="padding:15px 18px;border-bottom:1px solid ${cardBorder};display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                    <div style="font-size:14px;font-weight:900;color:${textMain};display:flex;align-items:center;gap:8px;">
+                        <i class="fa-solid fa-camera" style="color:#558b2f;"></i>
+                        <span>${escapeHtml(title)}</span>
+                    </div>
+                    <button type="button" id="nfPhotoPickClose" style="width:28px;height:28px;border-radius:999px;border:none;background:${galBg};color:${textSub};font-weight:900;cursor:pointer;">✕</button>
+                </div>
+                <div style="padding:14px;display:flex;flex-direction:column;gap:9px;">
+                    <button type="button" id="nfPhotoPickCamera" style="width:100%;padding:13px 16px;border-radius:18px;border:none;background:linear-gradient(135deg,#7cb342,#558b2f);color:#fff;font-size:13px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:0 8px 18px -6px rgba(85,139,47,.55);">
+                        <i class="fa-solid fa-camera" style="font-size:15px;"></i>
+                        <span>Ambil Foto (Kamera Langsung)</span>
+                    </button>
+                    <button type="button" id="nfPhotoPickGallery" style="width:100%;padding:12px 16px;border-radius:18px;border:1.5px solid ${cardBorder};background:${galBg};color:${textMain};font-size:12.5px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;">
+                        <i class="fa-regular fa-images" style="font-size:15px;color:#2563eb;"></i>
+                        <span>Pilih dari Galeri / File</span>
+                    </button>
+                </div>
+            </div>`;
+
+        const close = () => modal.remove();
+        modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+        document.body.appendChild(modal);
+
+        modal.querySelector("#nfPhotoPickClose").onclick = close;
+        modal.querySelector("#nfPhotoPickCamera").onclick = () => {
+            close();
+            if (typeof onCamera === "function") onCamera();
+        };
+        modal.querySelector("#nfPhotoPickGallery").onclick = () => {
+            close();
+            if (typeof onGallery === "function") onGallery();
+        };
+    };
+
+
+    // =========================================================================
     // INJECT CAMERA SCAN BUTTONS INTO POS UI (UNMISTAKABLE & CLEAN LAYOUT)
     // =========================================================================
     function injectPosCameraButtons() {
@@ -690,6 +755,8 @@
 
     function closeTopmostVisibleModal() {
         // 1. Dynamic overlays (Camera Scanner, Native Printer Picker)
+        const photoPickClose = document.getElementById("nfPhotoPickClose");
+        if (photoPickClose) { photoPickClose.click(); return true; }
         const docClose = document.getElementById("nfSafeDocClose");
         if (docClose) { docClose.click(); return true; }
         const camClose = document.getElementById("nfCamClose");

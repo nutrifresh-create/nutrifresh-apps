@@ -6,7 +6,7 @@ on:
       release_notes:
         description: 'Catatan pembaruan (tampil di pop-up update PC Windows)'
         required: false
-        default: 'v152.2 - Pisah Riwayat Online/Offline, Tanda VOID, Kunci Rakit PO Parsel & Kurir COD, Auto-Update Desktop (.exe).'
+        default: 'v152.3 - Kamera Langsung Foto Pesanan & Chat, Keterangan Lengkap & Fix HP Rakit Parsel, Kunci Pilihan Buah PO Stok Tersedia.'
       force_update:
         description: 'Wajibkan update (user tidak bisa melewati pop-up)?'
         type: boolean
@@ -42,7 +42,7 @@ jobs:
 
       - name: Configure Desktop Auto-Updater & Release Manifest (POS)
         env:
-          RELEASE_NOTES: "${{ github.event.inputs.release_notes || 'v152.2 - Pisah Riwayat Online/Offline, Tanda VOID, Kunci Rakit PO Parsel & Kurir COD, Auto-Update Desktop (.exe).' }}"
+          RELEASE_NOTES: "${{ github.event.inputs.release_notes || 'v152.3 - Kamera Langsung Foto Pesanan & Chat, Keterangan Lengkap & Fix HP Rakit Parsel, Kunci Pilihan Buah PO Stok Tersedia.' }}"
           FORCE_UPDATE: ${{ github.event.inputs.force_update || 'false' }}
         run: python scripts/configure_desktop_updater.py desktop/pos-tauri pos NutriFresh_POS.exe update-desktop-pos.json
 
@@ -113,7 +113,7 @@ jobs:
 
       - name: Configure Desktop Auto-Updater & Release Manifest (Office)
         env:
-          RELEASE_NOTES: "${{ github.event.inputs.release_notes || 'v152.2 - Pisah Riwayat Online/Offline, Tanda VOID, Kunci Rakit PO Parsel & Kurir COD, Auto-Update Desktop (.exe).' }}"
+          RELEASE_NOTES: "${{ github.event.inputs.release_notes || 'v152.3 - Kamera Langsung Foto Pesanan & Chat, Keterangan Lengkap & Fix HP Rakit Parsel, Kunci Pilihan Buah PO Stok Tersedia.' }}"
           FORCE_UPDATE: ${{ github.event.inputs.force_update || 'false' }}
         run: python scripts/configure_desktop_updater.py desktop/office-tauri office NutriFresh_Office.exe update-desktop-office.json
 

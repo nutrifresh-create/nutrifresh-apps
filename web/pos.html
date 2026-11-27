@@ -1090,6 +1090,21 @@
             border-color: #0f172a !important;
             box-shadow: none !important;
         }
+        html[data-theme="natural"] body .nf-slide-lens[data-tint="purple"] {
+            background: #9333ea !important;
+            border-color: #7e22ce !important;
+            box-shadow: none !important;
+        }
+        html[data-theme="natural"] body .nf-slide-lens[data-tint="emerald"] {
+            background: #059669 !important;
+            border-color: #047857 !important;
+            box-shadow: none !important;
+        }
+        html[data-theme="natural"] body .nf-slide-lens[data-tint="blue"] {
+            background: #2563eb !important;
+            border-color: #1d4ed8 !important;
+            box-shadow: none !important;
+        }
         html[data-theme="natural"] body #adminLogin,
         html[data-theme="natural"] body #adminContentArea .bg-white,
         html[data-theme="natural"] body #posRightCartPane,
@@ -3021,7 +3036,7 @@
                 <div class="space-y-2 border-t pt-3">
                     <div class="flex items-center justify-between"><label class="font-extrabold text-gray-800">Pilih Buah, Gula, Susu & Cup (untuk 1 Cup):</label><div class="flex gap-1 text-[10px] font-bold"><button type="button" onclick="app.setJuiceFilterCat('Semua')" id="jFilter-Semua" class="px-2 py-0.5 rounded bg-emerald-600 text-white">Semua</button><button type="button" onclick="app.setJuiceFilterCat('Buah')" id="jFilter-Buah" class="px-2 py-0.5 rounded bg-gray-100 text-gray-600">Buah</button><button type="button" onclick="app.setJuiceFilterCat('Bahan')" id="jFilter-Bahan" class="px-2 py-0.5 rounded bg-gray-100 text-gray-600">Bahan & Cup</button></div></div>
                     <input type="text" id="juiceCompSearchInput" oninput="app.populateJuiceComponentSelect()" class="w-full px-3 py-1.5 border rounded-xl text-xs bg-gray-50 outline-none" placeholder="Cari buah atau gula, susu, cup...">
-                    <div class="flex gap-2"><select id="juiceComponentSelect" class="flex-1 px-3 py-2 border rounded-xl bg-white font-semibold outline-none"></select><input type="number" step="1" min="1" id="juiceComponentQtyInput" class="w-24 px-2.5 py-2 border rounded-xl font-bold text-center outline-none" placeholder="gr/ml/pcs"><button type="button" onclick="app.addJuiceComponent()" class="bg-emerald-600 text-white font-extrabold px-3.5 py-2 rounded-xl">+ Isi</button></div>
+                    <div class="flex flex-col sm:flex-row gap-2"><select id="juiceComponentSelect" class="w-full sm:flex-1 min-w-0 px-3 py-2 border rounded-xl bg-white font-semibold outline-none"></select><div class="flex gap-2 flex-shrink-0"><input type="number" step="1" min="1" id="juiceComponentQtyInput" class="flex-1 sm:w-24 px-2.5 py-2 border rounded-xl font-bold text-center outline-none" placeholder="gr/ml/pcs"><button type="button" onclick="app.addJuiceComponent()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-4 py-2 rounded-xl whitespace-nowrap">+ Isi</button></div></div>
                     <div id="juiceComponentsList" class="space-y-1.5 max-h-36 overflow-y-auto bg-gray-50 p-2.5 rounded-2xl border border-gray-200"></div>
                 </div>
                 <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl space-y-2"><div class="flex items-center justify-between"><div><span class="text-[11px] font-bold text-emerald-900 block">Patokan HPP Jual / Cup:</span><span class="text-base font-black text-emerald-950" id="juiceSellBasisCostDisplay">Rp 0</span></div><button type="button" onclick="app.applyJuiceSuggestedPrice()" class="bg-white text-emerald-800 border border-emerald-300 font-extrabold text-[11px] px-2.5 py-1.5 rounded-xl">+ Jasa Rp 3rb</button></div><div class="flex items-center justify-between pt-1.5 border-t border-emerald-200/70 text-[11px]"><span>HPP Modal Asli / Cup:</span><span class="font-extrabold text-gray-800" id="juiceRealCostDisplay">Rp 0</span></div></div>
@@ -3035,16 +3050,17 @@
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-auto overflow-hidden border border-purple-200 max-h-[92vh] flex flex-col">
             <div class="p-4 border-b bg-gradient-to-r from-purple-600 to-indigo-600 text-white flex justify-between items-center flex-shrink-0"><h3 class="text-sm font-extrabold flex items-center"><i class="fa-solid fa-gift mr-2"></i> <span id="parcelModalHeaderTitle">Rakit Parsel Ritel &amp; Hitung HPP</span></h3><button type="button" onclick="app._activePoBuildId=null; document.getElementById('parcelBuilderModal').classList.add('hidden')" class="text-white/80 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button></div>
             <div class="p-5 space-y-3.5 text-xs overflow-y-auto">
-                <div id="parcelBuildPoBanner" class="hidden bg-purple-100 border-2 border-purple-400 rounded-2xl p-3 text-purple-950 space-y-1">
+                <div id="parcelBuildPoBanner" class="hidden bg-purple-50 border-2 border-purple-400 rounded-2xl p-3 text-purple-950 space-y-2">
                     <div class="font-black text-xs flex items-center gap-1.5"><i class="fa-solid fa-lock text-purple-700"></i> <span id="parcelBuildPoBannerTitle">Merakit Khusus PO Parsel</span></div>
-                    <p class="text-[11px] text-purple-900 leading-snug">Masukkan seluruh buah, keranjang &amp; pita yang dipakai lalu klik <strong>Simpan Rakitan &amp; Potong Stok Isi</strong>. Status PO otomatis berubah menjadi <strong>Selesai Dirakit</strong> dan siap diserahkan ke kurir.</p>
+                    <div id="parcelBuildPoDetails" class="space-y-1.5 text-[11px]"></div>
+                    <p class="text-[10.5px] text-purple-800 leading-snug border-t border-purple-200 pt-1.5">Masukkan seluruh buah, keranjang &amp; pita yang dipakai lalu klik <strong>Simpan Rakitan &amp; Potong Stok Isi</strong>. Status PO otomatis menjadi <strong>Selesai Dirakit</strong>.</p>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><div class="sm:col-span-2"><label class="block font-bold text-gray-700 mb-1">Produk Parsel Tujuan *</label><select id="parcelTargetSelect" onchange="app.handleParcelTargetChange()" class="w-full px-3 py-2 border rounded-xl bg-white font-bold outline-none"><option value="__NEW__">+ Buat Nama Parsel Baru...</option></select></div><div><label class="block font-bold text-gray-700 mb-1">Jumlah Dirakit *</label><input type="number" min="1" step="1" id="parcelQtyBuildInput" value="1" oninput="app.recalculateParcelCost()" class="w-full px-3 py-2 border rounded-xl font-black text-center outline-none"></div></div>
                 <div id="parcelNewNameBox" class="grid grid-cols-2 gap-3 bg-purple-50/70 p-3 rounded-2xl border border-purple-200"><div><label class="block font-bold text-purple-900 mb-1">Nama Parsel Baru *</label><input type="text" id="parcelNewNameInput" class="w-full px-3 py-1.5 border rounded-xl bg-white font-bold outline-none"></div><div><label class="block font-bold text-purple-900 mb-1">Harga Jual Parsel (Rp) *</label><input type="number" id="parcelNewPriceInput" class="w-full px-3 py-1.5 border rounded-xl bg-white font-extrabold text-nutri-brown outline-none"></div></div>
                 <div class="space-y-2 border-t pt-3">
                     <div class="flex items-center justify-between"><label class="font-extrabold text-gray-800">Cari & Pilih Isi Buah / Wadah (untuk 1 Parsel):</label><div class="flex gap-1 text-[10px] font-bold"><button type="button" onclick="app.setParcelFilterCat('Semua')" id="pFilter-Semua" class="px-2 py-0.5 rounded bg-purple-600 text-white">Semua</button><button type="button" onclick="app.setParcelFilterCat('Buah')" id="pFilter-Buah" class="px-2 py-0.5 rounded bg-gray-100 text-gray-600">Buah</button><button type="button" onclick="app.setParcelFilterCat('Wadah')" id="pFilter-Wadah" class="px-2 py-0.5 rounded bg-gray-100 text-gray-600">Wadah/Bahan</button></div></div>
                     <input type="text" id="parcelCompSearchInput" oninput="app.populateParcelComponentSelect()" class="w-full px-3 py-1.5 border rounded-xl text-xs bg-gray-50 outline-none" placeholder="Ketik nama buah atau keranjang...">
-                    <div class="flex gap-2"><select id="parcelComponentSelect" class="flex-1 px-3 py-2 border rounded-xl bg-white font-semibold outline-none"></select><input type="number" step="1" min="1" id="parcelComponentQtyInput" class="w-24 px-2.5 py-2 border rounded-xl font-bold text-center outline-none" placeholder="gr / pcs"><button type="button" onclick="app.addParcelComponent()" class="bg-purple-600 text-white font-extrabold px-3.5 py-2 rounded-xl">+ Isi</button></div>
+                    <div class="flex flex-col sm:flex-row gap-2"><select id="parcelComponentSelect" class="w-full sm:flex-1 min-w-0 px-3 py-2 border rounded-xl bg-white font-semibold outline-none"></select><div class="flex gap-2 flex-shrink-0"><input type="number" step="1" min="1" id="parcelComponentQtyInput" class="flex-1 sm:w-24 px-2.5 py-2 border rounded-xl font-bold text-center outline-none" placeholder="gr / pcs"><button type="button" onclick="app.addParcelComponent()" class="bg-purple-600 hover:bg-purple-700 text-white font-extrabold px-4 py-2 rounded-xl whitespace-nowrap">+ Isi</button></div></div>
                     <div id="parcelComponentsList" class="space-y-1.5 max-h-36 overflow-y-auto bg-gray-50 p-2.5 rounded-2xl border border-gray-200"></div>
                 </div>
                 <div class="bg-purple-50 border border-purple-200 p-3.5 rounded-2xl space-y-2"><div class="flex items-center justify-between"><div><span class="text-[11px] font-bold text-purple-900 block">Patokan HPP Jual / Parsel:</span><span class="text-base font-black text-purple-950" id="parcelSellBasisCostDisplay">Rp 0</span></div><button type="button" onclick="app.applyParcelSuggestedPrice()" class="bg-white text-purple-800 border border-purple-300 font-extrabold text-[11px] px-2.5 py-1.5 rounded-xl">+ Jasa Rp 15rb</button></div><div class="flex items-center justify-between pt-1.5 border-t border-purple-200/70 text-[11px]"><span>HPP Modal Asli / Parsel:</span><span class="font-extrabold text-gray-800" id="parcelUnitCostDisplay">Rp 0</span></div></div>
@@ -3516,7 +3532,9 @@
     </div>
 
     <input type="file" id="posOrderPhotoInput" accept="image/*" class="hidden" onchange="app.handlePosOrderPhotoSelected(event)">
+    <input type="file" id="posOrderPhotoCamInput" accept="image/*" capture="environment" class="hidden" onchange="app.handlePosOrderPhotoSelected(event)">
     <input type="file" id="posChatPhotoInput" accept="image/*" class="hidden" onchange="app.handlePosChatPhotoSelected(event)">
+    <input type="file" id="posChatPhotoCamInput" accept="image/*" capture="environment" class="hidden" onchange="app.handlePosChatPhotoSelected(event)">
 
     <!-- MODAL CHAT PESANAN PENUH POS (v152 — LEGA + KIRIM FOTO) -->
     <div id="posFullChatModal" class="fixed inset-0 bg-black/70 z-[96] hidden flex items-end sm:items-center justify-center fade-in backdrop-blur-sm sm:p-4">
@@ -5599,6 +5617,7 @@
                                         <div class="font-extrabold text-nutri-dark text-xs">
                                             ${item.qty}x ${this.escapeHtml(item.parcelType)} @${this.escapeHtml(kVal)} <span class="text-nutri-brown font-black ml-1">(${this.formatCurrency(item.subtotal || (item.qty * item.unitPrice))})</span>
                                         </div>
+                                        ${Array.isArray(item.selectedFruits) && item.selectedFruits.length > 0 ? `<div class="text-[10.5px] text-emerald-900 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-xl inline-block font-bold">🍎 Buah: ${this.escapeHtml(item.selectedFruits.join(', '))}${item.allowAutoReplace !== false ? ' (boleh ganti setara)' : ''}</div>` : ''}
                                         ${(addonStr || item.note) ? `<div class="text-[11px] text-amber-900 bg-amber-50/80 border border-amber-200/80 px-2.5 py-1 rounded-xl inline-block">📝 ${this.escapeHtml([addonStr, item.note].filter(Boolean).join(' • '))}</div>` : ''}
                                         ${destChecklistHtml}
                                         ${poPhotoUrl ? `<div onclick="document.getElementById('viewProofFullImg').src='${this.escapeHtml(poPhotoUrl)}';document.getElementById('viewProofModal').classList.remove('hidden')" class="cursor-pointer inline-flex items-center gap-2 mt-1 px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-[10.5px] font-bold"><img src="${this.escapeHtml(poPhotoUrl)}" class="w-7 h-7 rounded-lg object-cover border"> <span>📷 Foto Parsel Jadi (Lihat)</span></div>` : ''}
@@ -6461,8 +6480,17 @@
                 if (!orderId) return;
                 this._pendingPosPhotoOrderId = orderId;
                 this._pendingPosPhotoKind = kind;
-                const inp = document.getElementById('posOrderPhotoInput');
-                if (inp) { inp.value = ''; inp.click(); }
+                const title = kind === 'parcel' ? 'Foto Hasil Rakit Parsel' : 'Foto Timbangan / Pesanan';
+                const fire = (id) => { const el = document.getElementById(id); if (el) { el.value = ''; el.click(); } };
+                if (typeof window.nfShowPhotoSourcePicker === 'function') {
+                    window.nfShowPhotoSourcePicker({
+                        title,
+                        onCamera: () => fire('posOrderPhotoCamInput'),
+                        onGallery: () => fire('posOrderPhotoInput')
+                    });
+                } else {
+                    fire('posOrderPhotoCamInput');
+                }
             },
             handlePosOrderPhotoSelected(ev) {
                 const file = ev?.target?.files?.[0];
@@ -6529,8 +6557,16 @@
             triggerPosChatPhoto(orderId) {
                 if (!orderId) return;
                 this._pendingPosChatPhotoOrderId = orderId;
-                const inp = document.getElementById('posChatPhotoInput');
-                if (inp) { inp.value = ''; inp.click(); }
+                const fire = (id) => { const el = document.getElementById(id); if (el) { el.value = ''; el.click(); } };
+                if (typeof window.nfShowPhotoSourcePicker === 'function') {
+                    window.nfShowPhotoSourcePicker({
+                        title: 'Kirim Foto ke Chat Pesanan',
+                        onCamera: () => fire('posChatPhotoCamInput'),
+                        onGallery: () => fire('posChatPhotoInput')
+                    });
+                } else {
+                    fire('posChatPhotoCamInput');
+                }
             },
             handlePosChatPhotoSelected(ev) {
                 const file = ev?.target?.files?.[0];
@@ -8845,13 +8881,48 @@ isKepalaTokoRole() {
                 this.state.parcelComponentsTemp = []; this.state.parcelFilterCat = 'Semua';
                 const poBanner = document.getElementById('parcelBuildPoBanner');
                 const poBannerTitle = document.getElementById('parcelBuildPoBannerTitle');
+                const poDetailsEl = document.getElementById('parcelBuildPoDetails');
                 const hdrTitle = document.getElementById('parcelModalHeaderTitle');
                 if (poBanner) poBanner.classList.toggle('hidden', !this._activePoBuildId);
                 if (this._activePoBuildId && poContext) {
-                    if (poBannerTitle) poBannerTitle.textContent = `Merakit Khusus ${poContext.orderCode || poContext.id} — ${poContext.customerName || 'Pelanggan'}`;
+                    if (poBannerTitle) poBannerTitle.textContent = `Merakit Khusus ${poContext.orderCode || poContext.id} — ${poContext.customerName || 'Pelanggan'}${poContext.institution ? ' (' + poContext.institution + ')' : ''}`;
                     if (hdrTitle) hdrTitle.textContent = `Rakit PO Parsel #${poContext.orderCode || poContext.id}`;
-                } else if (hdrTitle) {
-                    hdrTitle.textContent = 'Rakit Parsel Ritel & Hitung HPP';
+                    if (poDetailsEl) {
+                        const poItemsList = Array.isArray(poContext.items) ? poContext.items : [];
+                        const itemBlocks = poItemsList.map((it, idx) => {
+                            const addonsArr = Array.isArray(it.addons) ? it.addons : [];
+                            const fruitsArr = Array.isArray(it.selectedFruits) ? it.selectedFruits.filter(Boolean) : [];
+                            const destStr = it.deliveryMode === 'Diantar'
+                                ? (Array.isArray(it.destinations) && it.destinations.length > 0 ? it.destinations.map(d => `${d.address || '-'}${it.destinations.length > 1 ? ' (' + (d.qty || 1) + ')' : ''}`).join(' | ') : '-')
+                                : 'Diambil di Toko NutriFresh';
+                            const fruitLine = fruitsArr.length > 0
+                                ? `<div class="text-emerald-900 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 font-bold">🍎 Pilihan Buah: ${this.escapeHtml(fruitsArr.join(', '))}</div>`
+                                : `<div class="text-purple-800 bg-white/80 border border-purple-200 rounded-lg px-2 py-1 font-semibold">✨ Isi Buah: Dipilihkan terbaik oleh toko sesuai budget</div>`;
+                            const noteLine = it.note
+                                ? `<div class="text-amber-950 bg-amber-100 border border-amber-300 rounded-lg px-2.5 py-1.5 font-extrabold">📝 Keterangan / Hiasan / Pantangan: ${this.escapeHtml(it.note)}</div>`
+                                : '';
+                            const replaceLine = (it.allowAutoReplace !== false && fruitsArr.length > 0)
+                                ? `<div class="text-[10px] text-slate-600 italic">✓ Boleh ganti buah segar setara jika pilihan mendadak habis.</div>`
+                                : '';
+                            return `
+                                <div class="bg-white rounded-xl border border-purple-200 p-2.5 space-y-1 shadow-sm">
+                                    <div class="flex flex-wrap items-center justify-between gap-1">
+                                        <span class="font-black text-gray-900">${poItemsList.length > 1 ? (idx + 1) + '. ' : ''}${Math.max(1, parseInt(it.qty, 10) || 1)}× ${this.escapeHtml(it.parcelType || 'Parcel')} @${this.formatCurrency(Number(it.unitPrice) || 0)}</span>
+                                        <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">${this.escapeHtml(it.deliveryMode || 'Diantar')} ${this.escapeHtml(it.deliveryDate || poContext.deliveryDate || '')} ${this.escapeHtml(it.deliveryTime || poContext.deliveryTime || '')}</span>
+                                    </div>
+                                    ${addonsArr.length > 0 ? `<div class="flex flex-wrap gap-1">${addonsArr.map(a => `<span class="px-2 py-0.5 rounded-full bg-pink-100 text-pink-900 border border-pink-200 font-extrabold text-[10px]">${a.includes('Pita') ? '🎀 ' : '✉️ '}${this.escapeHtml(a)}</span>`).join('')}</div>` : ''}
+                                    ${fruitLine}
+                                    ${noteLine}
+                                    ${replaceLine}
+                                    <div class="text-[10.5px] text-gray-600"><i class="fa-solid ${it.deliveryMode === 'Diantar' ? 'fa-location-dot text-red-500' : 'fa-store text-blue-600'} mr-1"></i>${this.escapeHtml(destStr)}</div>
+                                </div>`;
+                        }).join('');
+                        const generalPoNote = poContext.note ? `<div class="text-amber-950 bg-amber-100 border border-amber-300 rounded-xl px-2.5 py-1.5 font-extrabold">📌 Catatan Umum PO: ${this.escapeHtml(poContext.note)}</div>` : '';
+                        poDetailsEl.innerHTML = itemBlocks + generalPoNote;
+                    }
+                } else {
+                    if (poDetailsEl) poDetailsEl.innerHTML = '';
+                    if (hdrTitle) hdrTitle.textContent = 'Rakit Parsel Ritel & Hitung HPP';
                 }
                 const targetSel = document.getElementById('parcelTargetSelect'); targetSel.innerHTML = '<option value="__NEW__">+ Buat Nama Parsel Baru...</option>';
                 this.state.inventory.filter(p => p.category === 'Parsel & Gift').forEach(p => { const opt = document.createElement('option'); opt.value = p.id; opt.textContent = `${p.name} (Stok: ${this.formatStockDisplay(p.stock, p.unit)})`; targetSel.appendChild(opt); });
@@ -12701,7 +12772,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v152.2';
+        window.__NF_APP_VERSION = 'v152.3';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;

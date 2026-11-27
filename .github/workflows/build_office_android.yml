@@ -6,7 +6,7 @@ on:
       release_notes:
         description: 'Catatan pembaruan (tampil di pop-up update HP)'
         required: false
-        default: 'v152.2 - Pisah Riwayat Online/Offline, Tanda VOID, Kunci Rakit PO Parsel & Kurir COD, Pesan Ulang PO Parsel.'
+        default: 'v152.3 - Kamera Langsung Foto Pesanan & Chat, Keterangan Lengkap & Fix HP Rakit Parsel, Kunci Pilihan Buah PO Stok Tersedia.'
       force_update:
         description: 'Wajibkan update (user tidak bisa melewati pop-up)?'
         type: boolean
@@ -81,7 +81,7 @@ jobs:
       - name: Publish Signed APK & Update Manifest to GitHub Releases (In-App Auto-Update)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_NOTES: "${{ github.event.inputs.release_notes || 'v152.2 - Pisah Riwayat Online/Offline, Tanda VOID, Kunci Rakit PO Parsel & Kurir COD, Pesan Ulang PO Parsel.' }}"
+          RELEASE_NOTES: "${{ github.event.inputs.release_notes || 'v152.3 - Kamera Langsung Foto Pesanan & Chat, Keterangan Lengkap & Fix HP Rakit Parsel, Kunci Pilihan Buah PO Stok Tersedia.' }}"
           FORCE_UPDATE: ${{ github.event.inputs.force_update || 'false' }}
         run: |
           if [ ! -f mobile/office-android/android/.nf_release_signed ]; then

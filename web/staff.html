@@ -333,7 +333,9 @@
 
                 <div id="courierOrdersList" class="space-y-3 text-xs"></div>
                 <input type="file" id="courierProofFileInput" accept="image/*" capture="environment" class="hidden" onchange="staffApp.handleCourierProofPicked(event)">
+                <input type="file" id="courierProofGalleryInput" accept="image/*" class="hidden" onchange="staffApp.handleCourierProofPicked(event)">
                 <input type="file" id="courierChatPhotoInput" accept="image/*" class="hidden" onchange="staffApp.handleCourierChatPhotoPicked(event)">
+                <input type="file" id="courierChatPhotoCamInput" accept="image/*" capture="environment" class="hidden" onchange="staffApp.handleCourierChatPhotoPicked(event)">
 
                 <!-- MODAL CHAT KURIR PENUH (v152 — LEGA + KIRIM FOTO) -->
                 <div id="staffFullChatModal" class="fixed inset-0 bg-black/70 z-[94] hidden flex items-end sm:items-center justify-center backdrop-blur-sm sm:p-4">
@@ -1647,8 +1649,16 @@
             },
             triggerCourierProofPhoto(orderId) {
                 this.state.courierProofOrderId = orderId;
-                const inp = document.getElementById('courierProofFileInput');
-                if (inp) { inp.value = ''; inp.click(); }
+                const fire = (id) => { const el = document.getElementById(id); if (el) { el.value = ''; el.click(); } };
+                if (typeof window.nfShowPhotoSourcePicker === 'function') {
+                    window.nfShowPhotoSourcePicker({
+                        title: 'Foto Bukti Serah Terima',
+                        onCamera: () => fire('courierProofFileInput'),
+                        onGallery: () => fire('courierProofGalleryInput')
+                    });
+                } else {
+                    fire('courierProofFileInput');
+                }
             },
             handleCourierProofPicked(ev) {
                 const file = ev?.target?.files?.[0];
@@ -1856,8 +1866,16 @@
             },
             triggerCourierChatPhoto(orderId) {
                 this._pendingCourChatOrderId = orderId;
-                const inp = document.getElementById('courierChatPhotoInput');
-                if (inp) { inp.value = ''; inp.click(); }
+                const fire = (id) => { const el = document.getElementById(id); if (el) { el.value = ''; el.click(); } };
+                if (typeof window.nfShowPhotoSourcePicker === 'function') {
+                    window.nfShowPhotoSourcePicker({
+                        title: 'Kirim Foto ke Chat Pembeli',
+                        onCamera: () => fire('courierChatPhotoCamInput'),
+                        onGallery: () => fire('courierChatPhotoInput')
+                    });
+                } else {
+                    fire('courierChatPhotoCamInput');
+                }
             },
             handleCourierChatPhotoPicked(ev) {
                 const file = ev?.target?.files?.[0];
