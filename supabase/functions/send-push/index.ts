@@ -1,4 +1,4 @@
-// Supabase Edge Function: send-push (NutriFresh v151 — COD Menunggu Persetujuan + Direct Reply RPC + Smart Staff Filter)
+// Supabase Edge Function: send-push (NutriFresh v152 — PO Parsel Terintegrasi + Smart Live Order + Auto-Cleanup Media 30 Hari)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS_HEADERS: Record<string, string> = {
@@ -10,6 +10,54 @@ const CORS_HEADERS: Record<string, string> = {
 
 function jsonRes(obj: unknown, status = 200): Response {
   return new Response(JSON.stringify(obj), { status, headers: CORS_HEADERS });
+}
+
+let lastAutoMediaCleanupMs = 0;
+
+// deno-lint-ignore no-explicit-any
+async function runExpiredMediaCleanup(sb: any, days = 30, tenantId = "nutrifresh") {
+  if (!sb) return { ok: false, error: "Supabase service unavailable" };
+  const cleanDays = Math.max(7, Math.min(365, Number(days) || 30));
+  const { data: rpcRes, error: rpcErr } = await sb.rpc("nf_cleanup_old_order_media", {
+    p_days: cleanDays,
+    p_tenant_id: tenantId,
+  });
+  if (rpcErr) {
+    console.error("[send-push] nf_cleanup_old_order_media error:", rpcErr.message);
+    return { ok: false, error: rpcErr.message };
+  }
+  const paths: string[] = Array.isArray(rpcRes?.storagePaths)
+    ? rpcRes.storagePaths.filter((p: unknown) => typeof p === "string" && p.length > 3)
+    : [];
+  let deletedFiles = 0;
+  // Hapus file fisik di Supabase Storage (per batch 50 file)
+  for (let i = 0; i < paths.length; i += 50) {
+    const chunk = paths.slice(i, i + 50);
+    const { data: remData, error: remErr } = await sb.storage.from("nutrifresh-media").remove(chunk);
+    if (!remErr && Array.isArray(remData)) deletedFiles += remData.length;
+  }
+  // Sapu juga file yatim (orphan) > cleanDays hari di folder sementara order_media & chat_media
+  const cutoffMs = Date.now() - cleanDays * 24 * 60 * 60 * 1000;
+  for (const folder of ["order_media", "chat_media"]) {
+    try {
+      const { data: listed } = await sb.storage.from("nutrifresh-media").list(folder, { limit: 100 });
+      if (Array.isArray(listed) && listed.length > 0) {
+        const oldPaths = listed
+          .filter((f: any) => f?.name && f?.created_at && new Date(f.created_at).getTime() < cutoffMs)
+          .map((f: any) => `${folder}/${f.name}`);
+        if (oldPaths.length > 0) {
+          const { data: rem2 } = await sb.storage.from("nutrifresh-media").remove(oldPaths);
+          if (Array.isArray(rem2)) deletedFiles += rem2.length;
+        }
+      }
+    } catch (_) {}
+  }
+  return {
+    ok: true,
+    days: cleanDays,
+    cleanedOrders: Number(rpcRes?.cleanedOrders) || 0,
+    deletedFiles,
+  };
 }
 
 let cachedAccessToken = "";
@@ -107,8 +155,8 @@ function extractOrderId(...sources: Array<unknown>): string {
     const s = String(src || "").trim();
     if (!s) continue;
     const cleaned = s.replace(/^#/, "");
-    if (/^ORD-[A-Z0-9-]+$/i.test(cleaned)) return cleaned.toUpperCase();
-    const m = s.match(/ORD-[A-Z0-9-]+/i);
+    if (/^(?:ORD|PO)-[A-Z0-9-]+$/i.test(cleaned)) return cleaned.toUpperCase();
+    const m = s.match(/(?:ORD|PO)-[A-Z0-9-]+/i);
     if (m && m[0]) return m[0].toUpperCase();
   }
   return "";
@@ -165,17 +213,31 @@ function formatStatusForRole(st: string, targetRole: string, paymentMethod = "")
   return s;
 }
 
+function isPoEarlyStage(st: string): boolean {
+  return [
+    "PO Menunggu Konfirmasi",
+    "Menunggu Konfirmasi",
+    "PO Dikonfirmasi",
+    "Dikonfirmasi",
+    "PO Sedang Dirakit",
+    "Sedang Dirakit",
+    "PO Selesai Dirakit",
+    "Selesai Dirakit",
+  ].includes(String(st || "").trim());
+}
+
 function getOrderStep(st: string): number {
   if (st === "Selesai" || st.startsWith("Terkirim") || st.startsWith("Pesanan Diterima")) return 5;
   if ([
     "Diantar Kurir",
     "Siap Diambil",
+    "Siap Ambil/Kirim",
     "Disetujui — Siap Kirim",
     "Disetujui — Siap Diambil",
     "Siap Diambil Kurir",
   ].includes(st)) return 4;
-  if (["Menunggu Pembayaran", "Menunggu Persetujuan", "Menunggu Konfirmasi", "Menunggu Verifikasi Bayar"].includes(st)) return 3;
-  if (st === "Sedang Ditimbang") return 2;
+  if (["Menunggu Pembayaran", "Menunggu Persetujuan", "Menunggu Verifikasi Bayar"].includes(st)) return 3;
+  if (["Sedang Ditimbang", "PO Sedang Dirakit", "Sedang Dirakit", "PO Selesai Dirakit", "Selesai Dirakit"].includes(st)) return 2;
   return 1;
 }
 
@@ -290,6 +352,11 @@ function populateOrderEnrichment(
   fcmData.customer_name = String(overrides.customer_name || ord.customerName || "Pelanggan");
   fcmData.courier_name = String(overrides.courier_name || ord.courierName || "");
   fcmData.delivery_mode = String(overrides.delivery_mode || ord.deliveryMode || "Kirim ke Rumah");
+
+  const isPoOrder = ord.id.startsWith("PO-") || Boolean(ord.rawData?.isParcelOrder);
+  if (overrides.skip_live_order === true || overrides.skip_live_order === "1" || (isPoOrder && isPoEarlyStage(rawStatus))) {
+    fcmData.skip_live_order = "1";
+  }
 
   if (isChatNotif) {
     const lastMsg = ord.orderChat.length > 0 ? ord.orderChat[ord.orderChat.length - 1] : null;
@@ -442,6 +509,20 @@ Deno.serve(async (req: Request) => {
     // =========================================================================
     // 1. DIRECT REPLY CHAT DARI NOTIFIKASI ANDROID (v150 — OFFICIAL RPC + DUAL COLUMN!)
     // =========================================================================
+    // =========================================================================
+    // 0. PEMBERSIHAN OTOMATIS / MANUAL FOTO SEMENTARA PESANAN (> N HARI)
+    // =========================================================================
+    if (payload?.action === "cleanup_expired_media") {
+      const res = await runExpiredMediaCleanup(sb, Number(payload.days) || 30, tenantId);
+      return jsonRes(res, res.ok ? 200 : 500);
+    }
+
+    // Jalankan pembersihan ringan di latar belakang maksimal 1x per 24 jam
+    if (sb && (Date.now() - lastAutoMediaCleanupMs) > 24 * 60 * 60 * 1000) {
+      lastAutoMediaCleanupMs = Date.now();
+      runExpiredMediaCleanup(sb, 30, tenantId).catch(() => {});
+    }
+
     if (payload?.action === "direct_reply") {
       if (!sb) return jsonRes({ ok: false, error: "Supabase service unavailable" }, 500);
 
@@ -635,6 +716,9 @@ Deno.serve(async (req: Request) => {
           if (payload.total_text) fcmData.total_text = String(payload.total_text);
           if (payload.courier_name) fcmData.courier_name = String(payload.courier_name);
           if (payload.customer_name) fcmData.customer_name = String(payload.customer_name);
+          if (payload.skip_live_order === true || payload.skip_live_order === "1" || (orderId.startsWith("PO-") && isPoEarlyStage(effectiveStatus))) {
+            fcmData.skip_live_order = "1";
+          }
         }
 
         perRoleResults[tRole] = await sendToRoleTargets({

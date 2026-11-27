@@ -2466,40 +2466,86 @@ export async function customerApproveOrderRpc({ orderId, token }) {
     return data;
 }
 
-export async function customerSendOrderChatRpc({ orderId, token, message, senderName = "" }) {
+export async function customerSendOrderChatRpc({ orderId, token, message = "", senderName = "", imageUrl = "" }) {
     if (!supabase) throw new Error("Supabase belum terkonfigurasi.");
-    const { data, error } = await supabase.rpc("nf_customer_send_order_chat", {
+    const payload = {
         p_order_id: String(orderId || "").trim(),
         p_token: String(token || "").trim().toUpperCase(),
         p_message: String(message || "").trim(),
         p_sender_name: String(senderName || "").trim(),
-        p_tenant_id: TENANT_ID
-    });
+        p_tenant_id: TENANT_ID,
+        ...(imageUrl ? { p_image_url: String(imageUrl).trim() } : {})
+    };
+    let { data, error } = await supabase.rpc("nf_customer_send_order_chat", payload);
+    if (error && imageUrl && String(error.message || "").includes("p_image_url")) {
+        delete payload.p_image_url;
+        ({ data, error } = await supabase.rpc("nf_customer_send_order_chat", payload));
+    }
     if (error) throw error;
     return data;
 }
 
-export async function staffSendOrderChatRpc({ orderId, message, senderName = "Kasir Toko", senderRole = "store" }) {
+export async function staffSendOrderChatRpc({ orderId, message = "", senderName = "Kasir Toko", senderRole = "store", imageUrl = "" }) {
     if (!supabase) throw new Error("Supabase belum terkonfigurasi.");
-    const { data, error } = await supabase.rpc("nf_staff_send_order_chat", {
+    const payload = {
         p_order_id: String(orderId || "").trim(),
         p_message: String(message || "").trim(),
         p_sender_name: String(senderName || "Kasir Toko").trim(),
         p_sender_role: String(senderRole || "store").trim(),
-        p_tenant_id: TENANT_ID
-    });
+        p_tenant_id: TENANT_ID,
+        ...(imageUrl ? { p_image_url: String(imageUrl).trim() } : {})
+    };
+    let { data, error } = await supabase.rpc("nf_staff_send_order_chat", payload);
+    if (error && imageUrl && String(error.message || "").includes("p_image_url")) {
+        delete payload.p_image_url;
+        ({ data, error } = await supabase.rpc("nf_staff_send_order_chat", payload));
+    }
     if (error) throw error;
     return data;
 }
 
-export async function courierUpdateDeliveryRpc({ orderId, newStatus, courierName = "Kurir NutriFresh", proofUrl = "", note = "" }) {
+export async function courierUpdateDeliveryRpc({ orderId, newStatus, courierName = "Kurir NutriFresh", proofUrl = "", note = "", destIndex = -1 }) {
     if (!supabase) throw new Error("Supabase belum terkonfigurasi.");
-    const { data, error } = await supabase.rpc("nf_courier_update_delivery", {
+    const payload = {
         p_order_id: String(orderId || "").trim(),
         p_new_status: String(newStatus || "").trim(),
         p_courier_name: String(courierName || "Kurir NutriFresh").trim(),
         p_proof_url: String(proofUrl || "").trim(),
         p_note: String(note || "").trim(),
+        p_tenant_id: TENANT_ID,
+        ...(typeof destIndex === "number" && destIndex >= 0 ? { p_dest_index: destIndex } : {})
+    };
+    let { data, error } = await supabase.rpc("nf_courier_update_delivery", payload);
+    if (error && typeof destIndex === "number" && destIndex >= 0 && String(error.message || "").includes("p_dest_index")) {
+        delete payload.p_dest_index;
+        ({ data, error } = await supabase.rpc("nf_courier_update_delivery", payload));
+    }
+    if (error) throw error;
+    return data;
+}
+
+export async function cleanupExpiredOrderMediaRpc(days = 30) {
+    if (!supabase) throw new Error("Supabase belum terkonfigurasi.");
+    const cleanDays = Math.max(7, parseInt(days, 10) || 30);
+    // Panggil Edge Function send-push (punya service_role) agar file fisik di Storage ikut terhapus!
+    try {
+        const url = `${SUPABASE_CONFIG.url}/functions/v1/send-push`;
+        const key = SUPABASE_CONFIG.anonKey || SUPABASE_CONFIG.key || "";
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(key ? { apikey: key, Authorization: `Bearer ${key}` } : {})
+            },
+            body: JSON.stringify({ action: "cleanup_expired_media", days: cleanDays, tenant_id: TENANT_ID })
+        });
+        if (res.ok) {
+            const j = await res.json();
+            if (j && j.ok) return j;
+        }
+    } catch (_) {}
+    const { data, error } = await supabase.rpc("nf_cleanup_old_order_media", {
+        p_days: cleanDays,
         p_tenant_id: TENANT_ID
     });
     if (error) throw error;

@@ -333,6 +333,39 @@
 
                 <div id="courierOrdersList" class="space-y-3 text-xs"></div>
                 <input type="file" id="courierProofFileInput" accept="image/*" capture="environment" class="hidden" onchange="staffApp.handleCourierProofPicked(event)">
+                <input type="file" id="courierChatPhotoInput" accept="image/*" class="hidden" onchange="staffApp.handleCourierChatPhotoPicked(event)">
+
+                <!-- MODAL CHAT KURIR PENUH (v152 — LEGA + KIRIM FOTO) -->
+                <div id="staffFullChatModal" class="fixed inset-0 bg-black/70 z-[94] hidden flex items-end sm:items-center justify-center backdrop-blur-sm sm:p-4">
+                    <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-lg mx-auto overflow-hidden border border-gray-200 flex flex-col h-[86vh] sm:h-[80vh]">
+                        <div class="px-4 py-3.5 border-b bg-gradient-to-r from-teal-700 to-emerald-600 text-white flex justify-between items-center flex-shrink-0">
+                            <div class="min-w-0">
+                                <h3 id="staffFullChatTitle" class="text-sm font-black truncate">Chat Pesanan</h3>
+                                <p id="staffFullChatSub" class="text-[11px] text-teal-100 truncate">Terhubung langsung ke Pembeli &amp; Kasir</p>
+                            </div>
+                            <button type="button" onclick="staffApp.closeCourierFullChat()" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div id="staffFullChatBody" class="flex-1 overflow-y-auto p-3.5 space-y-2.5 bg-slate-100 text-xs"></div>
+                        <div class="p-3 border-t bg-white flex items-end gap-2 flex-shrink-0">
+                            <button type="button" onclick="staffApp.triggerCourierChatPhoto(staffApp.state.activeFullChatOrderId)" title="Kirim Foto" class="w-10 h-10 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-camera text-sm"></i></button>
+                            <textarea id="staffFullChatInput" rows="2" placeholder="Kabari pembeli (misal: Saya di depan pagar hijau, atau kirim foto lokasi)..." class="flex-1 px-3.5 py-2 text-xs rounded-2xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-teal-600 outline-none resize-none leading-snug"></textarea>
+                            <button type="button" onclick="staffApp.sendCourierFullChat()" class="px-4 h-10 rounded-full bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs flex-shrink-0">Kirim</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LIGHTBOX FOTO BESAR -->
+                <div id="staffPhotoLightboxModal" class="fixed inset-0 bg-black/85 z-[99] hidden flex items-center justify-center p-4 backdrop-blur-sm" onclick="if(event.target===this)this.classList.add('hidden')">
+                    <div class="bg-white rounded-3xl overflow-hidden shadow-2xl max-w-md w-full">
+                        <div class="px-4 py-3 border-b flex items-center justify-between bg-slate-50">
+                            <h4 id="staffPhotoLightboxTitle" class="text-xs font-extrabold text-gray-900 truncate">Pratinjau Foto</h4>
+                            <button type="button" onclick="document.getElementById('staffPhotoLightboxModal').classList.add('hidden')" class="w-7 h-7 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div class="p-3 bg-slate-950 text-center">
+                            <img id="staffPhotoLightboxImg" src="" alt="Foto" class="max-h-[72vh] mx-auto rounded-xl object-contain">
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- TAB 2: PENGAJUAN HR (CUTI, IZIN, SAKIT, LEMBUR, KASBON) + SALDO CUTI & PINJAMAN -->
@@ -1493,36 +1526,62 @@
                     const pickedProof = this.state.courierProofDataByOrder[ord.id] || '';
                     const chatArr = Array.isArray(ord.orderChat) ? ord.orderChat : [];
 
+                    const isPoOrd = !!(ord.isParcelOrder || String(ord.id || '').startsWith('PO-'));
+                    const dpAmt = Number(ord.dpAmount) || 0;
+                    const dests = Array.isArray(ord.destinations) ? ord.destinations : [];
+                    const hasMultiDest = dests.length > 1;
+                    const unpaidCod = isCod && ord.paymentStatus !== 'Lunas' && grand > 0;
+                    const parcelPhoto = ord.parcelPhotoUrl || ord.weighPhotoUrl || '';
+
                     return `
-                        <div class="nf-staff-card rounded-3xl p-4 space-y-3 border ${isCodWait ? 'border-amber-400' : (isOnWay ? 'border-indigo-400' : 'border-gray-200')}">
+                        <div class="nf-staff-card rounded-3xl p-4 space-y-3 border ${isCodWait ? 'border-amber-400' : (isOnWay ? 'border-indigo-400' : (isPoOrd ? 'border-purple-300' : 'border-gray-200'))}">
                             <div class="flex items-start justify-between gap-2">
                                 <div class="min-w-0">
-                                    <span class="font-mono font-black text-[11px] bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full">${this.esc(ord.orderCode || ord.id)}</span>
-                                    <h4 class="font-black text-sm text-gray-900 mt-1">${this.esc(ord.customerName || 'Pelanggan')}</h4>
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        ${isPoOrd ? '<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[9.5px] font-black">🎁 PO PARSEL</span>' : ''}
+                                        <span class="font-mono font-black text-[11px] bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full">${this.esc(ord.orderCode || ord.id)}</span>
+                                    </div>
+                                    <h4 class="font-black text-sm text-gray-900 mt-1">${this.esc(ord.customerName || 'Pelanggan')}${ord.institution ? ` <span class="text-xs font-bold text-gray-500">• ${this.esc(ord.institution)}</span>` : ''}</h4>
+                                    ${isPoOrd && ord.deliveryDate ? `<div class="text-[10px] text-purple-800 font-bold mt-0.5">📅 Jadwal Kirim: ${this.esc(ord.deliveryDate)} ${this.esc(ord.deliveryTime || '')}</div>` : ''}
                                 </div>
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-black flex-shrink-0 ${isDone ? 'bg-green-100 text-nutri-dark' : (isCodWait ? 'bg-amber-100 text-amber-900' : (isOnWay ? 'bg-indigo-100 text-indigo-800' : 'bg-blue-100 text-blue-800'))}">${this.esc(ord.orderStatus)}</span>
                             </div>
 
                             <!-- Kotak Tagihan COD vs Lunas -->
-                            ${isCod ? `
+                            ${unpaidCod ? `
                             <div class="bg-amber-50 border-2 border-amber-400 rounded-2xl p-3 flex items-center justify-between gap-2">
                                 <div>
-                                    <span class="text-[10px] font-black uppercase text-amber-800 block">💵 TAGIH TUNAI (COD) KE PEMBELI</span>
+                                    <span class="text-[10px] font-black uppercase text-amber-800 block">💵 ${dpAmt > 0 ? 'TAGIH SISA COD (SUDAH DP ' + this.rp(dpAmt) + ')' : 'TAGIH TUNAI (COD) KE PEMBELI'}</span>
                                     <span class="text-lg font-black text-amber-950">${this.rp(grand)}</span>
                                 </div>
                                 <span class="px-2.5 py-1 rounded-full bg-amber-500 text-white font-black text-[10px]">COD</span>
                             </div>` : `
                             <div class="bg-emerald-50 border border-emerald-300 rounded-2xl p-2.5 flex items-center justify-between gap-2">
                                 <div>
-                                    <span class="text-[10px] font-black uppercase text-emerald-800 block">✅ NON-TUNAI (${this.esc(ord.paymentMethod || 'QRIS')})</span>
-                                    <span class="text-xs font-extrabold text-emerald-900">Tidak perlu tagih uang tunai (${this.rp(grand)})</span>
+                                    <span class="text-[10px] font-black uppercase text-emerald-800 block">✅ ${ord.paymentStatus === 'Lunas' ? 'SUDAH LUNAS' : 'NON-TUNAI (' + this.esc(ord.paymentMethod || 'QRIS') + ')'}</span>
+                                    <span class="text-xs font-extrabold text-emerald-900">Tidak perlu tagih uang tunai (${this.rp(Number(ord.estimatedTotal) || grand)})</span>
                                 </div>
                                 <span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[10px]">LUNAS</span>
                             </div>`}
 
-                            <!-- Alamat & Tombol Navigasi -->
+                            <!-- Alamat & Tombol Navigasi (Multi-Alamat Otomatis Tercoret Saat Kurir Kirim!) -->
                             <div class="bg-gray-50 border border-gray-200 rounded-2xl p-3 space-y-2">
-                                <div class="text-[11px] font-semibold text-gray-800 leading-snug"><i class="fa-solid fa-location-dot text-red-500 mr-1"></i> ${this.esc(ord.address || 'Alamat belum diisi')}</div>
+                                ${dests.length > 0 ? `
+                                <div class="space-y-1.5">
+                                    ${dests.map((d, dIdx) => {
+                                        const dMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(d.address || '')}`;
+                                        return `<div class="flex items-center justify-between gap-2 p-2 rounded-xl border ${d.delivered ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-gray-200'}">
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-[11px] font-bold ${d.delivered ? 'text-emerald-800 line-through' : 'text-gray-900'}">${d.delivered ? '✅' : '📍'} ${d.qty || 1}x ${this.esc(d.address || '-')}</div>
+                                                ${d.delivered && d.deliveredBy ? `<div class="text-[9.5px] text-emerald-700">Terkirim oleh ${this.esc(d.deliveredBy)}</div>` : ''}
+                                            </div>
+                                            <div class="flex items-center gap-1 flex-shrink-0">
+                                                <a href="${dMaps}" target="_blank" rel="noopener" class="px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-extrabold text-[10px] border border-blue-200">Maps</a>
+                                                ${isOnWay && hasMultiDest && !d.delivered ? `<button type="button" onclick="staffApp.courierMarkDestDelivered('${this.esc(ord.id)}', ${dIdx})" class="px-2.5 py-1 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[10px] shadow-sm">✓ Terkirim</button>` : ''}
+                                            </div>
+                                        </div>`;
+                                    }).join('')}
+                                </div>` : `<div class="text-[11px] font-semibold text-gray-800 leading-snug"><i class="fa-solid fa-location-dot text-red-500 mr-1"></i> ${this.esc(ord.address || 'Alamat belum diisi')}</div>`}
                                 <div class="grid grid-cols-3 gap-1.5">
                                     <a href="${mapsUrl}" target="_blank" rel="noopener" class="py-1.5 px-2 rounded-full bg-blue-600 text-white font-extrabold text-[10.5px] text-center"><i class="fa-solid fa-map-location-dot mr-1"></i>Maps</a>
                                     <a href="${telUrl}" class="py-1.5 px-2 rounded-full bg-slate-800 text-white font-extrabold text-[10.5px] text-center"><i class="fa-solid fa-phone mr-1"></i>Telp</a>
@@ -1530,18 +1589,29 @@
                                 </div>
                             </div>
 
-                            <!-- Rincian Buah -->
+                            ${parcelPhoto ? `
+                            <div onclick="staffApp.openPhotoLightbox('${this.esc(parcelPhoto)}','Foto Paket #${this.esc(ord.orderCode || ord.id)}')" class="cursor-pointer flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 rounded-2xl p-2">
+                                <img src="${this.esc(parcelPhoto)}" alt="Foto" class="w-12 h-12 rounded-xl object-cover border border-emerald-300 flex-shrink-0">
+                                <div class="text-[11px] font-bold text-emerald-900">📷 Foto Paket / Timbangan dari Toko <span class="block text-[10px] font-normal text-emerald-700">Ketuk untuk memperbesar</span></div>
+                            </div>` : ''}
+
+                            <!-- Rincian Buah / Parsel -->
                             <div class="bg-gray-50 border border-gray-100 rounded-2xl p-2.5 space-y-1 text-[11px]">
                                 ${items.map(it => `<div class="flex justify-between gap-2"><span class="text-gray-700">▪️ <strong>${this.formatStockShort(it.qty, it.unit)}</strong> ${this.esc(it.name)}</span><span class="font-bold text-gray-800">${this.rp(it.subtotal)}</span></div>`).join('')}
                             </div>
 
-                            <!-- Chat Cepat Kurir <-> Pembeli -->
+                            <!-- Chat Lega Kurir <-> Pembeli + Foto + Perluas (v152) -->
                             ${!isDone ? `
-                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2 space-y-1.5">
-                                ${chatArr.slice(-4).map(m => `<div class="text-[10.5px] text-gray-700"><strong class="${m.sender === 'customer' ? 'text-amber-800' : 'text-teal-700'}">${this.esc(m.name || m.sender)}:</strong> ${this.esc(m.text || '')}</div>`).join('')}
-                                <div class="flex items-center gap-1.5">
-                                    <input type="text" id="courChatInp-${this.esc(ord.id)}" onkeydown="if(event.key==='Enter'){event.preventDefault();staffApp.sendCourierChat('${this.esc(ord.id)}');}" placeholder="Kabari pembeli (misal: Saya di depan)..." class="flex-1 px-2.5 py-1.5 text-[11px] rounded-full border border-slate-300 bg-white outline-none">
-                                    <button type="button" onclick="staffApp.sendCourierChat('${this.esc(ord.id)}')" class="px-3 py-1.5 rounded-full bg-slate-800 text-white font-extrabold text-[10.5px] flex-shrink-0">Kirim</button>
+                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 space-y-2">
+                                <div class="flex items-center justify-between text-[10.5px] font-extrabold text-slate-700">
+                                    <span><i class="fa-solid fa-comments text-teal-600 mr-1"></i> Chat Pembeli (${chatArr.length})</span>
+                                    <button type="button" onclick="staffApp.openCourierFullChat('${this.esc(ord.id)}')" class="px-2.5 py-1 rounded-full bg-white text-teal-800 border border-teal-300 font-extrabold text-[10px]"><i class="fa-solid fa-expand mr-1"></i>Perluas</button>
+                                </div>
+                                <div class="space-y-1 max-h-36 overflow-y-auto pr-0.5">${this.formatCourierChatHtml(ord, 8)}</div>
+                                <div class="flex items-end gap-1.5">
+                                    <button type="button" onclick="staffApp.triggerCourierChatPhoto('${this.esc(ord.id)}')" title="Kirim Foto" class="w-9 h-9 rounded-full bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-camera text-xs"></i></button>
+                                    <textarea id="courChatInp-${this.esc(ord.id)}" rows="2" placeholder="Kabari pembeli (misal: Saya sudah di depan pagar)..." class="flex-1 px-3 py-1.5 text-xs rounded-2xl border border-slate-300 bg-white outline-none resize-none leading-snug"></textarea>
+                                    <button type="button" onclick="staffApp.sendCourierChat('${this.esc(ord.id)}')" class="px-3.5 h-9 rounded-full bg-slate-800 text-white font-extrabold text-xs flex-shrink-0">Kirim</button>
                                 </div>
                             </div>` : ''}
 
@@ -1726,6 +1796,157 @@
                     this.alert('Gagal mengirim pesan: ' + (err?.message || err));
                 } finally {
                     if (inp) inp.disabled = false;
+                }
+            },
+            openPhotoLightbox(url, title = 'Pratinjau Foto') {
+                if (!url) return;
+                document.getElementById('staffPhotoLightboxImg').src = url;
+                document.getElementById('staffPhotoLightboxTitle').textContent = title;
+                document.getElementById('staffPhotoLightboxModal')?.classList.remove('hidden');
+            },
+            formatCourierChatHtml(ord, limitCount = 15) {
+                const chatArr = Array.isArray(ord?.orderChat) ? ord.orderChat : [];
+                if (chatArr.length === 0) return '<div class="text-[10.5px] text-gray-400 text-center py-1">Belum ada pesan chat.</div>';
+                return chatArr.slice(-limitCount).map(m => {
+                    const isCust = m.sender === 'customer';
+                    const tStr = m.at ? new Date(m.at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
+                    const imgHtml = m.imageUrl ? `<img src="${this.esc(m.imageUrl)}" onclick="staffApp.openPhotoLightbox('${this.esc(m.imageUrl)}','Foto Chat')" class="mt-1 max-h-36 rounded-xl border cursor-pointer object-cover">` : '';
+                    return `<div class="px-2.5 py-1.5 rounded-2xl text-[11px] ${isCust ? 'bg-amber-50 border border-amber-200 text-amber-950' : 'bg-white border border-slate-200 text-slate-800'}"><strong class="${isCust ? 'text-amber-800' : 'text-teal-700'}">${this.esc(m.name || m.sender)}</strong> <span class="text-[9.5px] text-gray-400">${tStr}</span>: <span class="whitespace-pre-line break-words">${this.esc(m.text || '')}</span>${imgHtml}</div>`;
+                }).join('');
+            },
+            openCourierFullChat(orderId) {
+                const ord = (this.state.onlineOrders || []).find(o => o.id === orderId);
+                if (!ord) return;
+                this.state.activeFullChatOrderId = orderId;
+                document.getElementById('staffFullChatTitle').textContent = `💬 Chat #${ord.orderCode || ord.id}`;
+                document.getElementById('staffFullChatSub').textContent = `${ord.customerName || 'Pelanggan'} • ${ord.orderStatus || ''}`;
+                const body = document.getElementById('staffFullChatBody');
+                body.innerHTML = this.formatCourierChatHtml(ord, 80);
+                setTimeout(() => { body.scrollTop = body.scrollHeight; }, 40);
+                document.getElementById('staffFullChatModal')?.classList.remove('hidden');
+            },
+            closeCourierFullChat() {
+                document.getElementById('staffFullChatModal')?.classList.add('hidden');
+            },
+            async sendCourierFullChat() {
+                const oid = this.state.activeFullChatOrderId;
+                const inp = document.getElementById('staffFullChatInput');
+                const msg = (inp?.value || '').trim();
+                if (!msg || !oid) return;
+                inp.disabled = true;
+                try {
+                    const cName = this.state.profile?.name || 'Kurir NutriFresh';
+                    await staffSendOrderChatRpc({ orderId: oid, message: msg, senderName: cName, senderRole: 'courier' });
+                    const ord = (this.state.onlineOrders || []).find(o => o.id === oid);
+                    this.dispatchOrderPushNow({
+                        order_id: oid, order_status: ord?.orderStatus || 'Diantar Kurir', courier_name: cName,
+                        receipt_token: ord?.receiptToken || '', target_roles: ['customer'],
+                        target_phone: ord?.customerPhone || '', event_type: 'chat',
+                        sender_name: cName, chat_text: msg,
+                        title: `💬 Pesan dari Kurir ${cName} (#${ord?.orderCode || oid})`, body: msg
+                    });
+                    inp.value = '';
+                    await this.loadAllData();
+                    this.openCourierFullChat(oid);
+                } catch (err) {
+                    this.alert('Gagal mengirim pesan: ' + (err?.message || err));
+                } finally {
+                    inp.disabled = false;
+                }
+            },
+            triggerCourierChatPhoto(orderId) {
+                this._pendingCourChatOrderId = orderId;
+                const inp = document.getElementById('courierChatPhotoInput');
+                if (inp) { inp.value = ''; inp.click(); }
+            },
+            handleCourierChatPhotoPicked(ev) {
+                const file = ev?.target?.files?.[0];
+                const oid = this._pendingCourChatOrderId;
+                if (!file || !oid) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = async () => {
+                        const maxSide = 640;
+                        let w = img.width, h = img.height;
+                        if (w > maxSide || h > maxSide) {
+                            if (w >= h) { h = Math.round((h * maxSide) / w); w = maxSide; }
+                            else { w = Math.round((w * maxSide) / h); h = maxSide; }
+                        }
+                        const cv = document.createElement('canvas');
+                        cv.width = w; cv.height = h;
+                        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+                        const dataUrl = cv.toDataURL('image/jpeg', 0.58);
+                        try {
+                            const cName = this.state.profile?.name || 'Kurir NutriFresh';
+                            let uploaded = '';
+                            try { uploaded = await uploadDataUrlToStorage(dataUrl, 'chat_media', `${oid}_kur_${Date.now()}`); } catch (_) {}
+                            const finalUrl = (uploaded && uploaded.startsWith('http')) ? uploaded : dataUrl;
+                            await staffSendOrderChatRpc({ orderId: oid, message: '📷 Foto dari kurir', senderName: cName, senderRole: 'courier', imageUrl: finalUrl });
+                            const ord = (this.state.onlineOrders || []).find(o => o.id === oid);
+                            this.dispatchOrderPushNow({
+                                order_id: oid, order_status: ord?.orderStatus || 'Diantar Kurir', courier_name: cName,
+                                receipt_token: ord?.receiptToken || '', target_roles: ['customer'],
+                                target_phone: ord?.customerPhone || '', event_type: 'chat',
+                                sender_name: cName, chat_text: '📷 Foto dari kurir',
+                                title: `💬 Foto dari Kurir ${cName} (#${ord?.orderCode || oid})`, body: '📷 Kurir mengirim foto terbaru'
+                            });
+                            await this.loadAllData();
+                            if (!document.getElementById('staffFullChatModal')?.classList.contains('hidden')) this.openCourierFullChat(oid);
+                        } catch (err) {
+                            this.alert('Gagal mengirim foto: ' + (err?.message || err));
+                        }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                ev.target.value = '';
+            },
+            async courierMarkDestDelivered(orderId, destIndex) {
+                const ord = (this.state.onlineOrders || []).find(o => o.id === orderId);
+                const dest = ord?.destinations?.[destIndex];
+                if (!ord || !dest) return;
+                if (!confirm(`Tandai alamat "${dest.qty || 1}x ${dest.address}" sudah terkirim?
+
+Alamat ini akan otomatis tercoret di POS & HP Pelanggan.`)) return;
+                const cname = this.state.profile?.name || 'Kurir NutriFresh';
+                let proofUrl = '';
+                const localDataUrl = this.state.courierProofDataByOrder[orderId] || '';
+                try {
+                    if (localDataUrl) {
+                        const uploaded = await uploadDataUrlToStorage(localDataUrl, 'proofs', `${orderId}_d${destIndex}`);
+                        proofUrl = (uploaded && uploaded.startsWith('http')) ? uploaded : localDataUrl;
+                    }
+                    const res = await courierUpdateDeliveryRpc({
+                        orderId, newStatus: 'Diantar Kurir', courierName: cname, proofUrl, destIndex
+                    });
+                    const allDone = !!(res && res.allDelivered);
+                    this.dispatchOrderPushNow({
+                        order_id: orderId,
+                        order_status: (res && res.orderStatus) || (allDone ? 'Terkirim • Lunas' : 'Diantar Kurir'),
+                        courier_name: cname,
+                        receipt_token: ord.receiptToken || '',
+                        target_roles: ['customer'],
+                        target_phone: ord.customerPhone || '',
+                        event_type: 'order_status',
+                        title: allDone ? `📦 Semua Alamat Terkirim! #${ord.orderCode || orderId}` : `✅ Alamat Terkirim • #${ord.orderCode || orderId}`,
+                        body: allDone ? `Semua parsel telah selesai diantar oleh ${cname}.` : `${dest.qty || 1}x ${dest.address} sudah diterima (diantar ${cname}).`
+                    });
+                    if (allDone) {
+                        this.dispatchOrderPushNow({
+                            order_id: orderId,
+                            order_status: (res && res.orderStatus) || 'Terkirim • Lunas',
+                            courier_name: cname,
+                            target_roles: ['pos'],
+                            event_type: 'order_status',
+                            title: `✅ Semua Titik PO/Antaran Selesai #${ord.orderCode || orderId}`,
+                            body: `${cname} menyelesaikan semua titik pengantaran untuk ${ord.customerName}.`
+                        });
+                        delete this.state.courierProofDataByOrder[orderId];
+                    }
+                    await this.loadAllData();
+                } catch (err) {
+                    this.alert('Gagal menandai alamat terkirim: ' + (err?.message || err));
                 }
             },
 

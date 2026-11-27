@@ -3296,8 +3296,11 @@
                             <p id="poSuccessSubtitle" class="text-xs text-gray-600 mt-1 max-w-sm mx-auto leading-relaxed">Pesanan Anda sudah tersimpan. Silakan lanjutkan kirim pesan konfirmasi ke WhatsApp toko kami.</p>
                         </div>
                         <div class="space-y-2 max-w-sm mx-auto pt-1">
+                            <button type="button" onclick="app.closeParcelPreOrderModal(); app.openCustomerOrdersModal('active');" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-3 px-4 shadow-md transition flex items-center justify-center gap-2 text-xs">
+                                <i class="fa-solid fa-receipt text-sm"></i> <span>Pantau &amp; Chat di Pesanan Saya</span>
+                            </button>
                             <button type="button" onclick="app.reopenLastPoWhatsApp()" class="w-full bg-green-600 hover:bg-green-700 text-white font-extrabold py-3 px-4 shadow-md transition flex items-center justify-center gap-2 text-xs">
-                                <i class="fa-brands fa-whatsapp text-base"></i> <span>Buka WhatsApp Konfirmasi</span>
+                                <i class="fa-brands fa-whatsapp text-base"></i> <span>Buka WhatsApp Konfirmasi (Opsional)</span>
                             </button>
                             <button type="button" onclick="app.copyLastPoSummaryText()" class="w-full bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 font-bold py-2.5 px-4 transition text-xs">
                                 <i class="fa-regular fa-copy mr-1"></i> Salin Ringkasan Pesanan
@@ -3435,6 +3438,39 @@
         </div>
     </div>
     <input type="file" id="custOrderProofFileInput" accept="image/*" class="hidden" onchange="app.handleCustomerProofFileSelected(event)">
+    <input type="file" id="custChatPhotoInput" accept="image/*" class="hidden" onchange="app.handleCustomerChatPhotoSelected(event)">
+
+    <!-- MODAL CHAT PESANAN PENUH (v152 — LEGA & NYAMAN DI HP + KIRIM FOTO) -->
+    <div id="custFullChatModal" class="fixed inset-0 bg-black/70 z-[94] hidden flex items-end sm:items-center justify-center fade-in backdrop-blur-sm sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-lg mx-auto overflow-hidden border border-gray-200 flex flex-col h-[88vh] sm:h-[82vh]">
+            <div class="px-4 py-3.5 border-b bg-gradient-to-r from-nutri-dark to-nutri-green text-white flex justify-between items-center flex-shrink-0">
+                <div class="min-w-0">
+                    <h3 id="custFullChatTitle" class="text-sm font-black truncate">Chat Pesanan</h3>
+                    <p id="custFullChatSub" class="text-[11px] text-green-100 truncate">Terhubung langsung ke Kasir &amp; Kurir NutriFresh</p>
+                </div>
+                <button type="button" onclick="app.closeCustomerFullChat()" aria-label="Tutup" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="custFullChatBody" class="flex-1 overflow-y-auto p-3.5 space-y-2.5 bg-slate-100/90 text-xs"></div>
+            <div class="p-3 border-t bg-white flex items-end gap-2 flex-shrink-0">
+                <button type="button" onclick="app.triggerCustomerChatPhoto(app.state.activeFullChatOrderId, app.state.activeFullChatToken)" title="Kirim Foto" class="w-10 h-10 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 flex items-center justify-center flex-shrink-0 transition"><i class="fa-solid fa-camera text-sm"></i></button>
+                <textarea id="custFullChatInput" rows="2" placeholder="Tulis pesan panjang, tanya kematangan buah, atau request perubahan..." class="flex-1 px-3.5 py-2 text-xs rounded-2xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-nutri-green outline-none resize-none leading-snug max-h-28"></textarea>
+                <button type="button" id="btnCustFullChatSend" onclick="app.sendCustomerFullChat()" class="px-4 h-10 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-xs flex-shrink-0 shadow-sm transition">Kirim</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL LIGHTBOX FOTO BESAR (TIMBANGAN / PARSEL / CHAT) -->
+    <div id="custPhotoLightboxModal" class="fixed inset-0 bg-black/85 z-[99] hidden flex items-center justify-center p-4 backdrop-blur-sm" onclick="if(event.target===this)this.classList.add('hidden')">
+        <div class="bg-white rounded-3xl overflow-hidden shadow-2xl max-w-md w-full">
+            <div class="px-4 py-3 border-b flex items-center justify-between bg-slate-50">
+                <h4 id="custPhotoLightboxTitle" class="text-xs font-extrabold text-gray-900 truncate">Pratinjau Foto</h4>
+                <button type="button" onclick="document.getElementById('custPhotoLightboxModal').classList.add('hidden')" class="w-7 h-7 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-3 bg-slate-950 text-center">
+                <img id="custPhotoLightboxImg" src="" alt="Foto" class="max-h-[72vh] mx-auto rounded-xl object-contain">
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL RESI DIGITAL ONLINE & DOWNLOAD PNG (v131 — ?resi=...&k=...) -->
     <div id="publicReceiptModal" class="fixed inset-0 bg-black/65 z-[96] hidden flex items-center justify-center fade-in backdrop-blur-sm p-4">
@@ -4841,10 +4877,22 @@
                     }
                 });
             },
+            isPoPreDeliveryStage(ord) {
+                if (!ord) return false;
+                const isPo = !!(ord.isParcelOrder || String(ord.id || ord.orderCode || '').startsWith('PO-'));
+                if (!isPo) return false;
+                const st = String(ord.orderStatus || '').trim();
+                return [
+                    'PO Menunggu Konfirmasi', 'Menunggu Konfirmasi',
+                    'PO Dikonfirmasi', 'Dikonfirmasi',
+                    'PO Sedang Dirakit', 'Sedang Dirakit',
+                    'PO Selesai Dirakit', 'Selesai Dirakit'
+                ].includes(st);
+            },
             syncNativeLiveOrderState() {
                 try {
                     if (!window.NfAndroidNative || typeof window.NfAndroidNative.syncActiveOrderState !== 'function') return;
-                    const active = (this.state.myOrdersList || []).filter(o => o && !['Selesai', 'Dibatalkan'].includes(o.orderStatus));
+                    const active = (this.state.myOrdersList || []).filter(o => o && !['Selesai', 'Dibatalkan'].includes(o.orderStatus) && !this.isPoPreDeliveryStage(o));
                     if (active.length === 0) {
                         window.NfAndroidNative.syncActiveOrderState(JSON.stringify({ active: false }));
                         return;
@@ -5124,8 +5172,23 @@
                 const pm = String(ord?.paymentMethod || '').toLowerCase();
                 return pm.includes('cash') || pm.includes('tunai') || pm.includes('cod');
             },
+            openCustomerPhotoLightbox(url, title = 'Pratinjau Foto') {
+                if (!url) return;
+                const img = document.getElementById('custPhotoLightboxImg');
+                const ttl = document.getElementById('custPhotoLightboxTitle');
+                if (img) img.src = url;
+                if (ttl) ttl.textContent = title;
+                document.getElementById('custPhotoLightboxModal')?.classList.remove('hidden');
+            },
             formatCustomerStatusLabel(ord) {
                 const st = String(ord?.orderStatus || 'Menunggu Timbang').trim();
+                const isPo = !!(ord?.isParcelOrder || String(ord?.id || '').startsWith('PO-'));
+                if (isPo) {
+                    if (st === 'PO Menunggu Konfirmasi' || st === 'Menunggu Konfirmasi') return 'PO Menunggu Konfirmasi Toko';
+                    if (st === 'PO Dikonfirmasi' || st === 'Dikonfirmasi') return 'PO Dikonfirmasi (Terjadwal)';
+                    if (st === 'PO Sedang Dirakit' || st === 'Sedang Dirakit') return 'Sedang Dirakit Toko';
+                    if (st === 'PO Selesai Dirakit' || st === 'Selesai Dirakit') return 'Parsel Selesai Dirakit (Siap Jadwal)';
+                }
                 if (this.isCodOrder(ord) && ['Menunggu Pembayaran', 'Menunggu Konfirmasi'].includes(st)) {
                     return 'Menunggu Persetujuan';
                 }
@@ -5137,24 +5200,28 @@
             getOrderStepNumber(st) {
                 const s = String(st || '').trim();
                 if (s === 'Selesai' || s.startsWith('Terkirim') || s.startsWith('Pesanan Diterima')) return 5;
-                if (['Diantar Kurir', 'Siap Diambil', 'Disetujui — Siap Kirim', 'Disetujui — Siap Diambil', 'Siap Diambil Kurir'].includes(s)) return 4;
-                if (['Menunggu Pembayaran', 'Menunggu Persetujuan', 'Menunggu Konfirmasi', 'Menunggu Verifikasi Bayar'].includes(s)) return 3;
-                if (s === 'Sedang Ditimbang') return 2;
+                if (['Diantar Kurir', 'Siap Diambil', 'Siap Ambil/Kirim', 'Disetujui — Siap Kirim', 'Disetujui — Siap Diambil', 'Siap Diambil Kurir'].includes(s)) return 4;
+                if (['Menunggu Pembayaran', 'Menunggu Persetujuan', 'Menunggu Verifikasi Bayar'].includes(s)) return 3;
+                if (['Sedang Ditimbang', 'PO Sedang Dirakit', 'Sedang Dirakit', 'PO Selesai Dirakit', 'Selesai Dirakit'].includes(s)) return 2;
                 return 1;
             },
-            formatCustChatMessagesHtml(ord) {
+            formatCustChatMessagesHtml(ord, limitCount = 20) {
                 const chatArr = Array.isArray(ord.orderChat) ? ord.orderChat : [];
                 if (chatArr.length === 0) {
-                    return '<div class="text-[10.5px] text-gray-400 text-center py-1.5">Ingin tambah buah, tanya kematangan, atau ubah pesanan? Tulis pesan langsung ke kasir di sini.</div>';
+                    return '<div class="text-[11px] text-gray-400 text-center py-2.5">Ingin tambah buah, tanya kematangan, atau ubah pesanan? Tulis pesan atau kirim foto langsung ke kasir di sini.</div>';
                 }
-                return chatArr.slice(-15).map(m => {
+                return chatArr.slice(-limitCount).map(m => {
                     const isMe = m.sender === 'customer';
                     const tStr = m.at ? new Date(m.at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
                     const senderTag = isMe ? 'Anda' : (m.sender === 'courier' ? `🛵 ${this.escapeHtml(m.name || 'Kurir')}` : `🍐 ${this.escapeHtml(m.name || 'Toko')}`);
+                    const imgHtml = m.imageUrl
+                        ? `<img src="${this.escapeHtml(m.imageUrl)}" alt="Foto" onclick="app.openCustomerPhotoLightbox('${this.escapeHtml(m.imageUrl)}','Foto Chat • ${senderTag}')" class="mt-1.5 max-h-44 rounded-xl border border-black/10 cursor-pointer object-cover">`
+                        : (m.imageExpired ? `<div class="mt-1 text-[10px] italic opacity-75">📷 Foto lama dibersihkan otomatis (&gt;30 hari)</div>` : '');
                     return `<div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
-                        <div class="max-w-[85%] rounded-2xl px-3 py-1.5 text-[11px] ${isMe ? 'bg-nutri-green text-white rounded-br-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm'}">
+                        <div class="max-w-[86%] rounded-2xl px-3.5 py-2 text-[11.5px] shadow-sm ${isMe ? 'bg-nutri-green text-white rounded-br-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm'}">
                             <div class="text-[9.5px] font-bold ${isMe ? 'text-green-100' : 'text-nutri-dark'}">${senderTag} • ${tStr}</div>
-                            <div class="leading-snug mt-0.5 break-words">${this.escapeHtml(m.text || '')}</div>
+                            ${m.text ? `<div class="leading-relaxed mt-0.5 break-words whitespace-pre-line">${this.escapeHtml(m.text)}</div>` : ''}
+                            ${imgHtml}
                         </div>
                     </div>`;
                 }).join('');
@@ -5163,12 +5230,128 @@
                 (this.state.myOrdersList || []).forEach(ord => {
                     const wrap = document.getElementById(`custChatMsgs-${ord.id}`);
                     if (wrap) {
-                        wrap.innerHTML = this.formatCustChatMessagesHtml(ord);
+                        wrap.innerHTML = this.formatCustChatMessagesHtml(ord, 15);
                         wrap.scrollTop = wrap.scrollHeight;
                     }
                     const cnt = document.getElementById(`custChatCnt-${ord.id}`);
                     if (cnt) cnt.textContent = `${Array.isArray(ord.orderChat) ? ord.orderChat.length : 0} pesan`;
                 });
+                if (this.state.activeFullChatOrderId && !document.getElementById('custFullChatModal')?.classList.contains('hidden')) {
+                    const fOrd = (this.state.myOrdersList || []).find(o => o.id === this.state.activeFullChatOrderId);
+                    const fBody = document.getElementById('custFullChatBody');
+                    if (fOrd && fBody) {
+                        fBody.innerHTML = this.formatCustChatMessagesHtml(fOrd, 80);
+                        fBody.scrollTop = fBody.scrollHeight;
+                    }
+                }
+            },
+            openCustomerFullChat(orderId, token) {
+                const ord = (this.state.myOrdersList || []).find(o => o.id === orderId);
+                if (!ord) return;
+                this.state.activeFullChatOrderId = orderId;
+                this.state.activeFullChatToken = token || ord.receiptToken || '';
+                const ttl = document.getElementById('custFullChatTitle');
+                const sub = document.getElementById('custFullChatSub');
+                const body = document.getElementById('custFullChatBody');
+                const inp = document.getElementById('custFullChatInput');
+                if (ttl) ttl.textContent = `💬 Chat #${ord.orderCode || ord.id}`;
+                if (sub) sub.textContent = `${this.formatCustomerStatusLabel(ord)} • Kasir & Kurir NutriFresh`;
+                if (body) {
+                    body.innerHTML = this.formatCustChatMessagesHtml(ord, 80);
+                    setTimeout(() => { body.scrollTop = body.scrollHeight; }, 40);
+                }
+                if (inp) {
+                    inp.value = (this.state.custChatDrafts && this.state.custChatDrafts[orderId]) || '';
+                    setTimeout(() => inp.focus(), 120);
+                }
+                document.getElementById('custFullChatModal')?.classList.remove('hidden');
+            },
+            closeCustomerFullChat() {
+                document.getElementById('custFullChatModal')?.classList.add('hidden');
+            },
+            async sendCustomerFullChat() {
+                const oid = this.state.activeFullChatOrderId;
+                const tok = this.state.activeFullChatToken;
+                const inp = document.getElementById('custFullChatInput');
+                const msg = (inp?.value || '').trim();
+                if (!msg || !oid || !tok) return;
+                inp.disabled = true;
+                try {
+                    await this.sendCustomerOrderChatDirect(oid, tok, msg, '');
+                    inp.value = '';
+                    if (this.state.custChatDrafts) delete this.state.custChatDrafts[oid];
+                } finally {
+                    inp.disabled = false;
+                    inp.focus();
+                }
+            },
+            triggerCustomerChatPhoto(orderId, token) {
+                this._pendingChatPhotoOrderId = orderId;
+                this._pendingChatPhotoToken = token;
+                const inp = document.getElementById('custChatPhotoInput');
+                if (inp) { inp.value = ''; inp.click(); }
+            },
+            handleCustomerChatPhotoSelected(ev) {
+                const file = ev?.target?.files?.[0];
+                const oid = this._pendingChatPhotoOrderId;
+                const tok = this._pendingChatPhotoToken;
+                if (!file || !oid || !tok) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = async () => {
+                        const maxSide = 640;
+                        let w = img.width, h = img.height;
+                        if (w > maxSide || h > maxSide) {
+                            if (w >= h) { h = Math.round((h * maxSide) / w); w = maxSide; }
+                            else { w = Math.round((w * maxSide) / h); h = maxSide; }
+                        }
+                        const cv = document.createElement('canvas');
+                        cv.width = w; cv.height = h;
+                        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+                        const dataUrl = cv.toDataURL('image/jpeg', 0.58);
+                        try {
+                            this.showCustomerToast('Mengunggah foto ke chat...');
+                            let uploaded = '';
+                            try { uploaded = await uploadDataUrlToStorage(dataUrl, 'chat_media', `${oid}_c_${Date.now()}`); } catch (_) {}
+                            const finalUrl = (uploaded && uploaded.startsWith('http')) ? uploaded : dataUrl;
+                            await this.sendCustomerOrderChatDirect(oid, tok, '📷 Mengirim foto', finalUrl);
+                            this.showCustomerToast('Foto terkirim ke chat toko!');
+                        } catch (err) {
+                            this.showAlert('Gagal mengirim foto: ' + this.cleanRpcErrorMsg(err));
+                        }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                ev.target.value = '';
+            },
+            async sendCustomerOrderChatDirect(orderId, token, msg, imageUrl = '') {
+                const ord = (this.state.myOrdersList || []).find(o => o.id === orderId);
+                const cSenderName = ord?.customerName || this.state.customerMember?.name || 'Pelanggan';
+                await customerSendOrderChatRpc({
+                    orderId,
+                    token,
+                    message: msg,
+                    senderName: cSenderName,
+                    imageUrl
+                });
+                this.dispatchOrderPushNow({
+                    order_id: orderId,
+                    target_roles: ['pos', 'staff'],
+                    event_type: 'chat',
+                    sender_name: cSenderName,
+                    chat_text: msg || '📷 Mengirim foto',
+                    title: `💬 Chat dari ${cSenderName} (#${orderId})`,
+                    body: msg || '📷 Mengirim foto'
+                });
+                if (ord) {
+                    if (!Array.isArray(ord.orderChat)) ord.orderChat = [];
+                    ord.orderChat.push({ id: 'TMP-' + Date.now(), sender: 'customer', name: ord.customerName || 'Anda', text: msg || '📷 Mengirim foto', imageUrl, at: new Date().toISOString() });
+                    this.patchCustomerOrderChatsInPlace();
+                }
+                this._lastOrdersRenderFp = '';
+                await this.refreshCustomerOrders(false);
             },
             toggleHistoryOrderDetail(orderId) {
                 if (!this.state.expandedHistoryOrders) this.state.expandedHistoryOrders = {};
@@ -5307,20 +5490,34 @@
 
                     // MODE AKTIF (SEDANG BERJALAN)
                     const draftVal = (this.state.custChatDrafts && this.state.custChatDrafts[ord.id]) || '';
+                    const isPoOrd = !!(ord.isParcelOrder || String(ord.id || '').startsWith('PO-'));
+                    const poSteps = isPoOrd ? [
+                        { n: 1, lbl: 'PO Masuk' },
+                        { n: 2, lbl: 'Rakit' },
+                        { n: 3, lbl: isCod ? 'Setuju' : 'Bayar' },
+                        { n: 4, lbl: ord.deliveryMode === 'Ambil di Toko' ? 'Siap' : 'Diantar' },
+                        { n: 5, lbl: 'Selesai' }
+                    ] : steps;
+                    const dpAmt = Number(ord.dpAmount) || 0;
+                    const poPhotoUrl = ord.parcelPhotoUrl || ord.weighPhotoUrl || '';
+                    const destList = Array.isArray(ord.destinations) ? ord.destinations : [];
                     return `
-                        <div class="bg-white rounded-3xl border ${needPay ? 'border-amber-400 ring-2 ring-amber-200/70' : 'border-gray-200'} p-4 shadow-sm space-y-3">
+                        <div class="bg-white rounded-3xl border ${needPay ? 'border-amber-400 ring-2 ring-amber-200/70' : (isPoOrd ? 'border-purple-200' : 'border-gray-200')} p-4 shadow-sm space-y-3">
                             <div class="flex items-start justify-between gap-2">
                                 <div class="min-w-0">
-                                    <span class="font-mono font-black text-[11px] bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full">${this.escapeHtml(ord.orderCode || ord.id)}</span>
-                                    <div class="text-[10px] text-gray-400 mt-1">${dtShort} • ${this.escapeHtml(ord.deliveryMode || 'Kirim ke Rumah')}</div>
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        ${isPoOrd ? '<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[9.5px] font-black">🎁 PO PARSEL</span>' : ''}
+                                        <span class="font-mono font-black text-[11px] bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full">${this.escapeHtml(ord.orderCode || ord.id)}</span>
+                                    </div>
+                                    <div class="text-[10px] text-gray-500 mt-1">${isPoOrd && ord.deliveryDate ? `📅 Jadwal: <strong>${this.escapeHtml(ord.deliveryDate)} ${this.escapeHtml(ord.deliveryTime || '')}</strong> • ` : `${dtShort} • `}${this.escapeHtml(ord.deliveryMode || 'Kirim ke Rumah')}</div>
                                 </div>
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black flex-shrink-0 ${isCancelled ? 'bg-red-100 text-red-700' : (ord.orderStatus === 'Selesai' ? 'bg-green-100 text-nutri-dark' : (needPay ? 'bg-amber-100 text-amber-900' : 'bg-blue-100 text-blue-800'))}">${this.escapeHtml(displayStatus)}</span>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black flex-shrink-0 ${isCancelled ? 'bg-red-100 text-red-700' : (ord.orderStatus === 'Selesai' ? 'bg-green-100 text-nutri-dark' : (needPay ? 'bg-amber-100 text-amber-900' : (isPoOrd ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800')))}">${this.escapeHtml(displayStatus)}</span>
                             </div>
 
                             ${!isCancelled ? `
                             <!-- Progress Bar 5 Langkah -->
                             <div class="grid grid-cols-5 gap-1 pt-1">
-                                ${steps.map(s => {
+                                ${poSteps.map(s => {
                                     const active = step >= s.n;
                                     const cur = step === s.n;
                                     return `<div class="text-center">
@@ -5333,22 +5530,32 @@
                             <!-- Rincian Item -->
                             <div class="bg-gray-50 border border-gray-100 rounded-2xl p-2.5 space-y-1 text-[11px]">
                                 ${items.map(it => `<div class="flex justify-between gap-2"><span class="text-gray-700 truncate">${this.formatStockDisplay(it.qty, it.unit)} × ${this.escapeHtml(it.name)}</span><span class="font-bold text-gray-900 flex-shrink-0">${this.formatCurrency(it.subtotal || this.calculateLineAmount(it, it.qty))}</span></div>`).join('')}
+                                ${dpAmt > 0 ? `<div class="flex justify-between pt-1 border-t border-gray-200/80 text-[11px] text-emerald-700 font-bold"><span>DP Sudah Dibayar</span><span>- ${this.formatCurrency(dpAmt)}</span></div>` : ''}
                                 <div class="flex justify-between pt-1.5 mt-1 border-t border-gray-200/80 text-[11px]">
                                     <span class="text-gray-500 font-bold">Ongkos Kirim</span>
                                     <span class="font-extrabold ${shipFee === 0 ? 'text-emerald-700' : 'text-gray-800'}">${shipFee === 0 ? 'Gratis (Rp 0)' : this.formatCurrency(shipFee)}</span>
                                 </div>
                                 <div class="flex justify-between items-center pt-1 font-black text-xs">
-                                    <span class="text-gray-700">${step >= 3 ? 'Total Final' : 'Estimasi Total'}</span>
+                                    <span class="text-gray-700">${dpAmt > 0 ? 'Sisa Tagihan' : (step >= 3 ? 'Total Final' : 'Estimasi Total')}</span>
                                     <span class="text-nutri-brown text-sm">${this.formatCurrency(grandTotal)}</span>
                                 </div>
                             </div>
 
+                            ${destList.length > 0 ? `
+                            <div class="flex flex-wrap gap-1.5">
+                                ${destList.map(d => `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold border ${d.delivered ? 'bg-emerald-50 border-emerald-300 text-emerald-800 line-through' : 'bg-slate-50 border-slate-200 text-slate-700'}">${d.delivered ? '✅' : '⏳'} ${d.qty || 1}x ${this.escapeHtml(d.address || '-')}</span>`).join('')}
+                            </div>` : ''}
+
                             ${ord.cashierNote ? `<div class="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-[11px] text-blue-900"><strong>Catatan Toko:</strong> ${this.escapeHtml(ord.cashierNote)}</div>` : ''}
 
-                            ${ord.weighPhotoUrl ? `
-                            <div class="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-[11px]">
-                                <span class="font-bold text-emerald-900"><i class="fa-solid fa-scale-balanced mr-1"></i> Foto Hasil Timbangan Toko</span>
-                                <a href="${this.escapeHtml(ord.weighPhotoUrl)}" target="_blank" rel="noopener" class="font-extrabold text-emerald-700 underline">Lihat Foto →</a>
+                            ${poPhotoUrl ? `
+                            <div onclick="app.openCustomerPhotoLightbox('${this.escapeHtml(poPhotoUrl)}','${isPoOrd ? 'Foto Parsel Jadi' : 'Foto Hasil Timbangan'} • #${this.escapeHtml(ord.orderCode || ord.id)}')" class="cursor-pointer flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl p-2.5 text-[11px] hover:bg-emerald-100/70 transition">
+                                <img src="${this.escapeHtml(poPhotoUrl)}" alt="Foto" class="w-14 h-14 rounded-xl object-cover border border-emerald-300 flex-shrink-0">
+                                <div class="min-w-0 flex-1">
+                                    <span class="font-extrabold text-emerald-900 block"><i class="fa-solid ${isPoOrd ? 'fa-gift' : 'fa-scale-balanced'} mr-1"></i> ${isPoOrd ? 'Foto Parsel Selesai Dirakit' : 'Foto Hasil Timbangan Toko'}</span>
+                                    <span class="text-[10px] text-emerald-700">Ketuk foto untuk memperbesar</span>
+                                </div>
+                                <i class="fa-solid fa-magnifying-glass-plus text-emerald-600 text-sm pr-1"></i>
                             </div>` : ''}
 
                             ${needPay ? `
@@ -5387,17 +5594,18 @@
                                 ${ord.deliveryProofUrl ? `<a href="${this.escapeHtml(ord.deliveryProofUrl)}" target="_blank" rel="noopener" class="font-extrabold text-indigo-700 underline">Bukti Antar →</a>` : ''}
                             </div>` : ''}
 
-                            <!-- CHAT 2 ARAH LANGSUNG DI DALAM PESANAN (ANTI-GANGGU KEYBOARD v143) -->
-                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 space-y-2">
-                                <div class="flex items-center justify-between text-[10.5px] font-extrabold text-slate-700">
-                                    <span><i class="fa-solid fa-comments text-nutri-green mr-1"></i> Chat Pesanan (2 Arah)</span>
-                                    <span id="custChatCnt-${this.escapeHtml(ord.id)}" class="text-[9.5px] text-slate-400">${chatArr.length} pesan</span>
+                            <!-- CHAT 2 ARAH LEGA + FOTO + MODE PENUH (v152) -->
+                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2">
+                                <div class="flex items-center justify-between text-[11px] font-extrabold text-slate-700 gap-2">
+                                    <span><i class="fa-solid fa-comments text-nutri-green mr-1"></i> Chat Pesanan <span id="custChatCnt-${this.escapeHtml(ord.id)}" class="text-[10px] font-bold text-slate-400 ml-1">${chatArr.length} pesan</span></span>
+                                    <button type="button" onclick="app.openCustomerFullChat('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="px-2.5 py-1 rounded-full bg-white hover:bg-emerald-50 text-nutri-dark border border-green-300 font-extrabold text-[10px] shadow-sm transition"><i class="fa-solid fa-expand mr-1"></i>Perluas Chat</button>
                                 </div>
-                                <div id="custChatMsgs-${this.escapeHtml(ord.id)}" class="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">${this.formatCustChatMessagesHtml(ord)}</div>
+                                <div id="custChatMsgs-${this.escapeHtml(ord.id)}" class="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">${this.formatCustChatMessagesHtml(ord, 15)}</div>
                                 ${!isClosedOrd ? `
-                                <div class="flex items-center gap-1.5 pt-1">
-                                    <input type="text" id="custChatInp-${this.escapeHtml(ord.id)}" value="${this.escapeHtml(draftVal)}" oninput="app.state.custChatDrafts['${this.escapeHtml(ord.id)}']=this.value" onkeydown="if(event.key==='Enter'){event.preventDefault();app.sendCustomerOrderChat('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}');}" placeholder="Tulis pesan / minta tambah item..." class="flex-1 px-3 py-1.5 text-[11px] rounded-full border border-slate-300 bg-white outline-none">
-                                    <button type="button" onclick="app.sendCustomerOrderChat('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="px-3 py-1.5 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] flex-shrink-0 transition">Kirim</button>
+                                <div class="flex items-end gap-1.5 pt-1">
+                                    <button type="button" onclick="app.triggerCustomerChatPhoto('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" title="Kirim Foto" class="w-9 h-9 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 flex items-center justify-center flex-shrink-0 transition"><i class="fa-solid fa-camera text-xs"></i></button>
+                                    <textarea id="custChatInp-${this.escapeHtml(ord.id)}" rows="2" oninput="app.state.custChatDrafts['${this.escapeHtml(ord.id)}']=this.value" placeholder="Tulis pesan / minta ubah buah atau isi parsel..." class="flex-1 px-3 py-2 text-xs rounded-2xl border border-slate-300 bg-white focus:border-nutri-green outline-none resize-none leading-snug">${this.escapeHtml(draftVal)}</textarea>
+                                    <button type="button" onclick="app.sendCustomerOrderChat('${this.escapeHtml(ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="px-3.5 h-9 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-xs flex-shrink-0 transition">Kirim</button>
                                 </div>` : ''}
                             </div>
 
@@ -5433,33 +5641,9 @@
                 if (!msg || !orderId || !token) return;
                 inp.disabled = true;
                 try {
-                    const ord = (this.state.myOrdersList || []).find(o => o.id === orderId);
-                    const cSenderName = ord?.customerName || this.state.customerMember?.name || 'Pelanggan';
-                    await customerSendOrderChatRpc({
-                        orderId,
-                        token,
-                        message: msg,
-                        senderName: cSenderName
-                    });
-                    this.dispatchOrderPushNow({
-                        order_id: orderId,
-                        target_roles: ['pos', 'staff'],
-                        event_type: 'chat',
-                        sender_name: cSenderName,
-                        chat_text: msg,
-                        title: `💬 Chat dari ${cSenderName} (#${orderId})`,
-                        body: msg
-                    });
+                    await this.sendCustomerOrderChatDirect(orderId, token, msg, '');
                     inp.value = '';
                     if (this.state.custChatDrafts) delete this.state.custChatDrafts[orderId];
-                    const ordRef = (this.state.myOrdersList || []).find(o => o.id === orderId);
-                    if (ordRef) {
-                        if (!Array.isArray(ordRef.orderChat)) ordRef.orderChat = [];
-                        ordRef.orderChat.push({ id: 'TMP-' + Date.now(), sender: 'customer', name: ordRef.customerName || 'Anda', text: msg, at: new Date().toISOString() });
-                        this.patchCustomerOrderChatsInPlace();
-                    }
-                    this._lastOrdersRenderFp = '';
-                    await this.refreshCustomerOrders(false);
                 } catch (err) {
                     this.showAlert('Gagal mengirim pesan: ' + this.cleanRpcErrorMsg(err));
                 } finally {
@@ -6969,6 +7153,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
                 if (btn) btn.disabled = true;
 
                 let orderCode = 'PO-' + new Date().toISOString().slice(2, 10).replace(/-/g, '') + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+                let receiptToken = Math.random().toString(36).slice(2, 8).toUpperCase();
                 let savedToCloud = false;
                 try {
                     if (!this.state.isOfflineMode) {
@@ -6982,6 +7167,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
                         });
                         if (res && res.orderCode) {
                             orderCode = res.orderCode;
+                            if (res.receiptToken) receiptToken = String(res.receiptToken).toUpperCase();
                             savedToCloud = true;
                         }
                     }
@@ -6989,6 +7175,45 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
                     console.warn('[Katalog] PO cloud submit fallback ke lokal:', err?.message || err);
                 } finally {
                     if (btn) btn.disabled = false;
+                }
+
+                // Daftarkan PO ke Pesanan Saya + kirim notifikasi push instan ke POS!
+                const flatDests = [];
+                items.forEach((it, iIdx) => {
+                    if (it.deliveryMode !== 'Diambil' && Array.isArray(it.destinations)) {
+                        it.destinations.forEach((d, dIdx) => flatDests.push({
+                            itemIdx: iIdx, destIdx: dIdx, parcelType: it.parcelType,
+                            deliveryDate: it.deliveryDate || firstDate, deliveryTime: it.deliveryTime || firstTime,
+                            address: d.address || '-', qty: d.qty || it.qty || 1, delivered: false
+                        }));
+                    }
+                });
+                const poOnlineSnap = {
+                    id: orderCode, orderCode, receiptToken, isParcelOrder: true, parcelOrderId: orderCode,
+                    customerName: name, customerPhone: phone, institution,
+                    deliveryMode: items.some(it => it.deliveryMode !== 'Diambil') ? 'Kirim ke Rumah' : 'Ambil di Toko',
+                    address: flatDests.map(d => `${d.qty}x ${d.address}`).join(' | ') || 'Diambil di Toko NutriFresh',
+                    deliveryDate: firstDate, deliveryTime: firstTime,
+                    paymentMethod: /ambil|cod|tunai|cash/i.test(paymentPlan) ? 'Cash / Tunai (COD)' : (/transfer|qris/i.test(paymentPlan) ? 'QRIS / Transfer' : paymentPlan),
+                    paymentStatus: 'Belum Bayar', dpAmount: 0,
+                    estimatedTotal: totalAmount, finalTotal: totalAmount, shippingFee: 0,
+                    orderStatus: 'PO Menunggu Konfirmasi',
+                    items: items.map((it, iIdx) => ({ id: `POITEM-${orderCode}-${iIdx}`, name: it.parcelType, qty: it.qty || 1, unit: 'Pcs', price: it.unitPrice || 0, subtotal: it.subtotal || ((it.qty || 1) * (it.unitPrice || 0)) })),
+                    destinations: flatDests, orderChat: [], createdAt: new Date().toISOString()
+                };
+                this.saveCustomerOrderRef(orderCode, receiptToken, poOnlineSnap);
+                this.renderCustomerOrderIndicators();
+                if (window.__nfSyncFcmToken) window.__nfSyncFcmToken({ phone });
+                if (savedToCloud) {
+                    this.dispatchOrderPushNow({
+                        order_id: orderCode,
+                        target_roles: ['pos'],
+                        event_type: 'order_status',
+                        order_status: 'PO Menunggu Konfirmasi',
+                        skip_live_order: true,
+                        title: `🎁 PO Parsel Baru #${orderCode}`,
+                        body: `${name}${institution ? ' (' + institution + ')' : ''} • Jadwal ${firstDate} ${firstTime} • ${this.formatCurrency(totalAmount)}`
+                    });
                 }
 
                 const poRecord = {
@@ -7150,7 +7375,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v151.1';
+        window.__NF_APP_VERSION = 'v152';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 

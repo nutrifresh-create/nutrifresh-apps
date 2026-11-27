@@ -268,9 +268,10 @@ public class NfLiveOrderHelper {
     public static void updateLiveOrderFromFcm(Context ctx, Map<String, String> data) {
         if (ctx == null || data == null) return;
         if (!"customer".equals(APP_ROLE)) return;
+        if ("1".equals(safe(data.get("skip_live_order")))) return;
         String orderId = safe(data.get("order_id")).replace("#", "");
         if (orderId.isEmpty()) orderId = safe(data.get("ref_id")).replace("#", "");
-        if (!orderId.startsWith("ORD-")) return;
+        if (!orderId.startsWith("ORD-") && !orderId.startsWith("PO-")) return;
 
         SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         String rTok = safe(data.get("receipt_token"));
@@ -1326,7 +1327,7 @@ def main():
     # 1. Auto-increment versionCode & versionName so Android allows direct in-place Update!
     run_num = int(os.environ.get("GITHUB_RUN_NUMBER", "1") or "1")
     ver_code = 100 + run_num
-    ver_name = f"1.51.{run_num}"
+    ver_name = f"1.52.{run_num}"
 
     gh_repo = (os.environ.get("GITHUB_REPOSITORY") or "nutrifresh-create/nutrifresh-apps").strip()
     update_manifest_url = f"https://github.com/{gh_repo}/releases/download/latest-apks/update-{app_role}.json"

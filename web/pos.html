@@ -1611,6 +1611,9 @@
                                     <div id="posActiveOrdSub" class="text-[10px] text-emerald-800 truncate">Ubah berat sesuai timbangan riil lalu kirim konfirmasi WA</div>
                                 </div>
                                 <div class="flex items-center gap-1 flex-shrink-0">
+                                    <button type="button" onclick="app.triggerPosOrderPhoto(app.state.activeLinkedOnlineOrder?.id, 'weigh')" title="Foto Timbangan" class="bg-amber-500 hover:bg-amber-600 text-white font-extrabold px-2.5 py-1.5 text-[10px] shadow-sm transition flex items-center gap-1">
+                                        <i class="fa-solid fa-camera text-xs"></i> <span>Foto</span>
+                                    </button>
                                     <button type="button" onclick="app.sendOnlineOrderFinalToApp()" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-2.5 py-1.5 text-[10px] shadow-sm transition flex items-center gap-1">
                                         <i class="fa-solid fa-paper-plane text-xs"></i> <span>Kirim Total ke App</span>
                                     </button>
@@ -3493,14 +3496,37 @@
                 </div>
                 <button type="button" onclick="document.getElementById('onlineOrdersModal').classList.add('hidden')" class="text-white/85 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <div class="px-4 py-2.5 bg-gray-50 border-b flex items-center justify-between gap-2 text-xs flex-shrink-0">
-                <div class="flex items-center gap-1.5">
-                    <button type="button" id="ordTab-active" onclick="app.setOnlineOrdersFilter('active')" class="px-3 py-1.5 font-extrabold bg-nutri-green text-white shadow-sm">Aktif / Menunggu</button>
-                    <button type="button" id="ordTab-done" onclick="app.setOnlineOrdersFilter('done')" class="px-3 py-1.5 font-bold bg-gray-200 text-gray-700">Selesai / Batal</button>
+            <div class="px-4 py-2.5 bg-gray-50 border-b flex flex-wrap items-center justify-between gap-2 text-xs flex-shrink-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <button type="button" id="ordTab-active" onclick="app.setOnlineOrdersFilter('active')" class="px-3 py-1.5 rounded-full font-extrabold bg-nutri-green text-white shadow-sm">⏳ Online Aktif</button>
+                    <button type="button" id="ordTab-done" onclick="app.setOnlineOrdersFilter('done')" class="px-3 py-1.5 rounded-full font-bold bg-gray-200 text-gray-700">✅ Riwayat Online</button>
+                    <button type="button" id="ordTab-offline" onclick="app.setOnlineOrdersFilter('offline')" class="px-3 py-1.5 rounded-full font-bold bg-gray-200 text-gray-700">🧾 Riwayat Offline</button>
                 </div>
                 <span id="onlineOrdersModalCount" class="text-[11px] font-extrabold text-gray-500">0 pesanan</span>
             </div>
             <div id="onlineOrdersListContainer" class="p-4 space-y-3 overflow-y-auto flex-1 text-xs"></div>
+        </div>
+    </div>
+
+    <input type="file" id="posOrderPhotoInput" accept="image/*" class="hidden" onchange="app.handlePosOrderPhotoSelected(event)">
+    <input type="file" id="posChatPhotoInput" accept="image/*" class="hidden" onchange="app.handlePosChatPhotoSelected(event)">
+
+    <!-- MODAL CHAT PESANAN PENUH POS (v152 — LEGA + KIRIM FOTO) -->
+    <div id="posFullChatModal" class="fixed inset-0 bg-black/70 z-[96] hidden flex items-end sm:items-center justify-center fade-in backdrop-blur-sm sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-lg mx-auto overflow-hidden border border-gray-200 flex flex-col h-[86vh] sm:h-[82vh]">
+            <div class="px-4 py-3.5 border-b bg-gradient-to-r from-[#558b2f] to-[#7cb342] text-white flex justify-between items-center flex-shrink-0">
+                <div class="min-w-0">
+                    <h3 id="posFullChatTitle" class="text-sm font-black truncate">Chat Pesanan</h3>
+                    <p id="posFullChatSub" class="text-[11px] text-green-100 truncate">Terhubung langsung ke Pelanggan &amp; Kurir</p>
+                </div>
+                <button type="button" onclick="app.closePosFullChat()" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="posFullChatBody" class="flex-1 overflow-y-auto p-3.5 space-y-2.5 bg-slate-100 text-xs"></div>
+            <div class="p-3 border-t bg-white flex items-end gap-2 flex-shrink-0">
+                <button type="button" onclick="app.triggerPosChatPhoto(app.state.activePosFullChatOrderId)" title="Kirim Foto Buah / Parsel" class="w-10 h-10 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-camera text-sm"></i></button>
+                <textarea id="posFullChatInput" rows="2" placeholder="Balas pesan pelanggan, info buah pengganti, atau kirim foto..." class="flex-1 px-3.5 py-2 text-xs rounded-2xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-nutri-green outline-none resize-none leading-snug"></textarea>
+                <button type="button" onclick="app.sendPosFullChat()" class="px-4 h-10 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-xs flex-shrink-0">Kirim</button>
+            </div>
         </div>
     </div>
 
@@ -3575,7 +3601,7 @@
             getActiveBranchId, setActiveBranchId, fetchCollectionRangeRpc,
             getStorageMaintenanceStatsRpc, cleanupOldPaymentProofsRpc,
             staffResetMemberPinRpc, posGetMemberDetailsRpc,
-            posSettleMemberTxRpc, posVoidMemberTxRpc, staffSendOrderChatRpc, registerPushDeviceRpc
+            posSettleMemberTxRpc, posVoidMemberTxRpc, staffSendOrderChatRpc, registerPushDeviceRpc, cleanupExpiredOrderMediaRpc
         } from "./supabase-adapter.js";
 
         installGlobalErrorTracker("pos.html");
@@ -4379,8 +4405,20 @@
                 if (syncLabel && showFeedback) syncLabel.textContent = 'Menyinkronkan...';
                 try {
                     if (this.state.isOfflineMode || !db) { this.refreshAllInventoryViews(); return; }
-                    const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'));
+                    const [snap, poSnap, ordSnap] = await Promise.all([
+                        getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'inventory')),
+                        getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'parcel_orders'), orderBy('deliveryDate', 'asc'), limit(250))).catch(() => null),
+                        getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'online_orders'), orderBy('createdAt', 'desc'), limit(120))).catch(() => null)
+                    ]);
                     this.state.inventory = snap.docs.map(d => this.normalizeInventoryItem({ id: d.id, ...d.data() }));
+                    if (poSnap && Array.isArray(poSnap.docs)) {
+                        this.state.poCloudAvailable = true;
+                        this.mergeParcelOrdersFromCloud(poSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                    }
+                    if (ordSnap && Array.isArray(ordSnap.docs)) {
+                        this.state.onlineOrdersCloudAvailable = true;
+                        this.mergeOnlineOrdersFromCloud(ordSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                    }
                     this.refreshAllInventoryViews();
                     if (showFeedback && syncLabel) {
                         syncLabel.textContent = 'Tersinkron ✓';
@@ -4832,20 +4870,212 @@
                         po.paymentStatus = dp >= (Number(po.totalAmount) || 0) && dp > 0 ? 'Lunas' : 'DP';
                         po.dpAmount = dp;
                         await this.persistParcelOrderRecord(po);
+                        await this.syncPoToOnlineOrderMirror(po);
                     }, false);
                     return;
                 }
                 po.paymentStatus = newPayStatus;
                 po.dpAmount = newPayStatus === 'Lunas' ? (Number(po.totalAmount) || 0) : 0;
                 await this.persistParcelOrderRecord(po);
+                await this.syncPoToOnlineOrderMirror(po);
+            },
+            async syncPoToOnlineOrderMirror(po, overrideOnlineStatus = null, extraPatch = {}) {
+                if (!po || !po.id) return null;
+                const existing = (this.state.onlineOrders || []).find(o => o.id === po.id);
+                const statusMap = {
+                    'Menunggu Konfirmasi': 'PO Menunggu Konfirmasi',
+                    'Dikonfirmasi': 'PO Dikonfirmasi',
+                    'Sedang Dirakit': 'PO Sedang Dirakit',
+                    'Selesai Dirakit': 'PO Selesai Dirakit',
+                    'Siap Ambil/Kirim': (po.items || []).some(it => it.deliveryMode !== 'Diambil') ? 'Siap Diambil Kurir' : 'Siap Diambil',
+                    'Siap Diambil Kurir': 'Siap Diambil Kurir',
+                    'Siap Diambil': 'Siap Diambil',
+                    'Diantar Kurir': 'Diantar Kurir',
+                    'Terkirim • Tunggu Setor COD': 'Terkirim • Tunggu Setor COD',
+                    'Terkirim • Lunas': 'Terkirim • Lunas',
+                    'Selesai': 'Selesai',
+                    'Dibatalkan': 'Dibatalkan'
+                };
+                const mappedStatus = overrideOnlineStatus || statusMap[po.orderStatus] || po.orderStatus || 'PO Menunggu Konfirmasi';
+                const flatDests = [];
+                const displayItems = [];
+                (po.items || []).forEach((it, iIdx) => {
+                    const qty = Math.max(1, parseInt(it.qty, 10) || 1);
+                    const up = Number(it.unitPrice) || 0;
+                    displayItems.push({
+                        id: `POITEM-${po.id}-${iIdx}`,
+                        name: it.parcelType || 'Parcel Custom',
+                        qty, requestedQty: qty, unit: 'Pcs', price: up,
+                        subtotal: Number(it.subtotal) || (qty * up),
+                        itemNote: it.note || '',
+                        deliveryDate: it.deliveryDate || po.deliveryDate || '',
+                        deliveryTime: it.deliveryTime || po.deliveryTime || '08:00',
+                        deliveryMode: it.deliveryMode || 'Diantar'
+                    });
+                    if (it.deliveryMode !== 'Diambil' && Array.isArray(it.destinations)) {
+                        it.destinations.forEach((d, dIdx) => flatDests.push({
+                            itemIdx: iIdx, destIdx: dIdx, parcelType: it.parcelType || 'Parcel Custom',
+                            deliveryDate: it.deliveryDate || po.deliveryDate || '',
+                            deliveryTime: it.deliveryTime || po.deliveryTime || '08:00',
+                            address: d.address || '-', qty: Math.max(1, parseInt(d.qty, 10) || qty),
+                            delivered: !!d.delivered, deliveredAt: d.deliveredAt || null,
+                            deliveredBy: d.deliveredBy || '', deliveryProofUrl: d.deliveryProofUrl || ''
+                        }));
+                    }
+                });
+                const hasDelivery = (po.items || []).some(it => it.deliveryMode !== 'Diambil');
+                const dpAmt = po.paymentStatus === 'Lunas' ? (Number(po.totalAmount) || 0) : (Number(po.dpAmount) || 0);
+                const remaining = Math.max(0, (Number(po.totalAmount) || 0) - dpAmt);
+                const pmRaw = String(po.paymentPlan || existing?.paymentMethod || 'Konfirmasi WA');
+                const pmNorm = /ambil|cod|tunai|cash/i.test(pmRaw) ? 'Cash / Tunai (COD)' : (/transfer|qris/i.test(pmRaw) ? 'QRIS / Transfer' : pmRaw);
+                const token = existing?.receiptToken || po.receiptToken || Math.random().toString(36).slice(2, 8).toUpperCase();
+                po.receiptToken = token;
+
+                const ordObj = {
+                    ...(existing || {}),
+                    id: po.id,
+                    orderCode: po.orderCode || po.id,
+                    receiptToken: token,
+                    isParcelOrder: true,
+                    parcelOrderId: po.id,
+                    customerName: po.customerName || 'Pelanggan',
+                    customerPhone: po.customerPhone || '-',
+                    institution: po.institution || '',
+                    memberId: po.memberId || null,
+                    deliveryMode: hasDelivery ? 'Kirim ke Rumah' : 'Ambil di Toko',
+                    address: flatDests.map(d => `${d.qty}x ${d.address}`).join(' | ') || 'Diambil di Toko NutriFresh',
+                    deliveryDate: po.deliveryDate || '',
+                    deliveryTime: po.deliveryTime || '08:00',
+                    paymentMethod: pmNorm,
+                    paymentPlan: po.paymentPlan || '',
+                    paymentStatus: po.paymentStatus || 'Belum Bayar',
+                    dpAmount: dpAmt,
+                    estimatedTotal: Number(po.totalAmount) || 0,
+                    finalTotal: remaining,
+                    shippingFee: Number(existing?.shippingFee) || 0,
+                    orderStatus: mappedStatus,
+                    items: displayItems,
+                    parcelItems: po.items || [],
+                    destinations: flatDests,
+                    parcelPhotoUrl: po.parcelPhotoUrl || existing?.parcelPhotoUrl || existing?.weighPhotoUrl || '',
+                    weighPhotoUrl: po.parcelPhotoUrl || existing?.weighPhotoUrl || '',
+                    orderChat: Array.isArray(existing?.orderChat) ? existing.orderChat : [],
+                    linkedTxId: po.linkedTxId || existing?.linkedTxId || null,
+                    createdAt: existing?.createdAt || po.createdAt || new Date().toISOString(),
+                    ...extraPatch
+                };
+                await this.persistOnlineOrderRecord(ordObj);
+                return ordObj;
+            },
+            async confirmParcelOrderStep(poId) {
+                const po = this.state.parcelOrders.find(x => x.id === poId);
+                if (!po) return;
+                po.orderStatus = 'Dikonfirmasi';
+                await this.persistParcelOrderRecord(po);
+                const ord = await this.syncPoToOnlineOrderMirror(po, 'PO Dikonfirmasi');
+                this.dispatchOrderPushNow({
+                    ...this.buildOrderPushMeta(ord, 'PO Dikonfirmasi'),
+                    order_id: po.id, target_roles: ['customer'], target_phone: po.customerPhone || '',
+                    event_type: 'order_status', skip_live_order: true,
+                    title: `✅ PO Parsel Dikonfirmasi! #${po.orderCode}`,
+                    body: `Jadwal ${po.deliveryDate} ${po.deliveryTime} sudah tercatat di NutriFresh. Anda bisa chat langsung di menu Pesanan Saya.`
+                });
+            },
+            async startBuildParcelFromPo(poId) {
+                const po = this.state.parcelOrders.find(x => x.id === poId);
+                if (!po) return;
+                po.orderStatus = 'Sedang Dirakit';
+                await this.persistParcelOrderRecord(po);
+                const ord = await this.syncPoToOnlineOrderMirror(po, 'PO Sedang Dirakit');
+                this.dispatchOrderPushNow({
+                    ...this.buildOrderPushMeta(ord, 'PO Sedang Dirakit'),
+                    order_id: po.id, target_roles: ['customer'], target_phone: po.customerPhone || '',
+                    event_type: 'order_status', skip_live_order: true,
+                    title: `🧺 Parsel Mulai Dirakit! #${po.orderCode}`,
+                    body: `Tim NutriFresh sedang merakit parsel pesanan Anda. Foto parsel jadi akan dikirim segera setelah selesai.`
+                });
+                // Tawarkan buka modal Rakit Parsel (potong stok asli)
+                this._activePoBuildId = po.id;
+                const firstItem = (po.items || [])[0];
+                this.showConfirm(`Status PO ${po.orderCode} diubah ke "Sedang Dirakit".
+
+Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah asli?`, () => {
+                    this.openParcelModal();
+                    if (firstItem) {
+                        const nmInp = document.getElementById('parcelNewNameInput');
+                        const prInp = document.getElementById('parcelNewPriceInput');
+                        const qtyInp = document.getElementById('parcelQtyBuildInput');
+                        if (nmInp) nmInp.value = `${firstItem.parcelType || 'Parcel'} (${po.customerName})`;
+                        if (prInp) prInp.value = String(Number(firstItem.unitPrice) || 0);
+                        if (qtyInp) qtyInp.value = String(Math.max(1, parseInt(firstItem.qty, 10) || 1));
+                    }
+                });
+            },
+            async markParcelAssembled(poId) {
+                const po = this.state.parcelOrders.find(x => x.id === poId);
+                if (!po) return;
+                po.orderStatus = 'Selesai Dirakit';
+                await this.persistParcelOrderRecord(po);
+                const ord = await this.syncPoToOnlineOrderMirror(po, 'PO Selesai Dirakit');
+                this.dispatchOrderPushNow({
+                    ...this.buildOrderPushMeta(ord, 'PO Selesai Dirakit'),
+                    order_id: po.id, target_roles: ['customer'], target_phone: po.customerPhone || '',
+                    event_type: 'order_status', skip_live_order: true,
+                    title: `🎁 Parsel Selesai Dirakit! #${po.orderCode}`,
+                    body: `Parsel Anda sudah rapi & siap sesuai jadwal (${po.deliveryDate} ${po.deliveryTime}). Cek di menu Pesanan Saya!`
+                });
+            },
+            async releaseParcelOrderToDelivery(poId) {
+                const po = this.state.parcelOrders.find(x => x.id === poId);
+                if (!po) return;
+                const hasDelivery = (po.items || []).some(it => it.deliveryMode !== 'Diambil');
+                const nextStatus = hasDelivery ? 'Siap Diambil Kurir' : 'Siap Diambil';
+                po.orderStatus = nextStatus;
+                await this.persistParcelOrderRecord(po);
+                const ord = await this.syncPoToOnlineOrderMirror(po, nextStatus);
+                const grandNow = Math.max(0, (Number(po.totalAmount) || 0) - (po.paymentStatus === 'Lunas' ? (Number(po.totalAmount) || 0) : (Number(po.dpAmount) || 0)));
+                if (hasDelivery) {
+                    this.dispatchOrderPushNow({
+                        ...this.buildOrderPushMeta(ord, 'Siap Diambil Kurir'),
+                        order_id: po.id, target_roles: ['staff'], event_type: 'order_status',
+                        title: `🎁 Parsel Siap Diambil Kurir! #${po.orderCode}`,
+                        body: `${po.customerName} • ${ord.address} (${grandNow > 0 ? 'Sisa ' + this.formatCurrency(grandNow) : 'LUNAS'})`
+                    });
+                }
+                // Hari-H pengiriman: Live Order AKTIF otomatis di HP pelanggan!
+                this.dispatchOrderPushNow({
+                    ...this.buildOrderPushMeta(ord, nextStatus),
+                    order_id: po.id, target_roles: ['customer'], target_phone: po.customerPhone || '',
+                    event_type: 'order_status', skip_live_order: false,
+                    title: hasDelivery ? `🛵 Parsel Siap Diantar Kurir! #${po.orderCode}` : `🛍️ Parsel Siap Diambil di Toko! #${po.orderCode}`,
+                    body: hasDelivery ? `Parsel Anda sudah siap berangkat bersama kurir NutriFresh.` : `Parsel Anda sudah siap diambil di gerai NutriFresh.`
+                });
+                this.showAlert(hasDelivery
+                    ? `PO ${po.orderCode} berhasil diserahkan ke daftar Antaran Kurir (Aplikasi Staff) & Live Tracking pelanggan aktif!`
+                    : `PO ${po.orderCode} ditandai Siap Diambil & pelanggan sudah dikabari!`);
+            },
+            async openPoOrderChat(poId) {
+                const po = this.state.parcelOrders.find(x => x.id === poId);
+                if (!po) return;
+                let ord = (this.state.onlineOrders || []).find(o => o.id === poId);
+                if (!ord) ord = await this.syncPoToOnlineOrderMirror(po);
+                this.openPosFullChat(poId);
             },
             async togglePoDestinationDelivered(poId, itemIdx, destIdx) {
                 const po = this.state.parcelOrders.find(x => x.id === poId);
                 if (!po || !Array.isArray(po.items) || !po.items[itemIdx]) return;
                 const dest = po.items[itemIdx].destinations && po.items[itemIdx].destinations[destIdx];
                 if (!dest) return;
-                dest.delivered = !dest.delivered;
-                await this.persistParcelOrderRecord(po);
+                const actionTxt = dest.delivered ? 'Batalkan tanda terkirim' : 'Tandai terkirim secara manual';
+                this.showConfirm(`${actionTxt} untuk alamat "${dest.qty || 1}x ${dest.address}"?
+
+(Normalnya alamat otomatis tercoret saat Kurir menekan Terkirim di Aplikasi Staff.)`, async () => {
+                    dest.delivered = !dest.delivered;
+                    dest.deliveredAt = dest.delivered ? new Date().toISOString() : null;
+                    dest.deliveredBy = dest.delivered ? (this.state.currentCashier || 'Kasir POS') : '';
+                    await this.persistParcelOrderRecord(po);
+                    await this.syncPoToOnlineOrderMirror(po);
+                });
             },
             async markLinkedParcelOrdersSettled(poIds, trxId) {
                 for (const poId of poIds) {
@@ -4856,6 +5086,7 @@
                     po.orderStatus = 'Selesai';
                     po.linkedTxId = trxId;
                     await this.persistParcelOrderRecord(po);
+                    await this.syncPoToOnlineOrderMirror(po, 'Selesai', { linkedTxId: trxId });
                 }
             },
             sendParcelOrderToPos(poId) {
@@ -4888,6 +5119,10 @@
                         linkedPoId: po.id
                     });
                 });
+                // Potong otomatis nominal DP bila pelanggan sudah bayar DP sebelumnya
+                if (po.paymentStatus === 'DP' && Number(po.dpAmount) > 0) {
+                    this.state.posOverallDiscount = { type: 'nominal', value: Number(po.dpAmount), label: `DP PO ${po.orderCode}` };
+                }
 
                 // Isi nama & cek apakah Member terdaftar
                 const cleanPhone = this.normalizeWaPhone(po.customerPhone || '');
@@ -5220,14 +5455,41 @@
                             ? 'border-l-amber-500'
                             : (po.orderStatus === 'Siap Ambil/Kirim' ? 'border-l-blue-500' : (po.orderStatus === 'Selesai' ? 'border-l-emerald-500' : 'border-l-nutri-green'));
 
+                        const hourInt = parseInt(String(item.deliveryTime || '08:00').split(':')[0], 10);
+                        const isPrepTonight = isTomorrow && !Number.isNaN(hourInt) && hourInt < 11 && ['Menunggu Konfirmasi', 'Dikonfirmasi'].includes(po.orderStatus);
+                        const linkedOrd = (this.state.onlineOrders || []).find(o => o.id === po.id);
+                        const poChatCnt = Array.isArray(linkedOrd?.orderChat) ? linkedOrd.orderChat.length : 0;
+                        const poPhotoUrl = po.parcelPhotoUrl || linkedOrd?.parcelPhotoUrl || linkedOrd?.weighPhotoUrl || '';
+                        const hasDeliveryMode = (po.items || []).some(it => it.deliveryMode !== 'Diambil');
+                        const isClosedPo = ['Selesai', 'Dibatalkan'].includes(po.orderStatus);
+                        const remBill = Math.max(0, (Number(po.totalAmount) || 0) - (po.paymentStatus === 'Lunas' ? (Number(po.totalAmount) || 0) : (Number(po.dpAmount) || 0)));
+
+                        // Alamat otomatis tercoret saat Kurir menekan Terkirim di Aplikasi Staff (klik dengan konfirmasi hanya untuk darurat)
                         const destChecklistHtml = (item.deliveryMode === 'Diantar' && Array.isArray(item.destinations) && item.destinations.length > 0)
                             ? `<div class="flex flex-wrap gap-1.5 pt-1">${item.destinations.map((d, dIdx) => `
-                                <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border cursor-pointer transition ${d.delivered ? 'bg-emerald-50 border-emerald-300 text-emerald-800 line-through' : 'bg-gray-50 border-gray-200 text-gray-800 hover:border-nutri-green'}">
-                                    <input type="checkbox" ${d.delivered ? 'checked' : ''} onchange="app.togglePoDestinationDelivered('${this.escapeHtml(po.id)}', ${itemIdx}, ${dIdx})" class="rounded text-nutri-green">
+                                <button type="button" onclick="app.togglePoDestinationDelivered('${this.escapeHtml(po.id)}', ${itemIdx}, ${dIdx})" title="${d.delivered ? 'Sudah diantar' : 'Otomatis tercoret saat kurir selesai antar (ketuk untuk override manual)'}" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition ${d.delivered ? 'bg-emerald-50 border-emerald-300 text-emerald-800 line-through' : 'bg-gray-50 border-gray-200 text-gray-800 hover:border-amber-400'}">
+                                    <span>${d.delivered ? '✅' : '⏳'}</span>
                                     <span>${d.qty}x ${this.escapeHtml(d.address)}</span>
-                                </label>
+                                    ${d.delivered && d.deliveredBy ? `<span class="no-underline text-[9.5px] font-semibold text-emerald-700">• ${this.escapeHtml(d.deliveredBy)}</span>` : ''}
+                                </button>
                             `).join('')}</div>`
                             : `<div class="text-[11px] font-bold text-blue-700 pt-0.5"><i class="fa-solid fa-store mr-1"></i>Diambil di Toko NutriFresh</div>`;
+
+                        // 1 Tombol Aksi Utama Bertahap sesuai alur kerja toko (Konfirmasi -> Rakit -> Foto/Selesai Rakit -> Serahkan Kurir -> Bayar & Selesai)
+                        let primaryPoBtnHtml = '';
+                        if (!isClosedPo) {
+                            if (po.orderStatus === 'Menunggu Konfirmasi') {
+                                primaryPoBtnHtml = `<button type="button" onclick="app.confirmParcelOrderStep('${this.escapeHtml(po.id)}')" class="px-3.5 py-1.5 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] shadow-sm transition">✅ Terima &amp; Konfirmasi PO</button>`;
+                            } else if (po.orderStatus === 'Dikonfirmasi') {
+                                primaryPoBtnHtml = `<button type="button" onclick="app.startBuildParcelFromPo('${this.escapeHtml(po.id)}')" class="px-3.5 py-1.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-[11px] shadow-sm transition">🧺 Rakit Parsel</button>`;
+                            } else if (po.orderStatus === 'Sedang Dirakit') {
+                                primaryPoBtnHtml = `<button type="button" onclick="app.markParcelAssembled('${this.escapeHtml(po.id)}')" class="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-sm transition">✨ Tandai Selesai Dirakit</button>`;
+                            } else if (po.orderStatus === 'Selesai Dirakit') {
+                                primaryPoBtnHtml = `<button type="button" onclick="app.releaseParcelOrderToDelivery('${this.escapeHtml(po.id)}')" class="px-3.5 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] shadow-sm transition">${hasDeliveryMode ? '🛵 Serahkan ke Kurir' : '🛍️ Tandai Siap Diambil'}</button>`;
+                            } else if (!po.linkedTxId) {
+                                primaryPoBtnHtml = `<button type="button" onclick="app.sendParcelOrderToPos('${this.escapeHtml(po.id)}')" class="px-3.5 py-1.5 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] shadow-sm transition"><i class="fa-solid fa-cash-register mr-1"></i> Terima Bayar &amp; Selesai${remBill > 0 && po.paymentStatus === 'DP' ? ' (' + this.formatCurrency(remBill) + ')' : ''}</button>`;
+                            }
+                        }
 
                         return `
                             <div class="bg-white rounded-2xl border border-gray-200/90 border-l-4 ${statusBorder} p-3.5 shadow-sm space-y-2.5 text-xs">
@@ -5237,7 +5499,9 @@
                                             <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black ${item.deliveryMode === 'Diantar' ? 'bg-amber-100 text-amber-950' : 'bg-blue-100 text-blue-900'}">
                                                 ${item.deliveryMode === 'Diantar' ? '🚚 Diantar' : '🏬 Diambil'} ${this.escapeHtml(item.deliveryTime || '08:00')}
                                             </span>
+                                            ${isPrepTonight ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-900 text-amber-300 border border-indigo-400">🌙 Rakit Malam Ini</span>' : ''}
                                             <span class="font-mono text-[10px] font-extrabold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">${this.escapeHtml(po.orderCode)}</span>
+                                            <span class="text-[10px] font-black bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">${this.escapeHtml(po.orderStatus)}</span>
                                             ${po.source === 'web' ? '<span class="text-[9px] font-black bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">📲 WEB</span>' : '<span class="text-[9px] font-black bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">💬 WA</span>'}
                                             ${(po.items || []).length > 1 ? `<span class="text-[9px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">Bagian dari ${(po.items || []).length} jadwal PO</span>` : ''}
                                         </div>
@@ -5249,18 +5513,17 @@
                                         </div>
                                         ${(addonStr || item.note) ? `<div class="text-[11px] text-amber-900 bg-amber-50/80 border border-amber-200/80 px-2.5 py-1 rounded-xl inline-block">📝 ${this.escapeHtml([addonStr, item.note].filter(Boolean).join(' • '))}</div>` : ''}
                                         ${destChecklistHtml}
+                                        ${poPhotoUrl ? `<div onclick="document.getElementById('viewProofFullImg').src='${this.escapeHtml(poPhotoUrl)}';document.getElementById('viewProofModal').classList.remove('hidden')" class="cursor-pointer inline-flex items-center gap-2 mt-1 px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-[10.5px] font-bold"><img src="${this.escapeHtml(poPhotoUrl)}" class="w-7 h-7 rounded-lg object-cover border"> <span>📷 Foto Parsel Jadi (Lihat)</span></div>` : ''}
                                     </div>
 
-                                    <!-- Kontrol Status & Pembayaran -->
+                                    <!-- Status Pembayaran & Total -->
                                     <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-2 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                                         <div class="text-left sm:text-right">
-                                            <span class="text-[10px] text-gray-400 block">Total 1 Nota PO</span>
-                                            <span class="font-black text-sm text-nutri-brown">${this.formatCurrency(po.totalAmount)}</span>
+                                            <span class="text-[10px] text-gray-400 block">${po.paymentStatus === 'DP' ? 'Sisa Tagihan PO' : 'Total 1 Nota PO'}</span>
+                                            <span class="font-black text-sm text-nutri-brown">${this.formatCurrency(po.paymentStatus === 'DP' ? remBill : po.totalAmount)}</span>
+                                            ${po.paymentStatus === 'DP' && Number(po.dpAmount) > 0 ? `<span class="block text-[9.5px] text-blue-700 font-bold">DP: ${this.formatCurrency(po.dpAmount)} / ${this.formatCurrency(po.totalAmount)}</span>` : ''}
                                         </div>
                                         <div class="flex flex-wrap items-center justify-end gap-1.5">
-                                            <select onchange="app.updateParcelOrderStatus('${this.escapeHtml(po.id)}', this.value)" class="px-2.5 py-1 rounded-full border border-gray-300 text-[11px] font-extrabold bg-white outline-none">
-                                                ${['Menunggu Konfirmasi', 'Dikonfirmasi', 'Sedang Dirakit', 'Siap Ambil/Kirim', 'Selesai', 'Dibatalkan'].map(st => `<option value="${st}" ${po.orderStatus === st ? 'selected' : ''}>${st}</option>`).join('')}
-                                            </select>
                                             <select onchange="app.updateParcelPaymentStatus('${this.escapeHtml(po.id)}', this.value)" class="px-2.5 py-1 rounded-full border text-[11px] font-extrabold outline-none ${payBadgeCls}">
                                                 <option value="Belum Bayar" ${po.paymentStatus === 'Belum Bayar' ? 'selected' : ''}>Belum Bayar</option>
                                                 <option value="DP" ${po.paymentStatus === 'DP' ? 'selected' : ''}>DP${po.paymentStatus === 'DP' && po.dpAmount > 0 ? ` (${this.formatCurrency(po.dpAmount)})` : ''}</option>
@@ -5270,12 +5533,16 @@
                                     </div>
                                 </div>
 
-                                <!-- Tombol Aksi Cepat -->
+                                <!-- Tombol Aksi Bertahap + Foto + Chat -->
                                 <div class="pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
                                     <div class="flex flex-wrap items-center gap-1.5">
-                                        <button type="button" onclick="app.printParcelOrderStickers('${this.escapeHtml(po.id)}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-[11px] transition"><i class="fa-solid fa-tag mr-1"></i> Stiker Parsel</button>
-                                        ${!po.linkedTxId ? `<button type="button" onclick="app.sendParcelOrderToPos('${this.escapeHtml(po.id)}')" class="px-3 py-1.5 bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] shadow-sm transition"><i class="fa-solid fa-cash-register mr-1"></i> Selesaikan ke Kasir</button>` : `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">✓ Masuk Kasir (${this.escapeHtml(po.linkedTxId)})</span>`}
-                                        <button type="button" onclick="app.openPoCustomerWa('${this.escapeHtml(po.id)}')" class="px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 font-extrabold text-[11px] transition"><i class="fa-brands fa-whatsapp mr-1"></i> WA</button>
+                                        ${primaryPoBtnHtml}
+                                        ${!isClosedPo && ['Sedang Dirakit', 'Selesai Dirakit', 'Dikonfirmasi'].includes(po.orderStatus) ? `<button type="button" onclick="app.triggerPosOrderPhoto('${this.escapeHtml(po.id)}', 'parcel')" class="px-2.5 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-[11px] transition">📷 Foto Parsel</button>` : ''}
+                                        <button type="button" onclick="app.openPoOrderChat('${this.escapeHtml(po.id)}')" class="px-2.5 py-1.5 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold text-[11px] transition">💬 Chat${poChatCnt > 0 ? ' (' + poChatCnt + ')' : ''}</button>
+                                        <button type="button" onclick="app.printParcelOrderStickers('${this.escapeHtml(po.id)}')" class="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-[11px] transition"><i class="fa-solid fa-tag mr-1"></i> Stiker</button>
+                                        ${!isClosedPo && !po.linkedTxId && !['Siap Diambil Kurir', 'Siap Diambil', 'Diantar Kurir', 'Terkirim • Tunggu Setor COD', 'Terkirim • Lunas'].includes(po.orderStatus) ? `<button type="button" onclick="app.sendParcelOrderToPos('${this.escapeHtml(po.id)}')" class="px-2.5 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-extrabold text-[11px] transition"><i class="fa-solid fa-cash-register mr-1"></i> Kasir</button>` : ''}
+                                        ${po.linkedTxId ? `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">✓ Kasir (${this.escapeHtml(po.linkedTxId)})</span>` : ''}
+                                        <button type="button" onclick="app.openPoCustomerWa('${this.escapeHtml(po.id)}')" class="px-2.5 py-1.5 rounded-full bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 font-extrabold text-[11px] transition"><i class="fa-brands fa-whatsapp"></i></button>
                                     </div>
                                     <div class="flex items-center gap-1">
                                         <button type="button" onclick="app.openPosParcelOrderModal('${this.escapeHtml(po.id)}')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px]">Edit</button>
@@ -5656,11 +5923,18 @@
                 document.getElementById('onlineOrdersModal')?.classList.remove('hidden');
             },
             setOnlineOrdersFilter(mode) {
-                this.state.onlineOrdersFilter = mode === 'done' ? 'done' : 'active';
-                const bAct = document.getElementById('ordTab-active');
-                const bDone = document.getElementById('ordTab-done');
-                if (bAct) bAct.className = this.state.onlineOrdersFilter === 'active' ? 'px-3 py-1.5 font-extrabold bg-nutri-green text-white shadow-sm' : 'px-3 py-1.5 font-bold bg-gray-200 text-gray-700';
-                if (bDone) bDone.className = this.state.onlineOrdersFilter === 'done' ? 'px-3 py-1.5 font-extrabold bg-nutri-green text-white shadow-sm' : 'px-3 py-1.5 font-bold bg-gray-200 text-gray-700';
+                this.state.onlineOrdersFilter = ['done', 'offline'].includes(mode) ? mode : 'active';
+                ['active', 'done', 'offline'].forEach(k => {
+                    const b = document.getElementById(`ordTab-${k}`);
+                    if (b) b.className = this.state.onlineOrdersFilter === k
+                        ? 'px-3 py-1.5 rounded-full font-extrabold bg-nutri-green text-white shadow-sm'
+                        : 'px-3 py-1.5 rounded-full font-bold bg-gray-200 text-gray-700';
+                });
+                this.renderOnlineOrdersList();
+            },
+            togglePosOrderHistoryDetail(key) {
+                if (!this.state.expandedPosHistory) this.state.expandedPosHistory = {};
+                this.state.expandedPosHistory[key] = !this.state.expandedPosHistory[key];
                 this.renderOnlineOrdersList();
             },
             buildOrderPushMeta(ord, overrideStatus = '') {
@@ -5775,14 +6049,103 @@
                         ? '✓ Cloud Sinkron — Pesanan dari HP pelanggan langsung masuk ke sini'
                         : 'Mode Lokal — Jalankan SQL v131 di Supabase untuk sinkron lintas HP & PC';
                 }
-                const wantDone = this.state.onlineOrdersFilter === 'done';
+                const mode = this.state.onlineOrdersFilter || 'active';
+                // TAB 3: RIWAYAT TRANSAKSI OFFLINE KASIR (RINGKAS & BISA DIBUKA DETAILNYA)
+                if (mode === 'offline') {
+                    const offTx = (this.state.transactions || []).filter(t => t && t.status !== 'void' && !String(t.id || '').startsWith('VOID')).slice(0, 60);
+                    if (cntEl) cntEl.textContent = `${offTx.length} nota`;
+                    if (offTx.length === 0) {
+                        box.innerHTML = `<div class="py-10 text-center text-gray-400"><i class="fa-solid fa-receipt text-3xl text-gray-300 mb-2"></i><br>Belum ada riwayat transaksi kasir offline.</div>`;
+                        return;
+                    }
+                    box.innerHTML = offTx.map(tx => {
+                        const key = `off_${tx.id}`;
+                        const isExp = !!(this.state.expandedPosHistory && this.state.expandedPosHistory[key]);
+                        const items = Array.isArray(tx.items) ? tx.items : [];
+                        const dtStr = tx.date ? this.formatDate(new Date(tx.date)) : '-';
+                        const sumNames = items.slice(0, 2).map(it => it.name).join(', ') + (items.length > 2 ? ` +${items.length - 2} lainnya` : '');
+                        return `<div class="bg-white rounded-2xl border border-gray-200 p-3 shadow-sm space-y-2">
+                            <div class="flex items-start justify-between gap-2 cursor-pointer" onclick="app.togglePosOrderHistoryDetail('${this.escapeHtml(key)}')">
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="font-mono font-black text-[10.5px] bg-slate-100 text-slate-800 px-2 py-0.5 rounded-full">${this.escapeHtml(tx.id)}</span>
+                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-black bg-emerald-100 text-emerald-800">${this.escapeHtml(tx.paymentMethod || 'Tunai')}</span>
+                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-gray-100 text-gray-600">${this.escapeHtml(tx.salesChannel || 'Toko')}</span>
+                                    </div>
+                                    <div class="text-[11.5px] font-extrabold text-gray-900 truncate mt-1">${this.escapeHtml(tx.customerName || 'Pelanggan Umum')} • <span class="font-semibold text-gray-600">${this.escapeHtml(sumNames || 'Transaksi')}</span></div>
+                                    <div class="text-[10px] text-gray-400">${this.escapeHtml(dtStr)} • Kasir: ${this.escapeHtml(tx.cashier || '-')}</div>
+                                </div>
+                                <div class="text-right flex-shrink-0">
+                                    <div class="font-black text-sm text-nutri-brown">${this.formatCurrency(tx.total || 0)}</div>
+                                    <span class="text-[10px] font-extrabold text-blue-600">${isExp ? 'Tutup ▴' : 'Detail ▾'}</span>
+                                </div>
+                            </div>
+                            ${isExp ? `
+                            <div class="pt-2 border-t border-gray-100 space-y-2">
+                                <div class="bg-gray-50 rounded-xl p-2 space-y-1 text-[11px] border border-gray-100">
+                                    ${items.map(it => `<div class="flex justify-between gap-2"><span>▪️ <strong>${this.formatStockDisplay(it.qty, it.unit)}</strong> ${this.escapeHtml(it.name)}</span><span class="font-bold text-gray-800">${this.formatCurrency(it.subtotal || 0)}</span></div>`).join('')}
+                                </div>
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <button type="button" onclick="document.getElementById('onlineOrdersModal').classList.add('hidden'); app.openDigitalReceiptModalById('${this.escapeHtml(tx.id)}')" class="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-extrabold text-[11px]">🧾 Resi Digital / WA</button>
+                                    <button type="button" onclick="app.reprintReceipt('${this.escapeHtml(tx.id)}')" class="px-3 py-1.5 rounded-full bg-slate-800 text-white font-extrabold text-[11px]"><i class="fa-solid fa-print mr-1"></i> Cetak Struk</button>
+                                </div>
+                            </div>` : ''}
+                        </div>`;
+                    }).join('');
+                    return;
+                }
+
+                const wantDone = mode === 'done';
                 const list = (this.state.onlineOrders || []).filter(o => {
                     const closed = ['Selesai', 'Dibatalkan'].includes(o.orderStatus);
                     return wantDone ? closed : !closed;
                 });
                 if (cntEl) cntEl.textContent = `${list.length} pesanan`;
                 if (list.length === 0) {
-                    box.innerHTML = `<div class="py-10 text-center text-gray-400"><i class="fa-solid fa-basket-shopping text-3xl text-gray-300 mb-2"></i><br>${wantDone ? 'Belum ada order selesai / dibatalkan.' : 'Belum ada antrean order masuk dari katalog online.'}</div>`;
+                    box.innerHTML = `<div class="py-10 text-center text-gray-400"><i class="fa-solid fa-basket-shopping text-3xl text-gray-300 mb-2"></i><br>${wantDone ? 'Belum ada riwayat order online selesai / batal.' : 'Belum ada antrean order masuk dari katalog online.'}</div>`;
+                    return;
+                }
+
+                // TAB 2: RIWAYAT ONLINE RINGKAS (PERSIS SEPERTI DI APP PELANGGAN!)
+                if (wantDone) {
+                    box.innerHTML = list.map(ord => {
+                        const key = `onl_${ord.id}`;
+                        const isExp = !!(this.state.expandedPosHistory && this.state.expandedPosHistory[key]);
+                        const items = Array.isArray(ord.items) ? ord.items : [];
+                        const dtStr = ord.createdAt ? this.formatDate(new Date(ord.createdAt)) : '-';
+                        const grandTotal = (Number(ord.finalTotal) || Number(ord.estimatedTotal) || 0) + (Number(ord.shippingFee) || 0);
+                        const isCancelled = ord.orderStatus === 'Dibatalkan';
+                        const sumNames = items.slice(0, 2).map(it => it.name).join(', ') + (items.length > 2 ? ` +${items.length - 2} lainnya` : '');
+                        const isPo = !!(ord.isParcelOrder || String(ord.id || '').startsWith('PO-'));
+                        return `<div class="bg-white rounded-2xl border border-gray-200 p-3 shadow-sm space-y-2">
+                            <div class="flex items-start justify-between gap-2 cursor-pointer" onclick="app.togglePosOrderHistoryDetail('${this.escapeHtml(key)}')">
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        ${isPo ? '<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[9px] font-black">🎁 PO</span>' : ''}
+                                        <span class="font-mono font-black text-[10.5px] bg-slate-100 text-slate-800 px-2 py-0.5 rounded-full">${this.escapeHtml(ord.orderCode || ord.id)}</span>
+                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-black ${isCancelled ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'}">${this.escapeHtml(ord.orderStatus)}</span>
+                                    </div>
+                                    <div class="text-[11.5px] font-extrabold text-gray-900 truncate mt-1">${this.escapeHtml(ord.customerName)} • <span class="font-semibold text-gray-600">${this.escapeHtml(sumNames || 'Pesanan')}</span></div>
+                                    <div class="text-[10px] text-gray-400">${this.escapeHtml(dtStr)} • ${this.escapeHtml(ord.deliveryMode || 'Kirim')}${ord.courierName ? ' • 🛵 ' + this.escapeHtml(ord.courierName) : ''}</div>
+                                </div>
+                                <div class="text-right flex-shrink-0">
+                                    <div class="font-black text-sm text-nutri-brown">${this.formatCurrency(grandTotal)}</div>
+                                    <span class="text-[10px] font-extrabold text-blue-600">${isExp ? 'Tutup ▴' : 'Detail ▾'}</span>
+                                </div>
+                            </div>
+                            ${isExp ? `
+                            <div class="pt-2 border-t border-gray-100 space-y-2">
+                                <div class="bg-gray-50 rounded-xl p-2 space-y-1 text-[11px] border border-gray-100">
+                                    ${items.map(it => `<div class="flex justify-between gap-2"><span>▪️ <strong>${this.formatStockDisplay(it.qty, it.unit)}</strong> ${this.escapeHtml(it.name)}</span><span class="font-bold text-gray-800">${this.formatCurrency(it.subtotal || 0)}</span></div>`).join('')}
+                                </div>
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    ${ord.linkedTxId ? `<button type="button" onclick="document.getElementById('onlineOrdersModal').classList.add('hidden'); app.openDigitalReceiptModalById('${this.escapeHtml(ord.linkedTxId)}')" class="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-extrabold text-[11px]">🧾 Resi (${this.escapeHtml(ord.linkedTxId)})</button>` : ''}
+                                    <button type="button" onclick="app.openPosFullChat('${this.escapeHtml(ord.id)}')" class="px-3 py-1.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 font-extrabold text-[11px]">💬 Riwayat Chat</button>
+                                    <button type="button" onclick="app.openOnlineOrderWaChat('${this.escapeHtml(ord.id)}')" class="px-3 py-1.5 rounded-full bg-green-50 text-green-700 border border-green-200 font-extrabold text-[11px]">WA</button>
+                                </div>
+                            </div>` : ''}
+                        </div>`;
+                    }).join('');
                     return;
                 }
                 box.innerHTML = list.map(ord => {
@@ -5840,27 +6203,35 @@
                                 ${items.map(it => `<div class="flex justify-between gap-2 text-[11px]"><span>▪️ <strong>${this.formatStockDisplay(it.qty, it.unit)}</strong> ${this.escapeHtml(it.name)}${it.unit === 'Gram' && it.weightPref ? ` <em class="text-amber-800">[${this.escapeHtml(it.weightPref)}]</em>` : ''}${it.itemNote ? ` <em class="text-blue-700">(${this.escapeHtml(it.itemNote)})</em>` : ''}</span><span class="font-bold text-gray-700 flex-shrink-0">${this.formatCurrency(it.subtotal)}</span></div>`).join('')}
                             </div>
 
-                            <!-- CHAT 2 ARAH DENGAN PELANGGAN & KURIR (v142) -->
+                            ${ord.weighPhotoUrl || ord.parcelPhotoUrl ? `
+                            <div onclick="document.getElementById('viewProofFullImg').src='${this.escapeHtml(ord.parcelPhotoUrl || ord.weighPhotoUrl)}';document.getElementById('viewProofModal').classList.remove('hidden')" class="cursor-pointer flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 rounded-xl p-2 text-[11px]">
+                                <img src="${this.escapeHtml(ord.parcelPhotoUrl || ord.weighPhotoUrl)}" class="w-11 h-11 rounded-lg object-cover border border-emerald-300 flex-shrink-0">
+                                <span class="font-bold text-emerald-900">📷 Foto Timbangan / Parsel Terlampir <span class="block text-[10px] font-normal text-emerald-700">Ketuk untuk memperbesar</span></span>
+                            </div>` : ''}
+
+                            <!-- CHAT 2 ARAH LEGA + FOTO + MODE PENUH (v152) -->
                             ${(!isClosed || chatArr.length > 0) ? `
-                            <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 space-y-1.5">
-                                <div class="flex items-center justify-between text-[10px] font-extrabold text-slate-600">
-                                    <span><i class="fa-solid fa-comments text-nutri-green mr-1"></i> Chat Pesanan (2 Arah)</span>
-                                    <span>${chatArr.length} pesan</span>
+                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 space-y-2">
+                                <div class="flex items-center justify-between text-[11px] font-extrabold text-slate-700 gap-2">
+                                    <span><i class="fa-solid fa-comments text-nutri-green mr-1"></i> Chat Pesanan (${chatArr.length})</span>
+                                    <button type="button" onclick="app.openPosFullChat('${this.escapeHtml(ord.id)}')" class="px-2.5 py-1 rounded-full bg-white hover:bg-emerald-50 text-nutri-dark border border-green-300 font-extrabold text-[10px] shadow-sm"><i class="fa-solid fa-expand mr-1"></i>Perluas Chat</button>
                                 </div>
                                 ${chatArr.length > 0 ? `
-                                <div class="space-y-1 max-h-28 overflow-y-auto pr-0.5">
-                                    ${chatArr.slice(-8).map(m => {
+                                <div class="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">
+                                    ${chatArr.slice(-10).map(m => {
                                         const isCust = m.sender === 'customer';
                                         const tStr = m.at ? new Date(m.at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
-                                        return `<div class="text-[10.5px] px-2.5 py-1 rounded-xl ${isCust ? 'bg-amber-50 border border-amber-200 text-amber-950' : 'bg-white border border-slate-200 text-slate-700'}">
-                                            <strong class="${isCust ? 'text-amber-800' : 'text-nutri-dark'}">${isCust ? '👤 ' + this.escapeHtml(m.name || 'Pelanggan') : (m.sender === 'courier' ? '🛵 ' + this.escapeHtml(m.name || 'Kurir') : '🍐 ' + this.escapeHtml(m.name || 'Toko'))}</strong> <span class="text-[9px] text-gray-400">${tStr}</span>: ${this.escapeHtml(m.text || '')}
+                                        const imgHtml = m.imageUrl ? `<img src="${this.escapeHtml(m.imageUrl)}" onclick="document.getElementById('viewProofFullImg').src='${this.escapeHtml(m.imageUrl)}';document.getElementById('viewProofModal').classList.remove('hidden')" class="mt-1 max-h-36 rounded-xl border cursor-pointer object-cover">` : '';
+                                        return `<div class="text-[11px] px-2.5 py-1.5 rounded-xl ${isCust ? 'bg-amber-50 border border-amber-200 text-amber-950' : 'bg-white border border-slate-200 text-slate-700'}">
+                                            <strong class="${isCust ? 'text-amber-800' : 'text-nutri-dark'}">${isCust ? '👤 ' + this.escapeHtml(m.name || 'Pelanggan') : (m.sender === 'courier' ? '🛵 ' + this.escapeHtml(m.name || 'Kurir') : '🍐 ' + this.escapeHtml(m.name || 'Toko'))}</strong> <span class="text-[9.5px] text-gray-400">${tStr}</span>: <span class="whitespace-pre-line break-words">${this.escapeHtml(m.text || '')}</span>${imgHtml}
                                         </div>`;
                                     }).join('')}
                                 </div>` : ''}
                                 ${!isClosed ? `
-                                <div class="flex items-center gap-1.5">
-                                    <input type="text" id="posOrdChatInp-${this.escapeHtml(ord.id)}" onkeydown="if(event.key==='Enter'){event.preventDefault();app.sendPosOrderChat('${this.escapeHtml(ord.id)}');}" placeholder="Balas pesan pelanggan di aplikasi..." class="flex-1 px-2.5 py-1 text-[11px] rounded-full border border-slate-300 bg-white outline-none">
-                                    <button type="button" onclick="app.sendPosOrderChat('${this.escapeHtml(ord.id)}')" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-[10.5px] flex-shrink-0">Kirim</button>
+                                <div class="flex items-end gap-1.5">
+                                    <button type="button" onclick="app.triggerPosChatPhoto('${this.escapeHtml(ord.id)}')" title="Kirim Foto ke Chat" class="w-9 h-9 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-camera text-xs"></i></button>
+                                    <textarea id="posOrdChatInp-${this.escapeHtml(ord.id)}" rows="2" placeholder="Balas pesan pelanggan atau kirim info buah..." class="flex-1 px-3 py-1.5 text-xs rounded-2xl border border-slate-300 bg-white focus:border-nutri-green outline-none resize-none leading-snug"></textarea>
+                                    <button type="button" onclick="app.sendPosOrderChat('${this.escapeHtml(ord.id)}')" class="px-3.5 h-9 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs flex-shrink-0">Kirim</button>
                                 </div>` : ''}
                             </div>` : ''}
 
@@ -5872,6 +6243,7 @@
                                     ${waitingCourierPickup ? `<span class="px-2.5 py-1.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200 font-extrabold text-[10.5px]">⏳ Menunggu Kurir Ambil</span>` : ''}
                                     ${isClosed && ord.linkedTxId ? `<button type="button" onclick="document.getElementById('onlineOrdersModal').classList.add('hidden'); app.openDigitalReceiptModalById('${this.escapeHtml(ord.linkedTxId)}')" class="bg-emerald-50 text-emerald-800 border border-emerald-200 font-extrabold px-3 py-1.5 text-[11px]">🧾 Lihat Resi (${this.escapeHtml(ord.linkedTxId)})</button>` : ''}
                                     ${!isClosed ? `<button type="button" onclick="app.loadOnlineOrderToPosCart('${this.escapeHtml(ord.id)}')" class="bg-nutri-green hover:bg-nutri-dark text-white font-extrabold px-2.5 py-1.5 text-[11px] shadow-sm transition flex items-center gap-1"><i class="fa-solid fa-scale-balanced"></i> <span>Timbang / Edit</span></button>` : ''}
+                                    ${!isClosed ? `<button type="button" onclick="app.triggerPosOrderPhoto('${this.escapeHtml(ord.id)}', '${(ord.isParcelOrder || String(ord.id || '').startsWith('PO-')) ? 'parcel' : 'weigh'}')" class="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-extrabold px-2.5 py-1.5 text-[11px] transition flex items-center gap-1"><i class="fa-solid fa-camera"></i> <span>Foto</span></button>` : ''}
                                     ${ord.paymentProofUrl ? `<button type="button" onclick="document.getElementById('viewProofFullImg').src='${this.escapeHtml(ord.paymentProofUrl)}';document.getElementById('viewProofModal').classList.remove('hidden')" class="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold px-2.5 py-1.5 text-[11px]"><i class="fa-solid fa-image mr-1"></i> Bukti Bayar</button>` : ''}
                                     ${ord.deliveryProofUrl ? `<button type="button" onclick="document.getElementById('viewProofFullImg').src='${this.escapeHtml(ord.deliveryProofUrl)}';document.getElementById('viewProofModal').classList.remove('hidden')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-extrabold px-2.5 py-1.5 text-[11px]"><i class="fa-solid fa-camera mr-1"></i> Bukti Antar</button>` : ''}
                                     <button type="button" onclick="app.openOnlineOrderWaChat('${this.escapeHtml(ord.id)}')" class="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 font-extrabold px-2.5 py-1.5 text-[11px]"><i class="fa-brands fa-whatsapp mr-1"></i> WA</button>
@@ -5913,6 +6285,185 @@
                 } finally {
                     if (inp) inp.disabled = false;
                 }
+            },
+            formatPosFullChatHtml(ord) {
+                const chatArr = Array.isArray(ord?.orderChat) ? ord.orderChat : [];
+                if (chatArr.length === 0) return '<div class="text-center text-gray-400 py-8">Belum ada pesan. Tulis balasan atau kirim foto buah/parsel di bawah.</div>';
+                return chatArr.map(m => {
+                    const isCust = m.sender === 'customer';
+                    const tStr = m.at ? new Date(m.at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
+                    const tag = isCust ? ('👤 ' + this.escapeHtml(m.name || 'Pelanggan')) : (m.sender === 'courier' ? ('🛵 ' + this.escapeHtml(m.name || 'Kurir')) : ('🍐 ' + this.escapeHtml(m.name || 'Toko')));
+                    const imgHtml = m.imageUrl ? `<img src="${this.escapeHtml(m.imageUrl)}" onclick="document.getElementById('viewProofFullImg').src='${this.escapeHtml(m.imageUrl)}';document.getElementById('viewProofModal').classList.remove('hidden')" class="mt-1.5 max-h-48 rounded-xl border border-black/10 cursor-pointer object-cover">` : '';
+                    return `<div class="flex ${isCust ? 'justify-start' : 'justify-end'}">
+                        <div class="max-w-[86%] rounded-2xl px-3.5 py-2 text-[11.5px] shadow-sm ${isCust ? 'bg-white border border-amber-200 text-gray-900 rounded-bl-sm' : 'bg-nutri-green text-white rounded-br-sm'}">
+                            <div class="text-[9.5px] font-bold ${isCust ? 'text-amber-800' : 'text-green-100'}">${tag} • ${tStr}</div>
+                            ${m.text ? `<div class="mt-0.5 leading-relaxed whitespace-pre-line break-words">${this.escapeHtml(m.text)}</div>` : ''}
+                            ${imgHtml}
+                        </div>
+                    </div>`;
+                }).join('');
+            },
+            openPosFullChat(orderId) {
+                const ord = (this.state.onlineOrders || []).find(o => o.id === orderId);
+                if (!ord) return;
+                this.state.activePosFullChatOrderId = orderId;
+                document.getElementById('posFullChatTitle').textContent = `💬 Chat #${ord.orderCode || ord.id} — ${ord.customerName || 'Pelanggan'}`;
+                document.getElementById('posFullChatSub').textContent = `${ord.orderStatus || ''} • ${ord.deliveryMode || ''}`;
+                const body = document.getElementById('posFullChatBody');
+                body.innerHTML = this.formatPosFullChatHtml(ord);
+                setTimeout(() => { body.scrollTop = body.scrollHeight; }, 40);
+                document.getElementById('posFullChatModal')?.classList.remove('hidden');
+            },
+            closePosFullChat() {
+                document.getElementById('posFullChatModal')?.classList.add('hidden');
+            },
+            async sendPosFullChat() {
+                const orderId = this.state.activePosFullChatOrderId;
+                const inp = document.getElementById('posFullChatInput');
+                const msg = (inp?.value || '').trim();
+                if (!msg || !orderId) return;
+                inp.disabled = true;
+                try {
+                    const senderName = this.state.currentCashier || this.state.staffAccount?.name || 'Kasir NutriFresh';
+                    const res = await staffSendOrderChatRpc({ orderId, message: msg, senderName, senderRole: 'store' });
+                    inp.value = '';
+                    const ord = (this.state.onlineOrders || []).find(o => o.id === orderId);
+                    if (ord && res && Array.isArray(res.orderChat)) ord.orderChat = res.orderChat;
+                    this.dispatchOrderPushNow({
+                        ...this.buildOrderPushMeta(ord),
+                        order_id: orderId, target_roles: ['customer'], target_phone: ord?.customerPhone || '',
+                        event_type: 'chat', sender_name: senderName, chat_text: msg,
+                        title: `💬 Pesan dari ${senderName} (#${ord?.orderCode || orderId})`, body: msg
+                    });
+                    const body = document.getElementById('posFullChatBody');
+                    if (body && ord) { body.innerHTML = this.formatPosFullChatHtml(ord); body.scrollTop = body.scrollHeight; }
+                    this.renderOnlineOrdersList();
+                    if (this.state.currentAdminTab === 'po_parsel') this.renderParcelOrderBoard();
+                } catch (err) {
+                    this.showAlert('Gagal mengirim chat: ' + (err?.message || err));
+                } finally {
+                    inp.disabled = false;
+                    inp.focus();
+                }
+            },
+            triggerPosOrderPhoto(orderId, kind = 'weigh') {
+                if (!orderId) return;
+                this._pendingPosPhotoOrderId = orderId;
+                this._pendingPosPhotoKind = kind;
+                const inp = document.getElementById('posOrderPhotoInput');
+                if (inp) { inp.value = ''; inp.click(); }
+            },
+            handlePosOrderPhotoSelected(ev) {
+                const file = ev?.target?.files?.[0];
+                const orderId = this._pendingPosPhotoOrderId;
+                const kind = this._pendingPosPhotoKind || 'weigh';
+                if (!file || !orderId) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = async () => {
+                        const maxSide = 680;
+                        let w = img.width, h = img.height;
+                        if (w > maxSide || h > maxSide) {
+                            if (w >= h) { h = Math.round((h * maxSide) / w); w = maxSide; }
+                            else { w = Math.round((w * maxSide) / h); h = maxSide; }
+                        }
+                        const cv = document.createElement('canvas');
+                        cv.width = w; cv.height = h;
+                        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+                        const dataUrl = cv.toDataURL('image/jpeg', 0.60);
+                        try {
+                            let uploaded = '';
+                            try { uploaded = await uploadDataUrlToStorage(dataUrl, 'order_media', `${orderId}_${kind}_${Date.now()}`); } catch (_) {}
+                            const finalUrl = (uploaded && uploaded.startsWith('http')) ? uploaded : dataUrl;
+                            if (kind === 'parcel') {
+                                const po = (this.state.parcelOrders || []).find(p => p.id === orderId);
+                                if (po) {
+                                    po.parcelPhotoUrl = finalUrl;
+                                    await this.persistParcelOrderRecord(po);
+                                    await this.syncPoToOnlineOrderMirror(po, null, { parcelPhotoUrl: finalUrl, weighPhotoUrl: finalUrl });
+                                    this.dispatchOrderPushNow({
+                                        order_id: po.id, target_roles: ['customer'], target_phone: po.customerPhone || '',
+                                        event_type: 'order_status', skip_live_order: true,
+                                        title: `📷 Foto Parsel Jadi Terkirim! #${po.orderCode}`,
+                                        body: `Cek foto parsel pesanan Anda di menu Pesanan Saya.`
+                                    });
+                                }
+                            } else {
+                                const ord = (this.state.onlineOrders || []).find(o => o.id === orderId);
+                                if (ord) {
+                                    ord.weighPhotoUrl = finalUrl;
+                                    await this.persistOnlineOrderRecord(ord);
+                                    this.dispatchOrderPushNow({
+                                        ...this.buildOrderPushMeta(ord),
+                                        order_id: ord.id, target_roles: ['customer'], target_phone: ord.customerPhone || '',
+                                        event_type: 'order_status',
+                                        title: `📷 Foto Hasil Timbangan! #${ord.orderCode || ord.id}`,
+                                        body: `Toko NutriFresh mengunggah foto timbangan pesanan Anda. Ketuk untuk melihat.`
+                                    });
+                                }
+                            }
+                            this.renderOnlineOrdersList();
+                            if (this.state.currentAdminTab === 'po_parsel') this.renderParcelOrderBoard();
+                            this.showAlert('Foto berhasil diunggah & langsung terlihat di HP pelanggan!
+(Foto otomatis dibersihkan setelah 30 hari pesanan selesai agar storage gratis tetap hemat.)');
+                        } catch (err) {
+                            this.showAlert('Gagal mengunggah foto: ' + (err?.message || err));
+                        }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                ev.target.value = '';
+            },
+            triggerPosChatPhoto(orderId) {
+                if (!orderId) return;
+                this._pendingPosChatPhotoOrderId = orderId;
+                const inp = document.getElementById('posChatPhotoInput');
+                if (inp) { inp.value = ''; inp.click(); }
+            },
+            handlePosChatPhotoSelected(ev) {
+                const file = ev?.target?.files?.[0];
+                const orderId = this._pendingPosChatPhotoOrderId;
+                if (!file || !orderId) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = async () => {
+                        const maxSide = 640;
+                        let w = img.width, h = img.height;
+                        if (w > maxSide || h > maxSide) {
+                            if (w >= h) { h = Math.round((h * maxSide) / w); w = maxSide; }
+                            else { w = Math.round((w * maxSide) / h); h = maxSide; }
+                        }
+                        const cv = document.createElement('canvas');
+                        cv.width = w; cv.height = h;
+                        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+                        const dataUrl = cv.toDataURL('image/jpeg', 0.58);
+                        try {
+                            const senderName = this.state.currentCashier || this.state.staffAccount?.name || 'Kasir NutriFresh';
+                            let uploaded = '';
+                            try { uploaded = await uploadDataUrlToStorage(dataUrl, 'chat_media', `${orderId}_pos_${Date.now()}`); } catch (_) {}
+                            const finalUrl = (uploaded && uploaded.startsWith('http')) ? uploaded : dataUrl;
+                            const res = await staffSendOrderChatRpc({ orderId, message: '📷 Foto dari toko', senderName, senderRole: 'store', imageUrl: finalUrl });
+                            const ord = (this.state.onlineOrders || []).find(o => o.id === orderId);
+                            if (ord && res && Array.isArray(res.orderChat)) ord.orderChat = res.orderChat;
+                            this.dispatchOrderPushNow({
+                                ...this.buildOrderPushMeta(ord),
+                                order_id: orderId, target_roles: ['customer'], target_phone: ord?.customerPhone || '',
+                                event_type: 'chat', sender_name: senderName, chat_text: '📷 Foto dari toko',
+                                title: `📷 Foto dari ${senderName} (#${ord?.orderCode || orderId})`, body: 'Toko mengirim foto terbaru di chat pesanan.'
+                            });
+                            if (!document.getElementById('posFullChatModal')?.classList.contains('hidden')) this.openPosFullChat(orderId);
+                            this.renderOnlineOrdersList();
+                        } catch (err) {
+                            this.showAlert('Gagal mengirim foto ke chat: ' + (err?.message || err));
+                        }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                ev.target.value = '';
             },
             settleOnlineOrderQuick(orderId) {
                 const ord = (this.state.onlineOrders || []).find(x => x.id === orderId);
@@ -11796,6 +12347,11 @@ Seluruh transaksi, shift, kulakan, dan absensi baru dari perangkat ini akan dita
                     if (btn) btn.disabled = true;
                     try {
                         const res = await cleanupOldPaymentProofsRpc(months);
+                        const mediaRes = await cleanupExpiredOrderMediaRpc(30).catch(() => null);
+                        if (mediaRes && mediaRes.ok && (mediaRes.cleanedOrders > 0 || mediaRes.deletedFiles > 0)) {
+                            res.cleaned_rows = (Number(res.cleaned_rows) || 0) + (Number(mediaRes.cleanedOrders) || 0);
+                            res.storage_files_deleted = (Number(res.storage_files_deleted) || 0) + (Number(mediaRes.deletedFiles) || 0);
+                        }
                         await this.loadStorageMaintenanceStats();
                         this.showAlert(`Perawatan selesai!
 Nota dibersihkan fotonya: ${res.cleaned_rows}
@@ -11929,7 +12485,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v151.1';
+        window.__NF_APP_VERSION = 'v152';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;
