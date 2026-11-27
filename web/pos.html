@@ -1198,6 +1198,9 @@
                 <span id="posHeaderBranchBadge" class="hidden md:inline-block text-[11px] font-extrabold bg-nutri-light text-nutri-green px-2.5 py-0.5 rounded-lg border border-green-200 whitespace-nowrap">Portal Toko • cabang-1</span>
             </div>
             <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                <button type="button" id="btnPosCheckUpdate" onclick="window.nfUpdater && window.nfUpdater.check(true)" data-desktop-label="Update" title="Cek Pembaruan Aplikasi" class="nf-native-updater-btn hidden text-emerald-800 hover:text-emerald-950 font-extrabold px-2 sm:px-3 py-1.5 rounded-xl transition bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-[11px] sm:text-xs flex items-center whitespace-nowrap">
+                    <i class="fa-solid fa-cloud-arrow-down sm:mr-1"></i> <span class="nf-upd-btn-label hidden sm:inline">Update</span>
+                </button>
                 <button type="button" id="btnPosNotifyBell" onclick="app.requestPosNotifications(true)" title="Aktifkan / Tes Notifikasi Order Masuk" class="text-amber-800 hover:text-amber-950 font-extrabold px-2 sm:px-3 py-1.5 rounded-xl transition bg-amber-50 hover:bg-amber-100 border border-amber-300 text-[11px] sm:text-xs flex items-center whitespace-nowrap">
                     <i id="posNotifyBellIcon" class="fa-solid fa-bell sm:mr-1"></i> <span id="posNotifyBellLabel" class="hidden sm:inline">Notif</span>
                 </button>

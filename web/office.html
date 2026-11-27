@@ -730,6 +730,9 @@
                 <button type="button" id="btnOfficePermCheck" onclick="window.nfPermissions && window.nfPermissions.open('office')" title="Cek Izin Notifikasi & Anti-Delay" class="px-2.5 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-extrabold text-[11px] border border-amber-400/40 transition flex items-center whitespace-nowrap">
                     <i class="fa-solid fa-bell text-amber-300 sm:mr-1"></i><span class="hidden sm:inline">Notif</span>
                 </button>
+                <button type="button" id="btnOfficeCheckUpdate" onclick="window.nfUpdater && window.nfUpdater.check(true)" data-desktop-label="Update" title="Cek Pembaruan Aplikasi" class="nf-native-updater-btn hidden px-2.5 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 font-extrabold text-[11px] border border-emerald-400/40 transition flex items-center whitespace-nowrap">
+                    <i class="fa-solid fa-cloud-arrow-down text-emerald-300 sm:mr-1"></i><span class="nf-upd-btn-label hidden sm:inline">Update</span>
+                </button>
                 <button type="button" id="btnOfficeThemeToggle" onclick="window.toggleNutriTheme()" title="Ganti Tema Natural / Dark / Glass" class="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] border border-slate-700 transition flex items-center whitespace-nowrap">
                     <i class="fa-solid fa-leaf text-lime-300 sm:mr-1"></i><span class="hidden sm:inline">Natural</span>
                 </button>

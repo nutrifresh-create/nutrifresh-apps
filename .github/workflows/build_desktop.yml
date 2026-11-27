@@ -1,9 +1,20 @@
 name: Build NutriFresh Desktop (.exe POS & Office)
 
 on:
-  push:
-    branches: [ main, master ]
   workflow_dispatch:
+    inputs:
+      release_notes:
+        description: 'Catatan pembaruan (tampil di pop-up update PC Windows)'
+        required: false
+        default: 'v152.2 - Pisah Riwayat Online/Offline, Tanda VOID, Kunci Rakit PO Parsel & Kurir COD, Auto-Update Desktop (.exe).'
+      force_update:
+        description: 'Wajibkan update (user tidak bisa melewati pop-up)?'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
 
 jobs:
   build-pos-exe:
@@ -29,6 +40,12 @@ jobs:
       - name: Prepare web bundle for POS
         run: python scripts/prepare_web_bundles.py
 
+      - name: Configure Desktop Auto-Updater & Release Manifest (POS)
+        env:
+          RELEASE_NOTES: "${{ github.event.inputs.release_notes || 'v152.2 - Pisah Riwayat Online/Offline, Tanda VOID, Kunci Rakit PO Parsel & Kurir COD, Auto-Update Desktop (.exe).' }}"
+          FORCE_UPDATE: ${{ github.event.inputs.force_update || 'false' }}
+        run: python scripts/configure_desktop_updater.py desktop/pos-tauri pos NutriFresh_POS.exe update-desktop-pos.json
+
       - name: Install Tauri CLI v2
         run: npm install -g @tauri-apps/cli@2
 
@@ -41,7 +58,30 @@ jobs:
         run: |
           Copy-Item "desktop/pos-tauri/src-tauri/target/release/nutrifresh_pos.exe" "NutriFresh_POS.exe" -Force
 
-      - name: Upload NutriFresh_POS.exe
+      - name: Publish NutriFresh_POS.exe & Update Manifest to GitHub Releases
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view latest-desktop *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create latest-desktop --title "NutriFresh Desktop Windows (.exe Auto-Update)" --notes "Rilis otomatis NutriFresh_POS.exe & NutriFresh_Office.exe untuk In-App Auto-Updater Windows."
+          }
+
+          $uploaded = $false
+          for ($i = 1; $i -le 4; $i++) {
+            gh release upload latest-desktop "NutriFresh_POS.exe" "update-desktop-pos.json" --clobber
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "[release] Uploaded NutriFresh_POS.exe & update-desktop-pos.json to latest-desktop!"
+              $uploaded = $true
+              break
+            }
+            Write-Host "[release] Retry upload ($i/4)..."
+            Start-Sleep -Seconds 5
+          }
+          if (-not $uploaded) { exit 1 }
+
+      - name: Upload NutriFresh_POS.exe Artifact
         uses: actions/upload-artifact@v4
         with:
           name: NutriFresh_POS_Windows_EXE
@@ -71,6 +111,12 @@ jobs:
       - name: Prepare web bundle for Office
         run: python scripts/prepare_web_bundles.py
 
+      - name: Configure Desktop Auto-Updater & Release Manifest (Office)
+        env:
+          RELEASE_NOTES: "${{ github.event.inputs.release_notes || 'v152.2 - Pisah Riwayat Online/Offline, Tanda VOID, Kunci Rakit PO Parsel & Kurir COD, Auto-Update Desktop (.exe).' }}"
+          FORCE_UPDATE: ${{ github.event.inputs.force_update || 'false' }}
+        run: python scripts/configure_desktop_updater.py desktop/office-tauri office NutriFresh_Office.exe update-desktop-office.json
+
       - name: Install Tauri CLI v2
         run: npm install -g @tauri-apps/cli@2
 
@@ -83,7 +129,30 @@ jobs:
         run: |
           Copy-Item "desktop/office-tauri/src-tauri/target/release/nutrifresh_office.exe" "NutriFresh_Office.exe" -Force
 
-      - name: Upload NutriFresh_Office.exe
+      - name: Publish NutriFresh_Office.exe & Update Manifest to GitHub Releases
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view latest-desktop *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create latest-desktop --title "NutriFresh Desktop Windows (.exe Auto-Update)" --notes "Rilis otomatis NutriFresh_POS.exe & NutriFresh_Office.exe untuk In-App Auto-Updater Windows."
+          }
+
+          $uploaded = $false
+          for ($i = 1; $i -le 4; $i++) {
+            gh release upload latest-desktop "NutriFresh_Office.exe" "update-desktop-office.json" --clobber
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "[release] Uploaded NutriFresh_Office.exe & update-desktop-office.json to latest-desktop!"
+              $uploaded = $true
+              break
+            }
+            Write-Host "[release] Retry upload ($i/4)..."
+            Start-Sleep -Seconds 5
+          }
+          if (-not $uploaded) { exit 1 }
+
+      - name: Upload NutriFresh_Office.exe Artifact
         uses: actions/upload-artifact@v4
         with:
           name: NutriFresh_Office_Windows_EXE

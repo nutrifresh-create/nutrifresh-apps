@@ -1744,11 +1744,210 @@
         resumePendingApkInstallIfAllowed();
     });
 
+    // =========================================================================
+    // WINDOWS DESKTOP (.EXE / TAURI) AUTO-UPDATER & UPDATE NOTIFICATION (v152.2)
+    // =========================================================================
+    function getLocalDesktopVersionInfo() {
+        if (!isTauri()) return null;
+        if (window.__NF_DESKTOP_VERSION__ && typeof window.__NF_DESKTOP_VERSION__ === "object") {
+            return window.__NF_DESKTOP_VERSION__;
+        }
+        const role = (nativeAppRole === "office" || document.body.classList.contains("nf-office-page")) ? "office" : "pos";
+        return {
+            appRole: role,
+            platform: "windows",
+            versionCode: 0,
+            versionName: String(window.__NF_APP_VERSION || "1.52").replace(/^v/i, ""),
+            exeFileName: role === "office" ? "NutriFresh_Office.exe" : "NutriFresh_POS.exe",
+            updateManifestUrl: `https://github.com/nutrifresh-create/nutrifresh-apps/releases/download/latest-desktop/update-desktop-${role}.json`
+        };
+    }
+
+    function renderDesktopUpdateModal(localInfo, remoteInfo) {
+        __nfUpdateRemoteData = remoteInfo;
+        __nfUpdateDownloadingFlag = false;
+
+        const isDark = document.documentElement.getAttribute("data-theme") === "dark" ||
+            document.body.classList.contains("nf-office-page");
+        const isForce = !!remoteInfo.force;
+        const appLabel = (localInfo?.appRole === "office") ? "NutriFresh Office (.exe)" : "NutriFresh POS (.exe)";
+
+        document.getElementById("nfAppUpdateModal")?.remove();
+        const modal = document.createElement("div");
+        modal.id = "nfAppUpdateModal";
+        modal.dataset.locked = isForce ? "1" : "0";
+        modal.style.cssText = "position:fixed;inset:0;z-index:100040;background:rgba(15,23,42,.72);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:Inter,system-ui,sans-serif;";
+        if (!isForce) {
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal && !__nfUpdateDownloadingFlag) {
+                    dismissAppUpdateModal(remoteInfo.versionCode);
+                }
+            });
+        }
+
+        const cardBg = isDark ? "#111827" : "#ffffff";
+        const cardBorder = isDark ? "rgba(255,255,255,.16)" : "#e2e8f0";
+        const textMain = isDark ? "#f8fafc" : "#0f172a";
+        const textSub = isDark ? "#94a3b8" : "#475569";
+        const noteBg = isDark ? "rgba(30,41,59,.85)" : "#f8fafc";
+
+        modal.innerHTML = `
+            <div style="width:100%;max-width:410px;background:${cardBg};border:1px solid ${cardBorder};border-radius:28px;overflow:hidden;box-shadow:0 26px 64px rgba(0,0,0,.48);">
+                <div style="background:linear-gradient(135deg,#558b2f,#0f766e);padding:18px 20px;color:#fff;position:relative;">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <div style="width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;">
+                            <i class="fa-solid fa-desktop"></i>
+                        </div>
+                        <div style="min-width:0;">
+                            <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;opacity:.9;">${isForce ? 'Pembaruan Wajib Windows' : 'Update Desktop Tersedia'}</div>
+                            <div style="font-size:15.5px;font-weight:900;line-height:1.25;margin-top:1px;">${escapeHtml(appLabel)}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:12px;display:inline-flex;align-items:center;gap:8px;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,.22);font-size:11px;font-weight:800;">
+                        <span>v${escapeHtml(localInfo?.versionName || '1.52')}</span>
+                        <i class="fa-solid fa-arrow-right" style="font-size:10px;opacity:.85;"></i>
+                        <span style="color:#d9f99d;">v${escapeHtml(remoteInfo.versionName || '')}</span>
+                    </div>
+                </div>
+                <div style="padding:16px 18px;">
+                    <div style="padding:11px 13px;border-radius:16px;background:${noteBg};border:1px solid ${cardBorder};">
+                        <div style="font-size:10.5px;font-weight:900;color:#558b2f;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Yang Baru di Versi Ini:</div>
+                        <div style="font-size:12px;color:${textMain};line-height:1.45;white-space:pre-line;">${escapeHtml(remoteInfo.notes || 'Pembaruan fitur dan keamanan terbaru NutriFresh Desktop.')}</div>
+                    </div>
+                    <div style="margin-top:10px;font-size:11px;color:${textSub};line-height:1.4;">
+                        <i class="fa-solid fa-shield-halved" style="color:#16a34a;margin-right:4px;"></i>
+                        Aplikasi akan mengunduh versi terbaru, mengganti file <strong>${escapeHtml(remoteInfo.exeFileName || localInfo?.exeFileName || '.exe')}</strong> secara otomatis, lalu membuka ulang sendiri. Pengaturan printer &amp; sesi kasir tetap aman.
+                    </div>
+                    <div id="nfUpdProgressWrap" style="display:none;margin-top:13px;">
+                        <div style="height:8px;border-radius:999px;background:${isDark ? '#1e293b' : '#e2e8f0'};overflow:hidden;">
+                            <div id="nfUpdProgressBar" style="width:28%;height:100%;border-radius:999px;background:linear-gradient(90deg,#7cb342,#10b981);transition:width .4s ease;"></div>
+                        </div>
+                        <div id="nfUpdStatusText" style="margin-top:6px;font-size:11px;font-weight:800;color:${textMain};text-align:center;">Mengunduh file .exe terbaru dari GitHub Releases...</div>
+                    </div>
+                </div>
+                <div style="padding:0 18px 18px;display:flex;flex-direction:column;gap:8px;">
+                    <button type="button" id="nfUpdPrimaryBtn" style="width:100%;padding:12px 16px;border-radius:999px;border:none;background:linear-gradient(135deg,#7cb342,#558b2f);color:#fff;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 8px 20px -6px rgba(85,139,47,.55);">
+                        <i class="fa-solid fa-download" style="margin-right:6px;"></i> Perbarui &amp; Restart Otomatis
+                    </button>
+                    <button type="button" id="nfUpdBrowserFallbackBtn" style="display:none;width:100%;padding:10px 14px;border-radius:999px;border:1px solid ${cardBorder};background:transparent;color:${textMain};font-size:11.5px;font-weight:800;cursor:pointer;">
+                        <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i> Unduh Manual lewat Browser
+                    </button>
+                    ${isForce ? '' : `<button type="button" id="nfUpdLaterBtn" style="width:100%;padding:9px 14px;border-radius:999px;border:none;background:transparent;color:${textSub};font-size:11.5px;font-weight:800;cursor:pointer;">Nanti Saja</button>`}
+                </div>
+            </div>`;
+
+        document.body.appendChild(modal);
+
+        const primaryBtn = modal.querySelector("#nfUpdPrimaryBtn");
+        const laterBtn = modal.querySelector("#nfUpdLaterBtn");
+        const browserBtn = modal.querySelector("#nfUpdBrowserFallbackBtn");
+        const progWrap = modal.querySelector("#nfUpdProgressWrap");
+        const progBar = modal.querySelector("#nfUpdProgressBar");
+        const statusTxt = modal.querySelector("#nfUpdStatusText");
+
+        primaryBtn.onclick = async () => {
+            if (__nfUpdateDownloadingFlag) return;
+            __nfUpdateDownloadingFlag = true;
+            modal.dataset.locked = "1";
+            primaryBtn.disabled = true;
+            primaryBtn.style.opacity = "0.65";
+            primaryBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Mengunduh &amp; Memasang...`;
+            if (laterBtn) laterBtn.style.display = "none";
+            if (progWrap) progWrap.style.display = "block";
+
+            let fakePct = 18;
+            const pulseTimer = setInterval(() => {
+                fakePct = Math.min(88, fakePct + 6);
+                if (progBar) progBar.style.width = fakePct + "%";
+            }, 900);
+
+            try {
+                await window.__TAURI__.core.invoke("download_and_install_desktop_update", {
+                    exeUrl: remoteInfo.exeUrl || ""
+                });
+                clearInterval(pulseTimer);
+                if (progBar) progBar.style.width = "100%";
+                if (statusTxt) statusTxt.textContent = "✓ Unduhan selesai! Menutup & memulai ulang NutriFresh secara otomatis...";
+            } catch (err) {
+                clearInterval(pulseTimer);
+                __nfUpdateDownloadingFlag = false;
+                modal.dataset.locked = isForce ? "1" : "0";
+                const errMsg = (err && (err.message || String(err))) || "Gagal mengunduh update.";
+                if (statusTxt) statusTxt.textContent = "⚠️ " + errMsg;
+                primaryBtn.disabled = false;
+                primaryBtn.style.opacity = "1";
+                primaryBtn.innerHTML = `<i class="fa-solid fa-rotate-right" style="margin-right:6px;"></i> Coba Unduh Lagi`;
+                if (browserBtn) browserBtn.style.display = "block";
+                if (laterBtn && !isForce) laterBtn.style.display = "block";
+            }
+        };
+
+        if (laterBtn) laterBtn.onclick = () => dismissAppUpdateModal(remoteInfo.versionCode);
+        if (browserBtn) browserBtn.onclick = () => openExternalNative(remoteInfo.exeUrl || "");
+    }
+
+    async function checkDesktopUpdateNow(manual = false) {
+        const local = getLocalDesktopVersionInfo();
+        if (!local || !local.updateManifestUrl) {
+            if (manual) showUpdateNoticeToast("Info versi Desktop belum tersedia.");
+            return false;
+        }
+        if (manual) showUpdateNoticeToast("Memeriksa versi Desktop terbaru...");
+        try {
+            const rawStr = await window.__TAURI__.core.invoke("check_desktop_update", {
+                manifestUrl: local.updateManifestUrl
+            });
+            const remote = JSON.parse(rawStr || "{}");
+            const remoteCode = Number(remote.versionCode) || 0;
+            const localCode = Number(local.versionCode) || 0;
+
+            if (remoteCode > localCode && remote.exeUrl) {
+                if (!manual && !remote.force) {
+                    const lastVer = Number(localStorage.getItem("nf_upd_dismissed_ver") || "0");
+                    const lastAt = Number(localStorage.getItem("nf_upd_dismissed_at") || "0");
+                    if (lastVer === remoteCode && lastAt && (Date.now() - lastAt) < 12 * 60 * 60 * 1000) {
+                        return true;
+                    }
+                }
+                if (window.nfNotify) {
+                    window.nfNotify.send({
+                        title: `🔔 Update ${local.appRole === "office" ? "Office" : "POS"} Desktop Tersedia (v${remote.versionName})`,
+                        body: remote.notes || "Klik untuk memperbarui aplikasi secara otomatis.",
+                        tag: `desktop-upd-${remoteCode}`,
+                        sound: "status",
+                        forceOsBanner: true,
+                        onClick: () => renderDesktopUpdateModal(local, remote)
+                    });
+                }
+                renderDesktopUpdateModal(local, remote);
+                return true;
+            } else if (manual) {
+                showUpdateNoticeToast(`Aplikasi Desktop sudah versi terbaru (v${local.versionName || "1.52"}) ✓`);
+            }
+        } catch (err) {
+            if (manual) {
+                const msg = (err && (err.message || String(err))) || "";
+                if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("command")) {
+                    showUpdateNoticeToast("Versi .exe ini perlu diperbarui 1x manual agar Auto-Update aktif.");
+                } else {
+                    showUpdateNoticeToast("Belum ada rilis Desktop baru / cek koneksi internet.");
+                }
+            }
+        }
+        return false;
+    }
+
     window.nfUpdater = {
-        getLocalInfo: getLocalApkVersionInfo,
+        getLocalInfo() {
+            return isTauri() ? getLocalDesktopVersionInfo() : getLocalApkVersionInfo();
+        },
         check(manual = false) {
+            if (isTauri()) {
+                checkDesktopUpdateNow(!!manual);
+                return true;
+            }
             if (!isAndroidNative() || typeof window.NfAndroidNative.checkAppUpdateAsync !== "function") {
-                if (manual) showUpdateNoticeToast("Update otomatis APK khusus untuk aplikasi Android (.apk).");
+                if (manual) showUpdateNoticeToast("Update otomatis khusus untuk aplikasi Android (.apk) & Windows Desktop (.exe).");
                 return false;
             }
             __nfUpdateManualMode = !!manual;
@@ -1758,22 +1957,47 @@
         }
     };
 
-    // Tampilkan elemen tombol khusus Android APK (.nf-android-only) & jalankan cek update otomatis 4.5 detik setelah buka APK
-    function revealAndroidOnlyElements() {
-        if (!isAndroidNative()) return;
-        document.querySelectorAll(".nf-android-only").forEach((el) => {
+    // Tampilkan tombol Cek Update di Android APK & Windows Desktop (.exe), lalu jalankan cek update otomatis
+    function revealNativeUpdaterElements() {
+        const android = isAndroidNative();
+        const desktop = isTauri();
+        if (!android && !desktop) return;
+        document.querySelectorAll(".nf-native-updater-btn").forEach((el) => {
             el.classList.remove("hidden");
+            if (desktop && el.dataset.desktopLabel) {
+                const lbl = el.querySelector(".nf-upd-btn-label");
+                if (lbl) lbl.textContent = el.dataset.desktopLabel;
+            }
+        });
+        document.querySelectorAll(".nf-android-only").forEach((el) => {
+            const onclickStr = el.getAttribute("onclick") || "";
+            if (android) {
+                el.classList.remove("hidden");
+            } else if (desktop && onclickStr.includes("nfUpdater")) {
+                el.classList.remove("hidden");
+                el.innerHTML = `<i class="fa-solid fa-cloud-arrow-down mr-1"></i> Cek Update (.exe)`;
+            }
         });
     }
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", revealAndroidOnlyElements);
+        document.addEventListener("DOMContentLoaded", revealNativeUpdaterElements);
     } else {
-        revealAndroidOnlyElements();
+        revealNativeUpdaterElements();
     }
     if (isAndroidNative()) {
         setTimeout(() => {
             if (window.nfUpdater) window.nfUpdater.check(false);
         }, 4500);
+    } else if (isTauri()) {
+        setTimeout(() => {
+            if (window.nfUpdater) window.nfUpdater.check(false);
+        }, 4500);
+        // Cek berkala setiap 4 jam selama komputer kasir/office menyala
+        setInterval(() => {
+            if (navigator.onLine && !document.getElementById("nfAppUpdateModal")) {
+                window.nfUpdater.check(false);
+            }
+        }, 4 * 60 * 60 * 1000);
     }
 
     // =========================================================================
