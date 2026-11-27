@@ -5121,7 +5121,7 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                 });
                 // Potong otomatis nominal DP bila pelanggan sudah bayar DP sebelumnya
                 if (po.paymentStatus === 'DP' && Number(po.dpAmount) > 0) {
-                    this.state.posOverallDiscount = { type: 'nominal', value: Number(po.dpAmount), label: `DP PO ${po.orderCode}` };
+                    this.state.posDiscount = { type: 'nominal', value: Number(po.dpAmount) };
                 }
 
                 // Isi nama & cek apakah Member terdaftar
@@ -6087,7 +6087,7 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                                 </div>
                                 <div class="flex flex-wrap items-center gap-1.5">
                                     <button type="button" onclick="document.getElementById('onlineOrdersModal').classList.add('hidden'); app.openDigitalReceiptModalById('${this.escapeHtml(tx.id)}')" class="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-extrabold text-[11px]">🧾 Resi Digital / WA</button>
-                                    <button type="button" onclick="app.reprintReceipt('${this.escapeHtml(tx.id)}')" class="px-3 py-1.5 rounded-full bg-slate-800 text-white font-extrabold text-[11px]"><i class="fa-solid fa-print mr-1"></i> Cetak Struk</button>
+                                    <button type="button" onclick="app.reprintTransaction('${this.escapeHtml(tx.id)}')" class="px-3 py-1.5 rounded-full bg-slate-800 text-white font-extrabold text-[11px]"><i class="fa-solid fa-print mr-1"></i> Cetak Struk</button>
                                 </div>
                             </div>` : ''}
                         </div>`;
@@ -6405,8 +6405,7 @@ Ingin langsung membuka form Rakit Parsel sekarang untuk memotong stok buah/wadah
                             }
                             this.renderOnlineOrdersList();
                             if (this.state.currentAdminTab === 'po_parsel') this.renderParcelOrderBoard();
-                            this.showAlert('Foto berhasil diunggah & langsung terlihat di HP pelanggan!
-(Foto otomatis dibersihkan setelah 30 hari pesanan selesai agar storage gratis tetap hemat.)');
+                            this.showAlert('Foto berhasil diunggah & langsung terlihat di HP pelanggan!\n(Foto otomatis dibersihkan setelah 30 hari pesanan selesai agar storage gratis tetap hemat.)');
                         } catch (err) {
                             this.showAlert('Gagal mengunggah foto: ' + (err?.message || err));
                         }
@@ -12485,7 +12484,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v152';
+        window.__NF_APP_VERSION = 'v152.1';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;
