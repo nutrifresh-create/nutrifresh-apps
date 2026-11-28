@@ -1,17 +1,32 @@
 name: Build NutriFresh Staff (.apk)
 
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'web/staff.html'
+      - 'web/sw.js'
+      - 'web/native-bridge.js'
+      - 'web/supabase-adapter.js'
+      - 'web/nutri-theme.css'
+      - 'scripts/configure_android_release_and_fcm.py'
+      - 'scripts/prepare_web_bundles.py'
+      - 'mobile/staff-android/**'
   workflow_dispatch:
     inputs:
       release_notes:
         description: 'Catatan pembaruan (tampil di pop-up update HP)'
         required: false
-        default: 'v152.3 - Kamera Langsung Foto Pesanan & Chat, Keterangan Lengkap & Fix HP Rakit Parsel, Kunci Pilihan Buah PO Stok Tersedia.'
+        default: 'v153.3 - UI Retail Pro 2 Tema (Natural & Dark), Bersih Splash & Header POS/Staff/Office, Auto-Update APK & EXE.'
       force_update:
         description: 'Wajibkan update (user tidak bisa melewati pop-up)?'
         type: boolean
         required: false
         default: false
+
+concurrency:
+  group: android-staff-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -81,7 +96,8 @@ jobs:
       - name: Publish Signed APK & Update Manifest to GitHub Releases (In-App Auto-Update)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_NOTES: "${{ github.event.inputs.release_notes || 'v152.3 - Kamera Langsung Foto Pesanan & Chat, Keterangan Lengkap & Fix HP Rakit Parsel, Kunci Pilihan Buah PO Stok Tersedia.' }}"
+          INPUT_NOTES: ${{ github.event.inputs.release_notes }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
           FORCE_UPDATE: ${{ github.event.inputs.force_update || 'false' }}
         run: |
           if [ ! -f mobile/staff-android/android/.nf_release_signed ]; then
@@ -94,6 +110,9 @@ jobs:
           from pathlib import Path
           meta = json.loads(Path("mobile/staff-android/android/.nf_version.json").read_text(encoding="utf-8"))
           repo = os.environ["GITHUB_REPOSITORY"]
+          inp_notes = (os.environ.get("INPUT_NOTES") or "").strip()
+          commit_first = (os.environ.get("COMMIT_MSG") or "").strip().splitlines()[0] if (os.environ.get("COMMIT_MSG") or "").strip() else ""
+          notes = inp_notes or commit_first or "v153.3 - UI Retail Pro 2 Tema (Natural & Dark), Bersih Splash & Header POS/Staff/Office, Auto-Update APK & EXE."
           out = {
               "appRole": "staff",
               "packageId": "id.my.nutrifresh.staff",
@@ -101,7 +120,7 @@ jobs:
               "versionName": str(meta["versionName"]),
               "apkFileName": "NutriFresh_Staff.apk",
               "apkUrl": f"https://github.com/{repo}/releases/download/latest-apks/NutriFresh_Staff.apk",
-              "notes": os.environ.get("RELEASE_NOTES", "").strip() or "Pembaruan fitur terbaru NutriFresh.",
+              "notes": notes,
               "force": str(os.environ.get("FORCE_UPDATE", "false")).lower() == "true",
               "publishedAt": datetime.datetime.now(datetime.timezone.utc).isoformat()
           }
@@ -109,16 +128,20 @@ jobs:
           print("[release] Generated update-staff.json:", out)
           PYEOF
 
+          sleep 6
           gh release view latest-apks >/dev/null 2>&1 || gh release create latest-apks --title "NutriFresh Android APKs (Auto-Update)" --notes "Rilis otomatis 4 APK NutriFresh bertanda tangan permanen untuk In-App Self-Updater." || true
 
-          for i in 1 2 3; do
+          uploaded=0
+          for i in 1 2 3 4 5; do
             if gh release upload latest-apks "NutriFresh_Staff.apk" "update-staff.json" --clobber; then
               echo "[release] Uploaded NutriFresh_Staff.apk & update-staff.json to latest-apks!"
+              uploaded=1
               break
             fi
-            echo "[release] Retry upload ($i/3)..."
-            sleep 4
+            echo "[release] Retry upload ($i/5)..."
+            sleep $((i * 4))
           done
+          if [ "$uploaded" -ne 1 ]; then exit 1; fi
 
       - name: Upload NutriFresh_Staff.apk
         uses: actions/upload-artifact@v4

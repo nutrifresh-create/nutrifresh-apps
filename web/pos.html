@@ -8,7 +8,7 @@
         (function() {
             try {
                 var raw = localStorage.getItem('nutri_ui_theme');
-                var savedTheme = (raw === 'glass' || raw === 'dark' || raw === 'natural') ? raw : 'natural';
+                var savedTheme = (raw === 'dark') ? 'dark' : 'natural';
                 document.documentElement.setAttribute('data-theme', savedTheme);
             } catch (e) {
                 document.documentElement.setAttribute('data-theme', 'natural');
@@ -1156,8 +1156,27 @@
             animation: none !important;
         }
         html[data-theme="natural"] body {
-            background-color: #f4f6f5 !important;
+            background-color: #e9edf2 !important;
             background-image: none !important;
+        }
+        /* Kunci dock bawah & header POS agar tidak pernah berubah gelap oleh script adaptive contrast lama */
+        html[data-theme="natural"] body #adminView > div:first-child nav,
+        html[data-theme="natural"] body #adminView > div:first-child nav.nf-dock-on-dark {
+            background: rgba(255, 255, 255, 0.96) !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+            box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.16) !important;
+        }
+        html[data-theme="natural"] body #adminTopHeader > div,
+        html[data-theme="natural"] body #adminTopHeader > div.nf-on-dark {
+            background: rgba(255, 255, 255, 0.96) !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+        }
+        html[data-theme="natural"] body #adminView > div:first-child nav .admin-tab.nf-on-dark:not(.nf-slide-active),
+        html[data-theme="natural"] body #adminView > div:first-child nav .admin-tab.nf-on-dark:not(.nf-slide-active) i,
+        html[data-theme="natural"] body #adminView > div:first-child nav .admin-tab.nf-on-dark:not(.nf-slide-active) span:not(#navPoBadgeCount) {
+            color: #64748b !important;
+            text-shadow: none !important;
+            filter: none !important;
         }
         html[data-theme="glass"] body {
             background-color: #edf2ef !important;
@@ -1539,14 +1558,16 @@
             }
         }
     </style>
-    <style id="nfCleanSplashV1531">
+    <style id="nfCleanSplashV1533">
         @keyframes nfCleanSpin { to { transform: rotate(360deg); } }
         html body #appSplashLoader,
         html[data-theme="natural"] body #appSplashLoader,
-        html[data-theme="glass"] body #appSplashLoader {
+        html[data-theme="natural"] body.nf-office-page #appSplashLoader {
             position: fixed !important;
             inset: 0 !important;
-            z-index: 9999 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 99999 !important;
             background: #ffffff !important;
             background-image: none !important;
             display: flex !important;
@@ -1556,15 +1577,30 @@
             padding: 24px !important;
             transition: opacity 0.28s ease !important;
         }
-        html[data-theme="dark"] body #appSplashLoader {
+        html[data-theme="dark"] body #appSplashLoader,
+        html[data-theme="dark"] body.nf-office-page #appSplashLoader {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 99999 !important;
             background: #0b1120 !important;
             background-image: none !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 24px !important;
+            transition: opacity 0.28s ease !important;
         }
         html body #appSplashLoader > div,
         html[data-theme="natural"] body #appSplashLoader > div,
-        html[data-theme="glass"] body #appSplashLoader > div,
-        html[data-theme="dark"] body #appSplashLoader > div {
+        html[data-theme="dark"] body #appSplashLoader > div,
+        html body #appSplashLoader .nf-splash-bottom,
+        html[data-theme="natural"] body #appSplashLoader .nf-splash-bottom,
+        html[data-theme="dark"] body #appSplashLoader .nf-splash-bottom {
             background: transparent !important;
+            background-color: transparent !important;
             border: none !important;
             box-shadow: none !important;
             -webkit-backdrop-filter: none !important;
@@ -1574,30 +1610,38 @@
             animation: none !important;
             max-width: none !important;
         }
-        .nf-splash-logo-wrap {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            border-radius: 0;
-            background: transparent;
+        html body #appSplashLoader .nf-splash-logo-wrap,
+        html[data-theme="natural"] body #appSplashLoader .nf-splash-logo-wrap {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: transparent !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
         }
-        html[data-theme="dark"] .nf-splash-logo-wrap {
-            background: rgba(255, 255, 255, 0.96);
-            padding: 12px 22px;
-            border-radius: 20px;
+        html[data-theme="natural"] body #appSplashLoader img,
+        html body #appSplashLoader img {
+            mix-blend-mode: multiply;
         }
-        .nf-splash-bottom {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: max(36px, env(safe-area-inset-bottom));
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
+        html[data-theme="dark"] body #appSplashLoader .nf-splash-logo-wrap {
+            background: rgba(255, 255, 255, 0.96) !important;
+            padding: 12px 22px !important;
+            border-radius: 20px !important;
         }
-        .nf-splash-ring {
+        html[data-theme="dark"] body #appSplashLoader img {
+            mix-blend-mode: normal;
+        }
+        html body #appSplashLoader .nf-splash-bottom {
+            position: absolute !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: max(36px, env(safe-area-inset-bottom)) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+        html body #appSplashLoader .nf-splash-ring {
             width: 18px;
             height: 18px;
             border-radius: 9999px;
@@ -1605,18 +1649,18 @@
             border-top-color: #7cb342;
             animation: nfCleanSpin 0.72s linear infinite;
         }
-        html[data-theme="dark"] .nf-splash-ring {
+        html[data-theme="dark"] body #appSplashLoader .nf-splash-ring {
             border-color: #1e293b;
             border-top-color: #a3e635;
         }
-        .nf-splash-caption {
+        html body #appSplashLoader .nf-splash-caption {
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.16em;
             text-transform: uppercase;
             color: #94a3b8;
         }
-        html[data-theme="dark"] .nf-splash-caption {
+        html[data-theme="dark"] body #appSplashLoader .nf-splash-caption {
             color: #64748b;
         }
     </style>
@@ -2884,25 +2928,15 @@
                                 <div class="pt-4 mt-2 border-t border-gray-200/80 space-y-2.5">
                                     <div>
                                         <h4 class="font-extrabold text-gray-800 flex items-center"><i class="fa-solid fa-palette text-nutri-green mr-1.5"></i> Tema Tampilan Aplikasi (Perangkat Ini)</h4>
-                                        <p class="text-[11px] text-gray-500 mt-0.5">Otomatis berlaku untuk Katalog, Kasir POS, dan halaman lain. Pilih <strong>Natural</strong> (bawaan) atau <strong>Dark</strong> untuk shift malam, atau <strong>Glass</strong> yang kini sudah ringan.</p>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">Otomatis berlaku untuk Katalog, Kasir POS, Staff, dan Office di perangkat ini. Pilih <strong>Natural</strong> (terang sejuk) atau <strong>Dark</strong> untuk shift malam.</p>
                                     </div>
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                         <button type="button" data-theme-card="natural" onclick="window.setNutriTheme('natural')" class="nf-theme-card p-3 text-left flex items-center justify-between gap-2.5">
                                             <div class="flex items-center gap-2.5 min-w-0">
                                                 <span class="w-9 h-9 rounded-full bg-[#f4f9f1] border border-green-300 flex items-center justify-center text-nutri-dark text-sm flex-shrink-0"><i class="fa-solid fa-leaf"></i></span>
                                                 <div class="min-w-0">
                                                     <span class="font-extrabold text-gray-900 text-xs block">Natural</span>
-                                                    <span class="text-[10px] text-gray-500 block leading-tight">Terang solid &amp; paling ringan</span>
-                                                </div>
-                                            </div>
-                                            <span class="nf-theme-check hidden text-nutri-green text-base flex-shrink-0"><i class="fa-solid fa-circle-check"></i></span>
-                                        </button>
-                                        <button type="button" data-theme-card="glass" onclick="window.setNutriTheme('glass')" class="nf-theme-card p-3 text-left flex items-center justify-between gap-2.5">
-                                            <div class="flex items-center gap-2.5 min-w-0">
-                                                <span class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400/80 via-sky-300/75 to-amber-300/80 border border-white shadow-sm flex items-center justify-center text-white text-sm flex-shrink-0"><i class="fa-solid fa-sparkles"></i></span>
-                                                <div class="min-w-0">
-                                                    <span class="font-extrabold text-gray-900 text-xs block">Glass</span>
-                                                    <span class="text-[10px] text-gray-500 block leading-tight">Kaca bening ringan 60fps</span>
+                                                    <span class="text-[10px] text-gray-500 block leading-tight">Terang sejuk &amp; ringan</span>
                                                 </div>
                                             </div>
                                             <span class="nf-theme-check hidden text-nutri-green text-base flex-shrink-0"><i class="fa-solid fa-circle-check"></i></span>
@@ -13257,7 +13291,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v153.2';
+        window.__NF_APP_VERSION = 'v153.3';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;
@@ -13956,7 +13990,7 @@ window.openOfficeWithDarkLoader = function(ev) {
                         setDarkClass(pBtns[j], isPD);
                         if (isPD) pDarkCount++;
                     }
-                    posNav.classList.toggle('nf-dock-on-dark', pBtns.length > 0 && pDarkCount >= Math.ceil(pBtns.length / 2));
+                    posNav.classList.toggle('nf-dock-on-dark', false && pBtns.length > 0 && pDarkCount >= Math.ceil(pBtns.length / 2));
                 }
             }
 
@@ -14002,7 +14036,7 @@ window.openOfficeWithDarkLoader = function(ev) {
            ============================================================== */
         (function() {
             function normalizeTheme(val) {
-                return (val === 'glass' || val === 'dark' || val === 'natural') ? val : 'natural';
+                return (val === 'dark') ? 'dark' : 'natural';
             }
 
             function getTheme() {
@@ -14069,7 +14103,7 @@ window.openOfficeWithDarkLoader = function(ev) {
 
             window.toggleNutriTheme = function() {
                 var cur = getTheme();
-                var next = cur === 'natural' ? 'dark' : (cur === 'dark' ? 'glass' : 'natural');
+                var next = (cur === 'dark') ? 'natural' : 'dark';
                 window.setNutriTheme(next, false);
             };
 

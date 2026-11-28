@@ -1324,10 +1324,18 @@ def main():
     if not app_gradle.exists():
         raise FileNotFoundError(f"Missing {app_gradle}")
 
-    # 1. Auto-increment versionCode & versionName so Android allows direct in-place Update!
+    # 1. Auto-increment versionCode & versionName from web/sw.js (strictly monotonic across all workflows!)
     run_num = int(os.environ.get("GITHUB_RUN_NUMBER", "1") or "1")
-    ver_code = 100 + run_num
-    ver_name = f"1.52.{run_num}"
+    sw_major, sw_minor = 153, 3
+    for sw_cand in (Path("web/sw.js"), Path(__file__).resolve().parent.parent / "web" / "sw.js"):
+        if sw_cand.exists():
+            m_sw = re.search(r"SW_VERSION\s*=\s*['\"]v?(\d+)(?:\.(\d+))?", sw_cand.read_text(encoding="utf-8"))
+            if m_sw:
+                sw_major = int(m_sw.group(1))
+                sw_minor = int(m_sw.group(2) or 0)
+                break
+    ver_code = (sw_major * 100000) + (sw_minor * 1000) + (run_num % 1000)
+    ver_name = f"{sw_major}.{sw_minor}.{run_num}"
 
     gh_repo = (os.environ.get("GITHUB_REPOSITORY") or "nutrifresh-create/nutrifresh-apps").strip()
     update_manifest_url = f"https://github.com/{gh_repo}/releases/download/latest-apks/update-{app_role}.json"

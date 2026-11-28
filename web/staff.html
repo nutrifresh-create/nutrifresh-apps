@@ -7,7 +7,7 @@
         (function() {
             try {
                 var raw = localStorage.getItem('nutri_ui_theme');
-                var savedTheme = (raw === 'glass' || raw === 'dark' || raw === 'natural') ? raw : 'natural';
+                var savedTheme = (raw === 'dark') ? 'dark' : 'natural';
                 document.documentElement.setAttribute('data-theme', savedTheme);
             } catch (e) {
                 document.documentElement.setAttribute('data-theme', 'natural');
@@ -56,14 +56,49 @@
         }
     </style>
     <link rel="stylesheet" href="nutri-theme.css">
-    <style id="nfCleanSplashV1531">
+        <style id="nfStaffRetailProV1533">
+        /* NUTRIFRESH STAFF RETAIL PRO UNSLOP LAYER (v153.3) */
+        .nf-liquid-bg, .nf-orb { display: none !important; animation: none !important; }
+        html[data-theme="natural"] body {
+            background-color: #eaf0ec !important;
+            background-image: none !important;
+        }
+        html[data-theme="dark"] body {
+            background-color: #0b1120 !important;
+            background-image: none !important;
+        }
+        button, nav, .staff-tab-btn {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        #liveClock, #courStatReady, #courStatOnWay, #courStatCod, #leaveRemainingVal, #loanRemainingVal, #courierOrdersList {
+            font-variant-numeric: tabular-nums !important;
+        }
+        html[data-theme="natural"] body header > div,
+        html[data-theme="natural"] body nav {
+            background: rgba(255, 255, 255, 0.96) !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+        }
+        html[data-theme="natural"] body main .bg-white {
+            background: #ffffff !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+            border-color: rgba(15, 23, 42, 0.08) !important;
+        }
+    </style>
+    <style id="nfCleanSplashV1533">
         @keyframes nfCleanSpin { to { transform: rotate(360deg); } }
         html body #appSplashLoader,
         html[data-theme="natural"] body #appSplashLoader,
-        html[data-theme="glass"] body #appSplashLoader {
+        html[data-theme="natural"] body.nf-office-page #appSplashLoader {
             position: fixed !important;
             inset: 0 !important;
-            z-index: 9999 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 99999 !important;
             background: #ffffff !important;
             background-image: none !important;
             display: flex !important;
@@ -73,15 +108,30 @@
             padding: 24px !important;
             transition: opacity 0.28s ease !important;
         }
-        html[data-theme="dark"] body #appSplashLoader {
+        html[data-theme="dark"] body #appSplashLoader,
+        html[data-theme="dark"] body.nf-office-page #appSplashLoader {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 99999 !important;
             background: #0b1120 !important;
             background-image: none !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 24px !important;
+            transition: opacity 0.28s ease !important;
         }
         html body #appSplashLoader > div,
         html[data-theme="natural"] body #appSplashLoader > div,
-        html[data-theme="glass"] body #appSplashLoader > div,
-        html[data-theme="dark"] body #appSplashLoader > div {
+        html[data-theme="dark"] body #appSplashLoader > div,
+        html body #appSplashLoader .nf-splash-bottom,
+        html[data-theme="natural"] body #appSplashLoader .nf-splash-bottom,
+        html[data-theme="dark"] body #appSplashLoader .nf-splash-bottom {
             background: transparent !important;
+            background-color: transparent !important;
             border: none !important;
             box-shadow: none !important;
             -webkit-backdrop-filter: none !important;
@@ -91,49 +141,57 @@
             animation: none !important;
             max-width: none !important;
         }
-        .nf-splash-logo-wrap {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            border-radius: 0;
-            background: transparent;
+        html body #appSplashLoader .nf-splash-logo-wrap,
+        html[data-theme="natural"] body #appSplashLoader .nf-splash-logo-wrap {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: transparent !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
         }
-        html[data-theme="dark"] .nf-splash-logo-wrap {
-            background: rgba(255, 255, 255, 0.96);
-            padding: 12px 22px;
-            border-radius: 20px;
+        html[data-theme="natural"] body #appSplashLoader img,
+        html body #appSplashLoader img {
+            mix-blend-mode: multiply;
         }
-        .nf-splash-bottom {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: max(36px, env(safe-area-inset-bottom));
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
+        html[data-theme="dark"] body #appSplashLoader .nf-splash-logo-wrap {
+            background: rgba(255, 255, 255, 0.96) !important;
+            padding: 12px 22px !important;
+            border-radius: 20px !important;
         }
-        .nf-splash-ring {
+        html[data-theme="dark"] body #appSplashLoader img {
+            mix-blend-mode: normal;
+        }
+        html body #appSplashLoader .nf-splash-bottom {
+            position: absolute !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: max(36px, env(safe-area-inset-bottom)) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+        html body #appSplashLoader .nf-splash-ring {
             width: 18px;
             height: 18px;
             border-radius: 9999px;
             border: 2px solid #e2e8f0;
-            border-top-color: #0f766e;
+            border-top-color: #7cb342;
             animation: nfCleanSpin 0.72s linear infinite;
         }
-        html[data-theme="dark"] .nf-splash-ring {
+        html[data-theme="dark"] body #appSplashLoader .nf-splash-ring {
             border-color: #1e293b;
             border-top-color: #a3e635;
         }
-        .nf-splash-caption {
+        html body #appSplashLoader .nf-splash-caption {
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.16em;
             text-transform: uppercase;
             color: #94a3b8;
         }
-        html[data-theme="dark"] .nf-splash-caption {
+        html[data-theme="dark"] body #appSplashLoader .nf-splash-caption {
             color: #64748b;
         }
     </style>
@@ -189,7 +247,7 @@
                     <button type="button" onclick="staffApp.refreshAll(true)" title="Segarkan Data" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center text-xs transition">
                         <i id="hdrRefreshIcon" class="fa-solid fa-rotate"></i>
                     </button>
-                    <button type="button" onclick="window.toggleNutriTheme()" title="Ganti Tema (Natural / Dark / Glass)" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center text-xs transition">
+                    <button type="button" onclick="window.toggleNutriTheme()" title="Ganti Tema (Natural / Dark)" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center text-xs transition">
                         <i class="fa-solid fa-circle-half-stroke"></i>
                     </button>
                 </div>
@@ -249,11 +307,11 @@
                         <label class="block text-xs font-extrabold text-gray-700 mb-1.5">1. Pilih Jadwal Shift Hari Ini</label>
                         <div class="grid grid-cols-2 gap-2">
                             <button type="button" id="btnShift1" onclick="staffApp.selectShift('Shift 1')" class="p-3 rounded-2xl border-2 border-nutri-green bg-nutri-light text-left transition">
-                                <span class="text-xs font-black text-nutri-dark block">☀️ Shift 1 (Pagi)</span>
+                                <span class="text-xs font-black text-nutri-dark block">Shift 1 (Pagi)</span>
                                 <span class="text-[11px] text-gray-600 font-semibold block mt-0.5" id="lblShift1Time">07:00 - 14:30</span>
                             </button>
                             <button type="button" id="btnShift2" onclick="staffApp.selectShift('Shift 2')" class="p-3 rounded-2xl border border-gray-200 bg-white text-left transition">
-                                <span class="text-xs font-black text-gray-800 block">🌤️ Shift 2 (Sore)</span>
+                                <span class="text-xs font-black text-gray-800 block">Shift 2 (Sore)</span>
                                 <span class="text-[11px] text-gray-500 font-semibold block mt-0.5" id="lblShift2Time">14:00 - 21:30</span>
                             </button>
                         </div>
@@ -292,10 +350,10 @@
                     <div>
                         <label class="block text-xs font-extrabold text-gray-700 mb-1.5">3. Keterangan / Alasan <span class="text-[10px] font-semibold text-gray-400">(Wajib jika terlambat)</span></label>
                         <div class="flex flex-wrap gap-1.5 mb-2">
-                            <button type="button" onclick="staffApp.setNote('Ambil Stok / Kulakan')" class="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-[10px] font-bold border">🚚 Ambil Stok</button>
-                            <button type="button" onclick="staffApp.setNote('Antar Pesanan Pelanggan')" class="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-[10px] font-bold border">🛵 Antar Pesanan</button>
-                            <button type="button" onclick="staffApp.setNote('Tukar / Ganti Shift')" class="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-[10px] font-bold border">🔄 Tukar Shift</button>
-                            <button type="button" onclick="staffApp.setNote('Kendala di Jalan')" class="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-[10px] font-bold border">⚠️ Kendala Jalan</button>
+                            <button type="button" onclick="staffApp.setNote('Ambil Stok / Kulakan')" class="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-[10px] font-bold border">Ambil Stok</button>
+                            <button type="button" onclick="staffApp.setNote('Antar Pesanan Pelanggan')" class="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-[10px] font-bold border">Antar Pesanan</button>
+                            <button type="button" onclick="staffApp.setNote('Tukar / Ganti Shift')" class="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-[10px] font-bold border">Tukar Shift</button>
+                            <button type="button" onclick="staffApp.setNote('Kendala di Jalan')" class="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-[10px] font-bold border">Kendala Jalan</button>
                         </div>
                         <input type="text" id="attNoteInput" placeholder="Ketik catatan tambahan (opsional)..." class="w-full px-3.5 py-2.5 rounded-2xl border border-gray-200 bg-gray-50 text-xs outline-none">
                     </div>
@@ -409,9 +467,9 @@
 
                 <!-- Filter Antaran -->
                 <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs">
-                    <button type="button" id="courFilt-active" onclick="staffApp.setCourierFilter('active')" class="px-3.5 py-1.5 rounded-full font-extrabold bg-teal-700 text-white shadow-sm whitespace-nowrap">🛵 Antaran Aktif</button>
-                    <button type="button" id="courFilt-cod" onclick="staffApp.setCourierFilter('cod')" class="px-3.5 py-1.5 rounded-full font-bold bg-white border border-gray-200 text-gray-700 whitespace-nowrap">💵 Tunggu Setor COD</button>
-                    <button type="button" id="courFilt-done" onclick="staffApp.setCourierFilter('done')" class="px-3.5 py-1.5 rounded-full font-bold bg-white border border-gray-200 text-gray-700 whitespace-nowrap">✅ Selesai</button>
+                    <button type="button" id="courFilt-active" onclick="staffApp.setCourierFilter('active')" class="px-3.5 py-1.5 rounded-full font-extrabold bg-teal-700 text-white shadow-sm whitespace-nowrap">Antaran Aktif</button>
+                    <button type="button" id="courFilt-cod" onclick="staffApp.setCourierFilter('cod')" class="px-3.5 py-1.5 rounded-full font-bold bg-white border border-gray-200 text-gray-700 whitespace-nowrap">Tunggu Setor COD</button>
+                    <button type="button" id="courFilt-done" onclick="staffApp.setCourierFilter('done')" class="px-3.5 py-1.5 rounded-full font-bold bg-white border border-gray-200 text-gray-700 whitespace-nowrap">Selesai</button>
                 </div>
 
                 <div id="courierOrdersList" class="space-y-3 text-xs"></div>
@@ -476,11 +534,11 @@
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">Jenis Pengajuan *</label>
                             <select id="reqType" onchange="staffApp.toggleReqFields()" class="w-full px-3 py-2 rounded-xl border bg-white font-bold outline-none">
-                                <option value="Cuti">🌴 Cuti</option>
-                                <option value="Izin">📝 Izin</option>
-                                <option value="Sakit">🩺 Sakit</option>
-                                <option value="Lembur">⏰ Lembur (Jam)</option>
-                                <option value="Kasbon">💵 Kasbon (Rp)</option>
+                                <option value="Cuti">Cuti</option>
+                                <option value="Izin">Izin</option>
+                                <option value="Sakit">Sakit</option>
+                                <option value="Lembur">Lembur (Jam)</option>
+                                <option value="Kasbon">Kasbon (Rp)</option>
                             </select>
                         </div>
                         <div>
@@ -569,28 +627,18 @@
                 <!-- Pilihan 3 Tema -->
                 <div class="nf-staff-card rounded-3xl p-4 sm:p-5 space-y-3 text-xs">
                     <h3 class="font-extrabold text-gray-900 flex items-center gap-1.5"><i class="fa-solid fa-palette text-nutri-green"></i> Tema Tampilan Aplikasi</h3>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button type="button" data-theme-card="natural" onclick="window.setNutriTheme('natural')" class="nf-theme-card p-2.5 text-left flex flex-col justify-between gap-1.5">
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button type="button" data-theme-card="natural" onclick="window.setNutriTheme('natural')" class="nf-theme-card p-3 text-left flex flex-col justify-between gap-1.5">
                             <div class="flex items-center justify-between">
                                 <span class="w-7 h-7 rounded-full bg-[#f4f9f1] border border-green-300 flex items-center justify-center text-nutri-dark text-xs"><i class="fa-solid fa-leaf"></i></span>
                                 <span class="nf-theme-check hidden text-nutri-green text-sm"><i class="fa-solid fa-circle-check"></i></span>
                             </div>
                             <div>
                                 <span class="font-extrabold text-gray-900 text-xs block">Natural</span>
-                                <span class="text-[10px] text-gray-500 block leading-tight">Terang ringan</span>
+                                <span class="text-[10px] text-gray-500 block leading-tight">Terang sejuk</span>
                             </div>
                         </button>
-                        <button type="button" data-theme-card="glass" onclick="window.setNutriTheme('glass')" class="nf-theme-card p-2.5 text-left flex flex-col justify-between gap-1.5">
-                            <div class="flex items-center justify-between">
-                                <span class="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-400/80 via-sky-300/75 to-amber-300/80 border border-white flex items-center justify-center text-white text-xs"><i class="fa-solid fa-sparkles"></i></span>
-                                <span class="nf-theme-check hidden text-nutri-green text-sm"><i class="fa-solid fa-circle-check"></i></span>
-                            </div>
-                            <div>
-                                <span class="font-extrabold text-gray-900 text-xs block">Glass</span>
-                                <span class="text-[10px] text-gray-500 block leading-tight">Kaca ringan</span>
-                            </div>
-                        </button>
-                        <button type="button" data-theme-card="dark" onclick="window.setNutriTheme('dark')" class="nf-theme-card p-2.5 text-left flex flex-col justify-between gap-1.5">
+                        <button type="button" data-theme-card="dark" onclick="window.setNutriTheme('dark')" class="nf-theme-card p-3 text-left flex flex-col justify-between gap-1.5">
                             <div class="flex items-center justify-between">
                                 <span class="w-7 h-7 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-amber-300 text-xs"><i class="fa-solid fa-moon"></i></span>
                                 <span class="nf-theme-check hidden text-nutri-green text-sm"><i class="fa-solid fa-circle-check"></i></span>
@@ -1623,11 +1671,11 @@
                             <div class="flex items-start justify-between gap-2">
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-1.5 flex-wrap">
-                                        ${isPoOrd ? '<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[9.5px] font-black">🎁 PO PARSEL</span>' : ''}
+                                        ${isPoOrd ? '<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[9.5px] font-black">PO PARSEL</span>' : ''}
                                         <span class="font-mono font-black text-[11px] bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full">${this.esc(ord.orderCode || ord.id)}</span>
                                     </div>
                                     <h4 class="font-black text-sm text-gray-900 mt-1">${this.esc(ord.customerName || 'Pelanggan')}${ord.institution ? ` <span class="text-xs font-bold text-gray-500">• ${this.esc(ord.institution)}</span>` : ''}</h4>
-                                    ${isPoOrd && ord.deliveryDate ? `<div class="text-[10px] text-purple-800 font-bold mt-0.5">📅 Jadwal Kirim: ${this.esc(ord.deliveryDate)} ${this.esc(ord.deliveryTime || '')}</div>` : ''}
+                                    ${isPoOrd && ord.deliveryDate ? `<div class="text-[10px] text-purple-800 font-bold mt-0.5">Jadwal Kirim: ${this.esc(ord.deliveryDate)} ${this.esc(ord.deliveryTime || '')}</div>` : ''}
                                 </div>
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-black flex-shrink-0 ${isDone ? 'bg-green-100 text-nutri-dark' : (isCodWait ? 'bg-amber-100 text-amber-900' : (isOnWay ? 'bg-indigo-100 text-indigo-800' : 'bg-blue-100 text-blue-800'))}">${this.esc(ord.orderStatus)}</span>
                             </div>
@@ -1643,7 +1691,7 @@
                             </div>` : `
                             <div class="bg-emerald-50 border border-emerald-300 rounded-2xl p-2.5 flex items-center justify-between gap-2">
                                 <div>
-                                    <span class="text-[10px] font-black uppercase text-emerald-800 block">✅ ${ord.paymentStatus === 'Lunas' ? 'SUDAH LUNAS' : 'NON-TUNAI (' + this.esc(ord.paymentMethod || 'QRIS') + ')'}</span>
+                                    <span class="text-[10px] font-black uppercase text-emerald-800 block">${ord.paymentStatus === 'Lunas' ? 'SUDAH LUNAS' : 'NON-TUNAI (' + this.esc(ord.paymentMethod || 'QRIS') + ')'}</span>
                                     <span class="text-xs font-extrabold text-emerald-900">Tidak perlu tagih uang tunai (${this.rp(Number(ord.estimatedTotal) || grand)})</span>
                                 </div>
                                 <span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[10px]">LUNAS</span>
@@ -1657,11 +1705,11 @@
                                         const dMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(d.address || '')}`;
                                         return `<div class="flex items-center justify-between gap-2 p-2 rounded-xl border ${d.delivered ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-gray-200'}">
                                             <div class="min-w-0 flex-1">
-                                                <div class="text-[11px] font-bold ${d.delivered ? 'text-emerald-800 line-through' : 'text-gray-900'}">${d.delivered ? '✅' : '📍'} ${d.qty || 1}x ${this.esc(d.address || '-')}</div>
+                                                <div class="text-[11px] font-bold ${d.delivered ? 'text-emerald-800 line-through' : 'text-gray-900'}">${d.delivered ? '<i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i>' : '<i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>'} ${d.qty || 1}x ${this.esc(d.address || '-')}</div>
                                                 ${d.delivered && d.deliveredBy ? `<div class="text-[9.5px] text-emerald-700">Terkirim oleh ${this.esc(d.deliveredBy)}</div>` : ''}
                                             </div>
                                             <div class="flex items-center gap-1 flex-shrink-0">
-                                                <a href="${dMaps}" target="_blank" rel="noopener" class="px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-extrabold text-[10px] border border-blue-200">Maps</a>
+                                                ${hasMultiDest ? `<a href="${dMaps}" target="_blank" rel="noopener" class="px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-extrabold text-[10px] border border-blue-200">Maps</a>` : ''}
                                                 ${isOnWay && hasMultiDest && !d.delivered ? `<button type="button" onclick="staffApp.courierMarkDestDelivered('${this.esc(ord.id)}', ${dIdx})" class="px-2.5 py-1 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[10px] shadow-sm">✓ Terkirim</button>` : ''}
                                             </div>
                                         </div>`;
@@ -2282,7 +2330,7 @@ Alamat ini akan otomatis tercoret di POS & HP Pelanggan.`)) return;
     <script>
         (function() {
             function normalizeTheme(val) {
-                return (val === 'glass' || val === 'dark' || val === 'natural') ? val : 'natural';
+                return (val === 'dark') ? 'dark' : 'natural';
             }
             function getTheme() {
                 try { return normalizeTheme(localStorage.getItem('nutri_ui_theme')); } catch (e) { return 'natural'; }
@@ -2306,7 +2354,7 @@ Alamat ini akan otomatis tercoret di POS & HP Pelanggan.`)) return;
             };
             window.toggleNutriTheme = function() {
                 var cur = getTheme();
-                window.setNutriTheme(cur === 'natural' ? 'dark' : (cur === 'dark' ? 'glass' : 'natural'));
+                window.setNutriTheme(cur === 'dark' ? 'natural' : 'dark');
             };
             function init() { var c = getTheme(); document.documentElement.setAttribute('data-theme', c); syncControls(c); }
             if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

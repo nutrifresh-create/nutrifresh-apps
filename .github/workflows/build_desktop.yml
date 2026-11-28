@@ -1,17 +1,33 @@
 name: Build NutriFresh Desktop (.exe POS & Office)
 
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'web/pos.html'
+      - 'web/office.html'
+      - 'web/sw.js'
+      - 'web/native-bridge.js'
+      - 'web/supabase-adapter.js'
+      - 'web/nutri-theme.css'
+      - 'scripts/configure_desktop_updater.py'
+      - 'scripts/prepare_web_bundles.py'
+      - 'desktop/**'
   workflow_dispatch:
     inputs:
       release_notes:
         description: 'Catatan pembaruan (tampil di pop-up update PC Windows)'
         required: false
-        default: 'v152.3 - Kamera Langsung Foto Pesanan & Chat, Keterangan Lengkap & Fix HP Rakit Parsel, Kunci Pilihan Buah PO Stok Tersedia.'
+        default: 'v153.3 - UI Retail Pro 2 Tema (Natural & Dark), Bersih Splash & Header POS/Staff/Office, Auto-Update APK & EXE.'
       force_update:
         description: 'Wajibkan update (user tidak bisa melewati pop-up)?'
         type: boolean
         required: false
         default: false
+
+concurrency:
+  group: desktop-exe-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -41,10 +57,19 @@ jobs:
         run: python scripts/prepare_web_bundles.py
 
       - name: Configure Desktop Auto-Updater & Release Manifest (POS)
+        shell: pwsh
         env:
-          RELEASE_NOTES: "${{ github.event.inputs.release_notes || 'v152.3 - Kamera Langsung Foto Pesanan & Chat, Keterangan Lengkap & Fix HP Rakit Parsel, Kunci Pilihan Buah PO Stok Tersedia.' }}"
+          INPUT_NOTES: ${{ github.event.inputs.release_notes }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
           FORCE_UPDATE: ${{ github.event.inputs.force_update || 'false' }}
-        run: python scripts/configure_desktop_updater.py desktop/pos-tauri pos NutriFresh_POS.exe update-desktop-pos.json
+        run: |
+          $notes = $env:INPUT_NOTES
+          if ([string]::IsNullOrWhiteSpace($notes)) {
+            $c = ($env:COMMIT_MSG -split "`n")[0]
+            $notes = if ([string]::IsNullOrWhiteSpace($c)) { "v153.3 - UI Retail Pro 2 Tema (Natural & Dark), Bersih Splash & Header POS/Staff/Office, Auto-Update APK & EXE." } else { $c.Trim() }
+          }
+          $env:RELEASE_NOTES = $notes
+          python scripts/configure_desktop_updater.py desktop/pos-tauri pos NutriFresh_POS.exe update-desktop-pos.json
 
       - name: Install Tauri CLI v2
         run: npm install -g @tauri-apps/cli@2
@@ -69,15 +94,15 @@ jobs:
           }
 
           $uploaded = $false
-          for ($i = 1; $i -le 4; $i++) {
+          for ($i = 1; $i -le 5; $i++) {
             gh release upload latest-desktop "NutriFresh_POS.exe" "update-desktop-pos.json" --clobber
             if ($LASTEXITCODE -eq 0) {
               Write-Host "[release] Uploaded NutriFresh_POS.exe & update-desktop-pos.json to latest-desktop!"
               $uploaded = $true
               break
             }
-            Write-Host "[release] Retry upload ($i/4)..."
-            Start-Sleep -Seconds 5
+            Write-Host "[release] Retry upload ($i/5)..."
+            Start-Sleep -Seconds ($i * 5)
           }
           if (-not $uploaded) { exit 1 }
 
@@ -112,10 +137,19 @@ jobs:
         run: python scripts/prepare_web_bundles.py
 
       - name: Configure Desktop Auto-Updater & Release Manifest (Office)
+        shell: pwsh
         env:
-          RELEASE_NOTES: "${{ github.event.inputs.release_notes || 'v152.3 - Kamera Langsung Foto Pesanan & Chat, Keterangan Lengkap & Fix HP Rakit Parsel, Kunci Pilihan Buah PO Stok Tersedia.' }}"
+          INPUT_NOTES: ${{ github.event.inputs.release_notes }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
           FORCE_UPDATE: ${{ github.event.inputs.force_update || 'false' }}
-        run: python scripts/configure_desktop_updater.py desktop/office-tauri office NutriFresh_Office.exe update-desktop-office.json
+        run: |
+          $notes = $env:INPUT_NOTES
+          if ([string]::IsNullOrWhiteSpace($notes)) {
+            $c = ($env:COMMIT_MSG -split "`n")[0]
+            $notes = if ([string]::IsNullOrWhiteSpace($c)) { "v153.3 - UI Retail Pro 2 Tema (Natural & Dark), Bersih Splash & Header POS/Staff/Office, Auto-Update APK & EXE." } else { $c.Trim() }
+          }
+          $env:RELEASE_NOTES = $notes
+          python scripts/configure_desktop_updater.py desktop/office-tauri office NutriFresh_Office.exe update-desktop-office.json
 
       - name: Install Tauri CLI v2
         run: npm install -g @tauri-apps/cli@2
@@ -134,21 +168,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          Start-Sleep -Seconds 6
           gh release view latest-desktop *> $null
           if ($LASTEXITCODE -ne 0) {
             gh release create latest-desktop --title "NutriFresh Desktop Windows (.exe Auto-Update)" --notes "Rilis otomatis NutriFresh_POS.exe & NutriFresh_Office.exe untuk In-App Auto-Updater Windows."
           }
 
           $uploaded = $false
-          for ($i = 1; $i -le 4; $i++) {
+          for ($i = 1; $i -le 5; $i++) {
             gh release upload latest-desktop "NutriFresh_Office.exe" "update-desktop-office.json" --clobber
             if ($LASTEXITCODE -eq 0) {
               Write-Host "[release] Uploaded NutriFresh_Office.exe & update-desktop-office.json to latest-desktop!"
               $uploaded = $true
               break
             }
-            Write-Host "[release] Retry upload ($i/4)..."
-            Start-Sleep -Seconds 5
+            Write-Host "[release] Retry upload ($i/5)..."
+            Start-Sleep -Seconds ($i * 5)
           }
           if (-not $uploaded) { exit 1 }
 

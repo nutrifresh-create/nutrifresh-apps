@@ -7,7 +7,7 @@
         (function() {
             try {
                 var raw = localStorage.getItem('nutri_ui_theme');
-                var savedTheme = (raw === 'glass' || raw === 'dark' || raw === 'natural') ? raw : 'natural';
+                var savedTheme = (raw === 'dark') ? 'dark' : 'natural';
                 document.documentElement.setAttribute('data-theme', savedTheme);
             } catch (e) {
                 document.documentElement.setAttribute('data-theme', 'natural');
@@ -622,12 +622,165 @@
 
     </style>
     <link rel="stylesheet" href="nutri-theme.css">
-    <style id="nfCleanSplashV1531">
+        <style id="nfOfficeRetailProV1533">
+        /* ==============================================================
+           NUTRIFRESH OFFICE RETAIL PRO UNSLOP LAYER (v153.3)
+           2 Tema (Natural #e9edf2 & Dark #0b1120), Header Netral Anti-Pelangi,
+           Tabular-Nums, & Void Row Rapi
+           ============================================================== */
+        .nf-liquid-bg, .nf-orb { display: none !important; animation: none !important; }
+        html[data-theme="natural"] body,
+        html[data-theme="natural"] body.nf-office-page {
+            background-color: #e9edf2 !important;
+            background-image: none !important;
+        }
+        html[data-theme="dark"] body,
+        html[data-theme="dark"] body.nf-office-page {
+            background-color: #0b1120 !important;
+            background-image: none !important;
+        }
+        button, nav, #officeTopHeader {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        #cashbookTableBody, #debtTableBody, #assetTableBody, #payrollTableBody,
+        #kpiNetProfit, #kpiTotalCash, #kpiNetWorth, .nf-num {
+            font-variant-numeric: tabular-nums !important;
+        }
+
+        /* TENANGKAN HEADER OFFICE: HAPUS 6 TOMBOL BULAT PELANGI & BERI RUANG NAMA */
+        html[data-theme="natural"] body #officeTopHeader > div {
+            background: rgba(255, 255, 255, 0.96) !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+            box-shadow: 0 4px 16px -8px rgba(15, 23, 42, 0.14) !important;
+        }
+        html[data-theme="dark"] body #officeTopHeader > div {
+            background: rgba(15, 23, 42, 0.95) !important;
+            border: 1px solid rgba(255, 255, 255, 0.09) !important;
+        }
+        html[data-theme="natural"] body #officeTopHeader > div > div:last-child button {
+            background: #f8fafc !important;
+            color: #334155 !important;
+            border: 1px solid #e2e8f0 !important;
+            font-weight: 600 !important;
+            box-shadow: none !important;
+        }
+        html[data-theme="natural"] body #officeTopHeader > div > div:last-child button i {
+            color: #475569 !important;
+        }
+        html[data-theme="natural"] body #officeTopHeader > div > div:last-child button[onclick*="logout"] {
+            background: #fef2f2 !important;
+            color: #dc2626 !important;
+            border-color: #fecaca !important;
+        }
+        html[data-theme="natural"] body #officeTopHeader > div > div:last-child button[onclick*="logout"] i {
+            color: #dc2626 !important;
+        }
+        html[data-theme="dark"] body #officeTopHeader > div > div:last-child button {
+            background: #1e293b !important;
+            color: #e2e8f0 !important;
+            border: 1px solid #334155 !important;
+            font-weight: 600 !important;
+            box-shadow: none !important;
+        }
+        html[data-theme="dark"] body #officeTopHeader > div > div:last-child button i {
+            color: #cbd5e1 !important;
+        }
+        html[data-theme="dark"] body #officeTopHeader > div > div:last-child button[onclick*="logout"] {
+            background: rgba(127, 29, 29, 0.35) !important;
+            color: #fca5a5 !important;
+            border-color: rgba(239, 68, 68, 0.35) !important;
+        }
+        html[data-theme="dark"] body #officeTopHeader > div > div:last-child button[onclick*="logout"] i {
+            color: #fca5a5 !important;
+        }
+        html body #officeTopHeader > div > div:last-child #btnOfficeExportExcel {
+            background: #558b2f !important;
+            color: #ffffff !important;
+            border-color: #4d7c0f !important;
+        }
+        html body #officeTopHeader > div > div:last-child #btnOfficeExportExcel i {
+            color: #ffffff !important;
+        }
+        @media (max-width: 639px) {
+            html body #officeTopHeader > div {
+                gap: 6px !important;
+            }
+            html body #officeTopHeader > div > div:last-child {
+                gap: 4px !important;
+            }
+            html body #officeTopHeader > div > div:last-child button {
+                width: 31px !important;
+                height: 31px !important;
+                padding: 0 !important;
+                font-size: 11px !important;
+            }
+            html body #officeTopHeader > div > div:last-child button[onclick*="goToStore"] {
+                width: auto !important;
+                padding: 0 9px !important;
+            }
+        }
+
+        /* KARTU BERSIH SOLID DI MODE NATURAL */
+        html[data-theme="natural"] body .bg-white {
+            background: #ffffff !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+            border-color: rgba(15, 23, 42, 0.08) !important;
+        }
+
+        /* INPUT & SELECT 12px RAPI */
+        html body main input:not([type="checkbox"]),
+        html body main select,
+        html body main textarea {
+            border-radius: 12px !important;
+        }
+
+        /* 3 TOMBOL KAS PERUSAHAAN 1 BARIS RAPI DI HP */
+        html body #officeCashActionBtns {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+            width: 100%;
+        }
+        @media (min-width: 640px) {
+            html body #officeCashActionBtns {
+                display: flex !important;
+                width: auto !important;
+            }
+        }
+        html body #officeCashActionBtns button {
+            border-radius: 12px !important;
+            padding: 8px 6px !important;
+            font-size: 11px !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+    <style id="nfCleanSplashV1533">
         @keyframes nfCleanSpin { to { transform: rotate(360deg); } }
         html body #officeSplashLoader,
         html[data-theme="natural"] body #officeSplashLoader,
-        html[data-theme="glass"] body #officeSplashLoader,
-        html[data-theme="dark"] body #officeSplashLoader {
+        html[data-theme="natural"] body.nf-office-page #officeSplashLoader {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 99999 !important;
+            background: #ffffff !important;
+            background-image: none !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 24px !important;
+            transition: opacity 0.28s ease !important;
+        }
+        html[data-theme="dark"] body #officeSplashLoader,
+        html[data-theme="dark"] body.nf-office-page #officeSplashLoader {
             position: fixed !important;
             inset: 0 !important;
             width: 100vw !important;
@@ -640,12 +793,16 @@
             align-items: center !important;
             justify-content: center !important;
             padding: 24px !important;
+            transition: opacity 0.28s ease !important;
         }
         html body #officeSplashLoader > div,
         html[data-theme="natural"] body #officeSplashLoader > div,
-        html[data-theme="glass"] body #officeSplashLoader > div,
-        html[data-theme="dark"] body #officeSplashLoader > div {
+        html[data-theme="dark"] body #officeSplashLoader > div,
+        html body #officeSplashLoader .nf-splash-bottom,
+        html[data-theme="natural"] body #officeSplashLoader .nf-splash-bottom,
+        html[data-theme="dark"] body #officeSplashLoader .nf-splash-bottom {
             background: transparent !important;
+            background-color: transparent !important;
             border: none !important;
             box-shadow: none !important;
             -webkit-backdrop-filter: none !important;
@@ -655,37 +812,57 @@
             animation: none !important;
             max-width: none !important;
         }
-        .nf-splash-logo-wrap-dark {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.96);
-            padding: 12px 22px;
-            border-radius: 20px;
+        html body #officeSplashLoader .nf-splash-logo-wrap-dark,
+        html[data-theme="natural"] body #officeSplashLoader .nf-splash-logo-wrap-dark {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: transparent !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
         }
-        .nf-splash-bottom {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: max(36px, env(safe-area-inset-bottom));
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
+        html[data-theme="natural"] body #officeSplashLoader img,
+        html body #officeSplashLoader img {
+            mix-blend-mode: multiply;
         }
-        .nf-splash-ring-dark {
+        html[data-theme="dark"] body #officeSplashLoader .nf-splash-logo-wrap-dark {
+            background: rgba(255, 255, 255, 0.96) !important;
+            padding: 12px 22px !important;
+            border-radius: 20px !important;
+        }
+        html[data-theme="dark"] body #officeSplashLoader img {
+            mix-blend-mode: normal;
+        }
+        html body #officeSplashLoader .nf-splash-bottom {
+            position: absolute !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: max(36px, env(safe-area-inset-bottom)) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+        html body #officeSplashLoader .nf-splash-ring-dark {
             width: 18px;
             height: 18px;
             border-radius: 9999px;
-            border: 2px solid #1e293b;
-            border-top-color: #a3e635;
+            border: 2px solid #e2e8f0;
+            border-top-color: #7cb342;
             animation: nfCleanSpin 0.72s linear infinite;
         }
-        .nf-splash-caption-dark {
+        html[data-theme="dark"] body #officeSplashLoader .nf-splash-ring-dark {
+            border-color: #1e293b;
+            border-top-color: #a3e635;
+        }
+        html body #officeSplashLoader .nf-splash-caption-dark {
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.16em;
             text-transform: uppercase;
+            color: #94a3b8;
+        }
+        html[data-theme="dark"] body #officeSplashLoader .nf-splash-caption-dark {
             color: #64748b;
         }
     </style>
@@ -797,7 +974,7 @@
                 <button type="button" id="btnOfficeCheckUpdate" onclick="window.nfUpdater && window.nfUpdater.check(true)" data-desktop-label="Update" title="Cek Pembaruan Aplikasi" class="nf-native-updater-btn hidden px-2.5 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 font-extrabold text-[11px] border border-emerald-400/40 transition flex items-center whitespace-nowrap">
                     <i class="fa-solid fa-cloud-arrow-down text-emerald-300 sm:mr-1"></i><span class="nf-upd-btn-label hidden sm:inline">Update</span>
                 </button>
-                <button type="button" id="btnOfficeThemeToggle" onclick="window.toggleNutriTheme()" title="Ganti Tema Natural / Dark / Glass" class="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] border border-slate-700 transition flex items-center whitespace-nowrap">
+                <button type="button" id="btnOfficeThemeToggle" onclick="window.toggleNutriTheme()" title="Ganti Tema Natural / Dark" class="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] border border-slate-700 transition flex items-center whitespace-nowrap">
                     <i class="fa-solid fa-leaf text-lime-300 sm:mr-1"></i><span class="hidden sm:inline">Natural</span>
                 </button>
                 <button type="button" id="btnOfficeBackupDb" onclick="officeApp.triggerFullBackupDownload()" title="Unduh cadangan penuh seluruh database (.JSON)" class="hidden px-2.5 py-1.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[11px] transition flex items-center whitespace-nowrap shadow-sm">
@@ -902,19 +1079,22 @@
             </div>
 
             <!-- PENGINGAT BACKUP RUTIN 7 HARI (KHUSUS OWNER) -->
-        <div id="officeBackupReminderBanner" class="hidden bg-blue-950/80 border border-blue-700/70 rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
-            <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-blue-600/30 border border-blue-500/40 text-blue-300 flex items-center justify-center flex-shrink-0">
-                    <i class="fa-solid fa-shield-halved"></i>
+        <div id="officeBackupReminderBanner" class="hidden bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 flex items-center justify-between gap-2.5 text-xs shadow-sm">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-database text-xs"></i>
                 </div>
-                <div>
-                    <p class="font-extrabold text-blue-100">Waktunya Backup Rutin Database NutriFresh (Tiap 7 Hari)</p>
-                    <p id="officeBackupReminderText" class="text-[11px] text-blue-300">Backup terakhir: Belum pernah. Simpan 1 file .JSON ke laptop/Google Drive sebagai pengaman.</p>
+                <div class="min-w-0">
+                    <p class="font-bold text-slate-900 truncate">Waktunya Backup Database</p>
+                    <p id="officeBackupReminderText" class="text-[11px] text-slate-500 truncate">Simpan cadangan rutin .JSON tiap 7 hari.</p>
                 </div>
             </div>
-            <button type="button" onclick="officeApp.triggerFullBackupDownload()" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[11px] whitespace-nowrap shadow transition self-start sm:self-center">
-                <i class="fa-solid fa-download mr-1"></i> Unduh Backup (.JSON)
-            </button>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                <button type="button" onclick="officeApp.triggerFullBackupDownload()" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-[11px] whitespace-nowrap transition">
+                    <i class="fa-solid fa-download mr-1"></i> Backup
+                </button>
+                <button type="button" onclick="document.getElementById('officeBackupReminderBanner').classList.add('hidden')" aria-label="Tutup pengingat" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs"><i class="fa-solid fa-xmark"></i></button>
+            </div>
         </div>
 
         <!-- 1. KAS, LABA RUGI & NERACA MINI (TERHUBUNG OTOMATIS DENGAN POS — v149) -->
@@ -1099,7 +1279,7 @@
                         <i class="fa-solid fa-pen-to-square text-nutri-green"></i>
                         <span>Catat Transaksi Kas Perusahaan</span>
                     </span>
-                    <div class="flex flex-wrap gap-1.5">
+                    <div id="officeCashActionBtns" class="flex flex-wrap gap-1.5">
                         <button type="button" id="finDrawerBtn-in" onclick="officeApp.toggleFinanceDrawer('in')" class="px-3.5 py-2 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] shadow-sm transition">+ Setoran / Modal</button>
                         <button type="button" id="finDrawerBtn-out" onclick="officeApp.toggleFinanceDrawer('out')" class="px-3.5 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white font-extrabold text-[11px] shadow-sm transition">− Beban / Prive</button>
                         <button type="button" id="finDrawerBtn-res" onclick="officeApp.toggleFinanceDrawer('res')" class="px-3.5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[11px] shadow-sm transition">⇄ Kas Cadangan</button>
@@ -1115,8 +1295,8 @@
                     <div>
                         <label class="block font-bold text-gray-700 mb-1">Sumber Dana</label>
                         <select id="trfInType" class="w-full px-3 py-2 border rounded-xl bg-white font-bold outline-none">
-                            <option value="SETORAN">🏪 Setoran Kas Toko</option>
-                            <option value="MODAL">💼 Modal Awal / Suntik Owner</option>
+                            <option value="SETORAN">Setoran Kas Toko</option>
+                            <option value="MODAL">Modal Awal / Suntik Owner</option>
                         </select>
                     </div>
                     <div>
@@ -1140,13 +1320,13 @@
                     <div>
                         <label class="block font-bold text-gray-700 mb-1">Pos Pengeluaran</label>
                         <select id="expCategory" class="w-full px-3 py-2 border rounded-xl bg-white font-bold outline-none">
-                            <option value="Sewa Toko / Ruko">🏠 Sewa Toko / Ruko</option>
-                            <option value="Listrik & Air">⚡ Listrik &amp; Air</option>
-                            <option value="Internet & Sistem">📶 Internet &amp; Sistem</option>
-                            <option value="Operasional & Perawatan">🔧 Operasional &amp; Perawatan</option>
-                            <option value="Pajak & Legalitas">📑 Pajak &amp; Legalitas</option>
-                            <option value="Biaya Umum Lainnya">📦 Biaya Umum Lainnya</option>
-                            <option value="Prive / Tarik Untung Owner">👑 Prive / Tarik Untung Owner (Non-Beban)</option>
+                            <option value="Sewa Toko / Ruko">Sewa Toko / Ruko</option>
+                            <option value="Listrik & Air">Listrik &amp; Air</option>
+                            <option value="Internet & Sistem">Internet &amp; Sistem</option>
+                            <option value="Operasional & Perawatan">Operasional &amp; Perawatan</option>
+                            <option value="Pajak & Legalitas">Pajak &amp; Legalitas</option>
+                            <option value="Biaya Umum Lainnya">Biaya Umum Lainnya</option>
+                            <option value="Prive / Tarik Untung Owner">Prive / Tarik Untung Owner (Non-Beban)</option>
                         </select>
                     </div>
                     <div>
@@ -1363,9 +1543,9 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-1.5">
                         <button type="button" onclick="officeApp.setHrReqStatusFilter('ALL')" id="hrReqFilter-ALL" class="px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-nutri-green text-white shadow-sm">Semua</button>
-                        <button type="button" onclick="officeApp.setHrReqStatusFilter('Menunggu')" id="hrReqFilter-Menunggu" class="px-3 py-1.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700">⏳ Menunggu</button>
-                        <button type="button" onclick="officeApp.setHrReqStatusFilter('Disetujui')" id="hrReqFilter-Disetujui" class="px-3 py-1.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700">✅ Disetujui</button>
-                        <button type="button" onclick="officeApp.setHrReqStatusFilter('Ditolak')" id="hrReqFilter-Ditolak" class="px-3 py-1.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700">❌ Ditolak</button>
+                        <button type="button" onclick="officeApp.setHrReqStatusFilter('Menunggu')" id="hrReqFilter-Menunggu" class="px-3 py-1.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700">Menunggu</button>
+                        <button type="button" onclick="officeApp.setHrReqStatusFilter('Disetujui')" id="hrReqFilter-Disetujui" class="px-3 py-1.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700">Disetujui</button>
+                        <button type="button" onclick="officeApp.setHrReqStatusFilter('Ditolak')" id="hrReqFilter-Ditolak" class="px-3 py-1.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700">Ditolak</button>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
@@ -1431,10 +1611,10 @@
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">Shift *</label>
                             <select id="schedShiftSelect" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
-                                <option value="Shift 1">☀️ Shift 1 (Pagi)</option>
-                                <option value="Shift 2">🌤️ Shift 2 (Sore)</option>
-                                <option value="Full Day">⭐ Full Day</option>
-                                <option value="Libur">🌴 Libur</option>
+                                <option value="Shift 1">Shift 1 (Pagi)</option>
+                                <option value="Shift 2">Shift 2 (Sore)</option>
+                                <option value="Full Day">Full Day</option>
+                                <option value="Libur">Libur</option>
                             </select>
                         </div>
                     </div>
@@ -1521,8 +1701,8 @@
                     <div>
                         <label class="block font-bold text-gray-700 mb-1">Prioritas</label>
                         <select id="annPriorityInput" class="w-full px-3 py-2 border rounded-xl font-bold outline-none">
-                            <option value="info">ℹ️ Info Umum</option>
-                            <option value="urgent">⚠️ Penting / Urgent</option>
+                            <option value="info">Info Umum</option>
+                            <option value="urgent">Penting / Urgent</option>
                         </select>
                     </div>
                     <div>
@@ -1677,8 +1857,8 @@
                         <div>
                             <label class="block font-bold text-gray-700 mb-1">Status *</label>
                             <select id="offEmpStatus" class="w-full px-3 py-2 border rounded-xl bg-white font-bold outline-none">
-                                <option value="Aktif">✅ Aktif</option>
-                                <option value="Non-Aktif">⏸️ Non-Aktif</option>
+                                <option value="Aktif">Aktif</option>
+                                <option value="Non-Aktif">Non-Aktif</option>
                             </select>
                         </div>
                     </div>
@@ -3587,7 +3767,7 @@ Keterangan / No. Ref Transfer:`, 'Transfer Bank');
                             : (grp === 'MODAL_OWNER'
                                 ? ' <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[9px] font-black">MODAL</span>'
                                 : (grp === 'PRIVE_OWNER' ? ' <span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[9px] font-black">PRIVE</span>' : ''));
-                        return `<tr class="hover:bg-gray-50 ${isVoid ? 'opacity-50 line-through' : ''}"><td class="p-3 font-mono text-gray-600 whitespace-nowrap">${this.escapeHtml(row.date)}</td><td class="p-3"><span class="px-2 py-0.5 rounded-md text-[10px] font-black ${isVoid ? 'bg-red-900/60 text-red-300' : (isPos ? 'bg-green-100 text-nutri-dark' : 'bg-red-100 text-red-700')}">${this.escapeHtml(row.category)}</span>${grpTag}${isFromPos ? ' <span class="px-1.5 py-0.5 rounded bg-emerald-900/60 text-emerald-300 text-[9px] font-black">🔗 POS</span>' : ''}</td><td class="p-3 text-gray-700">${this.escapeHtml(row.note)}${isVoid ? `<div class="text-[10px] text-red-400 font-bold">VOID: ${this.escapeHtml(row.voidReason || '-')}</div>` : ''}</td><td class="p-3 text-right font-black whitespace-nowrap ${isPos ? 'text-nutri-dark' : 'text-red-600'}">${isPos ? '+' : '-'} ${this.formatRp(row.amount)}</td><td class="p-3 text-center">${isVoid ? '<span class="text-[10px] font-black text-red-400">VOID</span>' : `<button type="button" onclick="officeApp.deleteCashbookEntry('${this.escapeHtml(row.id)}')" title="Batalkan (VOID) Catatan Kas" class="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold text-[10.5px]"><i class="fa-solid fa-ban mr-0.5"></i> Void</button>`}</td></tr>`;
+                        return `<tr class="hover:bg-gray-50 ${isVoid ? 'opacity-65' : ''}"><td class="p-3 font-mono text-gray-500 whitespace-nowrap">${this.escapeHtml(row.date)}</td><td class="p-3"><div class="flex flex-wrap items-center gap-1"><span class="inline-block whitespace-nowrap px-2 py-0.5 rounded-md text-[10px] font-bold ${isVoid ? 'bg-slate-100 text-slate-500 border border-slate-200' : (isPos ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200')}">${this.escapeHtml(row.category)}</span>${grpTag}${isFromPos ? '<span class="inline-block whitespace-nowrap px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 text-[9px] font-bold">POS</span>' : ''}${isVoid ? '<span class="inline-block whitespace-nowrap px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-200 text-[9px] font-bold">VOID</span>' : ''}</div></td><td class="p-3 text-gray-700"><span class="${isVoid ? 'line-through text-gray-400' : ''}">${this.escapeHtml(row.note)}</span>${isVoid ? `<div class="text-[10px] text-red-500 font-semibold mt-0.5">Batal: ${this.escapeHtml(row.voidReason || '-')}</div>` : ''}</td><td class="p-3 text-right font-bold whitespace-nowrap nf-num ${isVoid ? 'line-through text-gray-400' : (isPos ? 'text-nutri-dark' : 'text-red-600')}">${isPos ? '+' : '-'} ${this.formatRp(row.amount)}</td><td class="p-3 text-center">${isVoid ? '<span class="text-[10px] font-bold text-gray-400">—</span>' : `<button type="button" onclick="officeApp.deleteCashbookEntry('${this.escapeHtml(row.id)}')" title="Batalkan (VOID) Catatan Kas" class="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-[10.5px] whitespace-nowrap"><i class="fa-solid fa-ban mr-0.5"></i> Void</button>`}</td></tr>`;
                     }).join('');
 
                 const isDebtVoid = (d) => ['VOID', 'voided'].includes(String(d?.status || ''));
@@ -3675,7 +3855,7 @@ Keterangan / No. Ref Transfer:`, 'Transfer Bank');
                     } else if (pStatus === 'Diajukan') {
                         actionCellHtml = canTransferRole
                             ? `<button type="button" onclick="officeApp.paySalary('${this.escapeHtml(name)}', ${netPay})" class="px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-sm transition">💸 ACC &amp; Transfer</button>`
-                            : `<span class="px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 font-extrabold text-[10.5px]">⏳ Menunggu Bendahara</span>`;
+                            : `<span class="px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 font-extrabold text-[10.5px]">Menunggu Bendahara</span>`;
                     } else {
                         if (isHrRole) {
                             actionCellHtml = `<button type="button" onclick="officeApp.submitPayrollToFinance('${this.escapeHtml(name)}', ${netPay})" class="px-3 py-1.5 rounded-full bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-[11px] shadow-sm transition">📤 Ajukan ke Bendahara</button>`;
@@ -4201,7 +4381,7 @@ Keterangan / No. Ref Transfer:`, 'Transfer Bank');
                 const box = document.getElementById('offAnnouncementsList');
                 if (!box) return;
                 if (!this.state.announcements.length) {
-                    box.innerHTML = '<div class="p-6 text-center text-gray-400">Belum ada pengumuman tim. Buat di form sebelah kiri.</div>';
+                    box.innerHTML = '<div class="p-6 text-center text-gray-400">Belum ada pengumuman tim. Buat pengumuman baru pada formulir di atas.</div>';
                     return;
                 }
                 box.innerHTML = this.state.announcements.map(a => {
@@ -4759,7 +4939,7 @@ Catat juga sebagai Kas Masuk (Pengembalian Pinjaman) di Buku Kas Perusahaan?`);
     </div>
 
     <script>
-        window.__NF_APP_VERSION = 'v153.1';
+        window.__NF_APP_VERSION = 'v153.3';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 
@@ -5146,7 +5326,7 @@ Catat juga sebagai Kas Masuk (Pengembalian Pinjaman) di Buku Kas Perusahaan?`);
            ============================================================== */
         (function() {
             function normalizeTheme(val) {
-                return (val === 'glass' || val === 'dark' || val === 'natural') ? val : 'natural';
+                return (val === 'dark') ? 'dark' : 'natural';
             }
 
             function getTheme() {
@@ -5181,15 +5361,12 @@ Catat juga sebagai Kas Masuk (Pengembalian Pinjaman) di Buku Kas Perusahaan?`);
                 });
                 var offBtn = document.getElementById('btnOfficeThemeToggle');
                 if (offBtn) {
-                    if (mode === 'glass') {
-                        offBtn.innerHTML = '<i class="fa-solid fa-sparkles text-sky-300 sm:mr-1"></i><span class="hidden sm:inline">Glass</span>';
-                        offBtn.title = 'Tema: Glass (klik untuk ganti ke Natural / Dark)';
-                    } else if (mode === 'dark') {
+                    if (mode === 'dark') {
                         offBtn.innerHTML = '<i class="fa-solid fa-moon text-amber-300 sm:mr-1"></i><span class="hidden sm:inline">Dark</span>';
-                        offBtn.title = 'Tema: Dark (klik untuk ganti ke Glass / Natural)';
+                        offBtn.title = 'Tema: Dark (klik untuk ganti ke Natural)';
                     } else {
-                        offBtn.innerHTML = '<i class="fa-solid fa-leaf text-lime-300 sm:mr-1"></i><span class="hidden sm:inline">Natural</span>';
-                        offBtn.title = 'Tema: Natural (klik untuk ganti ke Dark / Glass)';
+                        offBtn.innerHTML = '<i class="fa-solid fa-sun text-amber-500 sm:mr-1"></i><span class="hidden sm:inline">Natural</span>';
+                        offBtn.title = 'Tema: Natural (klik untuk ganti ke Dark)';
                     }
                 }
                 updateMetaThemeColor(mode);
@@ -5213,7 +5390,7 @@ Catat juga sebagai Kas Masuk (Pengembalian Pinjaman) di Buku Kas Perusahaan?`);
 
             window.toggleNutriTheme = function() {
                 var cur = getTheme();
-                var next = cur === 'natural' ? 'dark' : (cur === 'dark' ? 'glass' : 'natural');
+                var next = (cur === 'dark') ? 'natural' : 'dark';
                 window.setNutriTheme(next, false);
             };
 
