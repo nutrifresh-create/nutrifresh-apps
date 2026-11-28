@@ -937,6 +937,7 @@
     window.nfPlayChime = playChime;
     window.nfNotify = {
         getStatus() {
+            if (isTauri()) return "granted";
             if (isAndroidNative() && typeof window.NfAndroidNative.hasNotificationPermission === "function") {
                 return window.NfAndroidNative.hasNotificationPermission() ? "granted" : "default";
             }
@@ -945,6 +946,10 @@
         },
         async requestPermission() {
             unlockAudioCtx();
+            if (isTauri()) {
+                playChime("status");
+                return "granted";
+            }
             if (isAndroidNative() && (typeof window.NfAndroidNative.requestNotificationPermissionSmart === "function" || typeof window.NfAndroidNative.requestNotificationPermission === "function")) {
                 try {
                     if (typeof window.NfAndroidNative.requestNotificationPermissionSmart === "function") {
@@ -991,6 +996,19 @@
                     try {
                         window.NfAndroidNative.showLocalNotification(String(title), String(body));
                         return true;
+                    } catch (_) {}
+                }
+                return true;
+            }
+
+            // 1B. Windows Desktop (.exe / Tauri): Bel audio + banner in-app langsung aktif, plus native Windows toast bila jendela tidak fokus / tes manual
+            if (isTauri()) {
+                if (forceOsBanner || document.hidden || !document.hasFocus()) {
+                    try {
+                        window.__TAURI__.core.invoke("show_desktop_notification", {
+                            title: String(title),
+                            body: String(body)
+                        }).catch(() => {});
                     } catch (_) {}
                 }
                 return true;
@@ -1140,11 +1158,12 @@
     async function readPermissionStates(roleKey) {
         const preset = PERM_ROLE_PRESETS[roleKey] || PERM_ROLE_PRESETS.customer;
         const android = isAndroidNative();
+        const desktop = isTauri();
         const ios = isIosDevice();
         const standalone = isStandaloneMode();
         const states = {
-            platform: android ? "android_apk" : (ios ? "ios" : "web"),
-            isIosSafariBrowser: ios && !standalone && !android,
+            platform: android ? "android_apk" : (desktop ? "windows_exe" : (ios ? "ios" : "web")),
+            isIosSafariBrowser: ios && !standalone && !android && !desktop,
             items: {}
         };
 
@@ -1172,7 +1191,9 @@
             }
 
             if (key === "notif") {
-                if (android) {
+                if (desktop) {
+                    states.items.notif = { status: "granted" };
+                } else if (android) {
                     const ok = nativeObj ? !!nativeObj.notif : (
                         typeof window.NfAndroidNative.hasNotificationPermission === "function"
                             ? !!window.NfAndroidNative.hasNotificationPermission()
@@ -1240,6 +1261,12 @@
     }
 
     function getWebRecoveryGuideHtml(key) {
+        if (isTauri()) {
+            if (key === "camera") {
+                return `<strong>Akses Kamera di Windows PC:</strong><br>Buka <strong>Settings Windows → Privacy &amp; security → Camera</strong> → aktifkan <em>Camera access</em> dan <em>Let desktop apps access your camera</em>.`;
+            }
+            return `<strong>Notifikasi Aplikasi Windows (.exe):</strong><br>Bel audio &amp; banner notifikasi di dalam aplikasi sudah aktif otomatis. Pastikan volume PC aktif dan <em>Do Not Disturb</em> Windows tidak menyala.`;
+        }
         const ios = isIosDevice();
         if (ios && !isStandaloneMode()) {
             return `<strong>Cara aktifkan di iPhone:</strong><br>1. Ketuk ikon <strong>Bagikan (Share)</strong> di bawah Safari → pilih <strong>Tambah ke Layar Utama</strong>.<br>2. Buka NutriFresh dari ikon di Layar Utama, lalu ketuk tombol <strong>Aktifkan</strong> di sini.`;
@@ -1418,6 +1445,8 @@
                 const vi = JSON.parse(window.NfAndroidNative.getAppVersionJson() || "{}");
                 if (vi.versionName) installedVerLabel = `v${vi.versionName}`;
             } catch (_) {}
+        } else if (isTauri() && window.__NF_DESKTOP_VERSION__ && window.__NF_DESKTOP_VERSION__.versionName) {
+            installedVerLabel = `v${window.__NF_DESKTOP_VERSION__.versionName}`;
         }
         const autostartTipHtml = android
             ? `<div style="margin-top:10px;padding:9px 11px;border-radius:14px;background:${isDark ? 'rgba(56,189,248,.12)' : '#eff6ff'};border:1px solid ${isDark ? 'rgba(56,189,248,.3)' : '#bfdbfe'};display:flex;align-items:center;justify-content:space-between;gap:8px;">

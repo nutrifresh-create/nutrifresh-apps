@@ -236,6 +236,49 @@ async fn download_and_install_desktop_update(
 
     Ok("RESTARTING".to_string())
 }
+
+#[tauri::command]
+async fn show_desktop_notification(title: String, body: String) -> Result<(), String> {
+    let t = title.chars().take(120).collect::<String>();
+    let b = body.chars().take(280).collect::<String>();
+    tauri::async_runtime::spawn_blocking(move || {
+        let ps_toast = concat!(
+            "try { ",
+            "Add-Type -AssemblyName System.Windows.Forms; ",
+            "Add-Type -AssemblyName System.Drawing; ",
+            "$n = New-Object System.Windows.Forms.NotifyIcon; ",
+            "$n.Icon = [System.Drawing.SystemIcons]::Information; ",
+            "$n.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Info; ",
+            "$n.BalloonTipTitle = $env:NF_N_TITLE; ",
+            "$n.BalloonTipText = $env:NF_N_BODY; ",
+            "$n.Visible = $true; ",
+            "$n.ShowBalloonTip(5000); ",
+            "Start-Sleep -Milliseconds 5500; ",
+            "$n.Dispose(); ",
+            "} catch {}"
+        );
+        let mut cmd = std::process::Command::new("powershell.exe");
+        cmd.args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-WindowStyle",
+            "Hidden",
+            "-Command",
+            ps_toast,
+        ]);
+        cmd.env("NF_N_TITLE", &t);
+        cmd.env("NF_N_BODY", &b);
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x08000000 | 0x00000008);
+        }
+        let _ = cmd.spawn();
+    });
+    Ok(())
+}
 """
 
 
@@ -272,7 +315,7 @@ def patch_tauri_rust_commands(src_dir: Path):
     if "check_desktop_update" not in rust_txt.split("generate_handler![", 1)[1].split("]", 1)[0]:
         rust_txt = re.sub(
             r"(generate_handler!\s*\[)",
-            r"\1\n            check_desktop_update,\n            download_and_install_desktop_update,",
+            r"\1\n            check_desktop_update,\n            download_and_install_desktop_update,\n            show_desktop_notification,",
             rust_txt,
             count=1,
         )
@@ -315,7 +358,7 @@ def main():
     manifest_out_arg = sys.argv[4].strip() if len(sys.argv) >= 5 else ""
 
     run_num = int(os.environ.get("GITHUB_RUN_NUMBER", "1") or "1")
-    sw_major, sw_minor = 153, 3
+    sw_major, sw_minor = 153, 4
     for sw_cand in (Path("web/sw.js"), Path(__file__).resolve().parent.parent / "web" / "sw.js"):
         if sw_cand.exists():
             m_sw = re.search(r"SW_VERSION\s*=\s*['\"]v?(\d+)(?:\.(\d+))?", sw_cand.read_text(encoding="utf-8"))

@@ -759,6 +759,59 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        /* KONTRAST BANNER BACKUP DI MODE DARK & NATURAL */
+        html[data-theme="dark"] body #officeBackupReminderBanner {
+            background: #172554 !important;
+            border: 1px solid #1d4ed8 !important;
+            color: #e2e8f0 !important;
+        }
+        html[data-theme="dark"] body #officeBackupReminderBanner p:first-child {
+            color: #f8fafc !important;
+        }
+        html[data-theme="dark"] body #officeBackupReminderBanner #officeBackupReminderText {
+            color: #93c5fd !important;
+        }
+        html[data-theme="dark"] body #officeBackupReminderBanner button[onclick*="triggerFullBackupDownload"] {
+            background: #2563eb !important;
+            color: #ffffff !important;
+            border: 1px solid #3b82f6 !important;
+        }
+        html[data-theme="dark"] body #officeBackupReminderBanner button[aria-label="Tutup pengingat"] {
+            background: rgba(255, 255, 255, 0.12) !important;
+            color: #cbd5e1 !important;
+        }
+        html[data-theme="dark"] body #officeBackupReminderBanner > div:first-child > div:first-child {
+            background: rgba(59, 130, 246, 0.25) !important;
+            color: #93c5fd !important;
+        }
+        /* SIDEBAR OFFICE RATA KIRI SERAGAM & KONSISTEN DI NATURAL/DARK */
+        html body #officeSidebar .office-side-btn {
+            border-radius: 12px !important;
+            justify-content: space-between !important;
+            text-align: left !important;
+        }
+        html[data-theme="natural"] body #officeSidebar {
+            background: #ffffff !important;
+            border-color: rgba(15, 23, 42, 0.08) !important;
+        }
+        html[data-theme="natural"] body #officeContextFilterBar {
+            background: #ffffff !important;
+            border-color: rgba(15, 23, 42, 0.08) !important;
+        }
+        html[data-theme="natural"] body #officeContextFilterBar input,
+        html[data-theme="natural"] body #officeContextFilterBar select {
+            background: #f8fafc !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+        html[data-theme="natural"] body #autoDetectedRolePill {
+            background: #f4f9f1 !important;
+            color: #4d7c0f !important;
+            border-color: #cde5be !important;
+        }
+        html body #officeContextFilterBar select {
+            width: auto !important;
+        }
     </style>
     <style id="nfCleanSplashV1533">
         @keyframes nfCleanSpin { to { transform: rotate(360deg); } }
@@ -955,7 +1008,7 @@
     <header id="officeTopHeader" class="bg-[#111827]/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30 shadow-lg">
         <div class="max-w-[1560px] mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-2">
             <div class="flex items-center gap-2.5 min-w-0">
-                <div class="w-9 h-9 rounded-full bg-slate-900 border border-lime-500/35 p-1 flex items-center justify-center flex-shrink-0">
+                <div class="w-9 h-9 rounded-full bg-white/95 border border-lime-500/40 p-1 flex items-center justify-center flex-shrink-0 shadow-sm">
                     <img src="logo.png" alt="NutriFresh" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='icon.png';">
                 </div>
                 <div class="min-w-0">
@@ -994,19 +1047,19 @@
     <div id="officeAppShell" class="flex-1 max-w-[1560px] w-full mx-auto flex flex-col md:flex-row gap-4 px-3 sm:px-5 pt-3 pb-24 md:pb-8 min-w-0">
 
         <!-- SIDEBAR KIRI KHUSUS PC / DESKTOP -->
-        <aside id="officeSidebar" class="hidden md:flex md:w-64 flex-shrink-0 flex-col gap-1.5 md:sticky md:top-[68px] md:max-h-[calc(100vh-84px)] overflow-y-auto no-scrollbar rounded-3xl p-3 bg-[#111827] border border-slate-800 shadow-lg self-start">
+        <aside id="officeSidebar" class="hidden md:flex md:w-60 flex-shrink-0 flex-col gap-1 md:sticky md:top-[68px] md:max-h-[calc(100vh-84px)] overflow-y-auto no-scrollbar rounded-3xl p-3 bg-[#111827] border border-slate-800 shadow-lg self-start">
             <div id="sideGrpKeuangan" class="px-2.5 pt-1 pb-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
                 <i class="fa-solid fa-coins text-[10px]"></i> <span>Keuangan &amp; Bendahara</span>
             </div>
-            <button type="button" id="sideBtn-ringkasan" onclick="officeApp.switchTab('ringkasan')" class="office-side-btn is-active w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl text-xs font-extrabold text-white transition text-left">
-                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-wallet w-4 text-center"></i> <span class="truncate">Kas, Beban &amp; ACC TF</span></span>
-                <span id="sidePendingFinanceBadge" class="hidden bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span>
+            <button type="button" id="sideBtn-ringkasan" onclick="officeApp.switchTab('ringkasan')" class="office-side-btn is-active w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-extrabold text-white transition text-left">
+                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-wallet w-4 text-center flex-shrink-0"></i> <span class="truncate">Kas, Beban &amp; ACC TF</span></span>
+                <span id="sidePendingFinanceBadge" class="hidden bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full flex-shrink-0">0</span>
             </button>
-            <button type="button" id="sideBtn-kewajiban" onclick="officeApp.switchTab('kewajiban')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
-                <i class="fa-solid fa-file-invoice w-4 text-center"></i> <span>Hutang &amp; Piutang</span>
+            <button type="button" id="sideBtn-kewajiban" onclick="officeApp.switchTab('kewajiban')" class="office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition text-left">
+                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-file-invoice w-4 text-center flex-shrink-0"></i> <span class="truncate">Hutang &amp; Piutang</span></span>
             </button>
-            <button type="button" id="sideBtn-aset" onclick="officeApp.switchTab('aset')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
-                <i class="fa-solid fa-boxes-packing w-4 text-center"></i> <span>Aset &amp; Penyusutan</span>
+            <button type="button" id="sideBtn-aset" onclick="officeApp.switchTab('aset')" class="office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition text-left">
+                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-boxes-packing w-4 text-center flex-shrink-0"></i> <span class="truncate">Aset &amp; Penyusutan</span></span>
             </button>
 
             <div id="sideDividerSep" class="my-1.5 border-t border-slate-800"></div>
@@ -1014,21 +1067,21 @@
             <div id="sideGrpHr" class="px-2.5 pt-0.5 pb-0.5 text-[10px] font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
                 <i class="fa-solid fa-users text-[10px]"></i> <span>HR &amp; Operasional Tim</span>
             </div>
-            <button type="button" id="sideBtn-hrd" onclick="officeApp.switchTab('hrd')" class="office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
-                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-file-signature w-4 text-center"></i> <span class="truncate">Persetujuan HR</span></span>
-                <span id="sidePendingHrBadge" class="hidden bg-amber-500 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span>
+            <button type="button" id="sideBtn-hrd" onclick="officeApp.switchTab('hrd')" class="office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition text-left">
+                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-file-signature w-4 text-center flex-shrink-0"></i> <span class="truncate">Persetujuan HR</span></span>
+                <span id="sidePendingHrBadge" class="hidden bg-amber-500 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-full flex-shrink-0">0</span>
             </button>
-            <button type="button" id="sideBtn-absensi_foto" onclick="officeApp.switchTab('absensi_foto')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
-                <i class="fa-solid fa-camera w-4 text-center"></i> <span>Absensi, Foto &amp; Dzikir</span>
+            <button type="button" id="sideBtn-absensi_foto" onclick="officeApp.switchTab('absensi_foto')" class="office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition text-left">
+                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-camera w-4 text-center flex-shrink-0"></i> <span class="truncate">Absensi, Foto &amp; Dzikir</span></span>
             </button>
-            <button type="button" id="sideBtn-jadwal_shift" onclick="officeApp.switchTab('jadwal_shift')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
-                <i class="fa-solid fa-calendar-days w-4 text-center"></i> <span>Jadwal Shift</span>
+            <button type="button" id="sideBtn-jadwal_shift" onclick="officeApp.switchTab('jadwal_shift')" class="office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition text-left">
+                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-calendar-days w-4 text-center flex-shrink-0"></i> <span class="truncate">Jadwal Shift</span></span>
             </button>
-            <button type="button" id="sideBtn-cuti_pinjaman" onclick="officeApp.switchTab('cuti_pinjaman')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
-                <i class="fa-solid fa-hand-holding-dollar w-4 text-center"></i> <span>Cuti &amp; Pinjaman</span>
+            <button type="button" id="sideBtn-cuti_pinjaman" onclick="officeApp.switchTab('cuti_pinjaman')" class="office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition text-left">
+                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-hand-holding-dollar w-4 text-center flex-shrink-0"></i> <span class="truncate">Cuti &amp; Pinjaman</span></span>
             </button>
-            <button type="button" id="sideBtn-pengumuman" onclick="officeApp.switchTab('pengumuman')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
-                <i class="fa-solid fa-bullhorn w-4 text-center"></i> <span>Pengumuman Tim</span>
+            <button type="button" id="sideBtn-pengumuman" onclick="officeApp.switchTab('pengumuman')" class="office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition text-left">
+                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-bullhorn w-4 text-center flex-shrink-0"></i> <span class="truncate">Pengumuman Tim</span></span>
             </button>
 
             <div class="my-1.5 border-t border-slate-800"></div>
@@ -1036,40 +1089,38 @@
             <div class="px-2.5 pt-0.5 pb-0.5 text-[10px] font-black uppercase tracking-wider text-sky-300 flex items-center gap-1.5">
                 <i class="fa-solid fa-sitemap text-[10px]"></i> <span>Payroll &amp; Pengaturan</span>
             </div>
-            <button type="button" id="sideBtn-payroll" onclick="officeApp.switchTab('payroll')" class="office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
-                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-money-check-dollar w-4 text-center"></i> <span class="truncate">Payroll Gaji</span></span>
-                <span id="sidePendingPayrollBadge" class="hidden bg-sky-400 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span>
+            <button type="button" id="sideBtn-payroll" onclick="officeApp.switchTab('payroll')" class="office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition text-left">
+                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-money-check-dollar w-4 text-center flex-shrink-0"></i> <span class="truncate">Payroll Gaji</span></span>
+                <span id="sidePendingPayrollBadge" class="hidden bg-sky-400 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-full flex-shrink-0">0</span>
             </button>
-            <button type="button" id="sideBtn-karyawan" onclick="officeApp.switchTab('karyawan')" class="office-side-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition text-left">
-                <i class="fa-solid fa-id-card w-4 text-center"></i> <span>Karyawan &amp; Akses</span>
+            <button type="button" id="sideBtn-karyawan" onclick="officeApp.switchTab('karyawan')" class="office-side-btn w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition text-left">
+                <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-id-card w-4 text-center flex-shrink-0"></i> <span class="truncate">Karyawan &amp; Akses</span></span>
             </button>
         </aside>
 
         <!-- KONTEN UTAMA -->
         <main id="officeMainContainer" class="flex-1 min-w-0 space-y-4">
-            <!-- BARIS PERIODE, IDENTITAS AKUN & PERAN -->
-            <div class="bg-[#111827] rounded-2xl border border-slate-800 px-4 py-3 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                <div class="flex flex-wrap items-center gap-3">
+            <!-- BARIS PERIODE, CABANG & PERAN (1 BARIS RAPI DI DESKTOP) -->
+            <div id="officeContextFilterBar" class="bg-[#111827] rounded-2xl border border-slate-800 px-4 py-2.5 shadow-sm flex flex-wrap items-center justify-between gap-2.5">
+                <div class="flex flex-wrap items-center gap-2.5">
                     <div class="flex items-center gap-2">
-                        <span class="text-xs font-extrabold text-slate-200">Periode:</span>
-                        <input type="month" id="activeMonthInput" onchange="officeApp.onMonthOrBranchChange()" class="px-3 py-1.5 border border-slate-700 rounded-full text-xs font-extrabold bg-slate-900 text-white focus:border-nutri-green outline-none">
+                        <span class="text-xs font-bold text-slate-400">Periode</span>
+                        <input type="month" id="activeMonthInput" onchange="officeApp.onMonthOrBranchChange()" class="px-3 py-1.5 border border-slate-700 rounded-xl text-xs font-bold bg-slate-900 text-white focus:border-nutri-green outline-none">
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs font-extrabold text-slate-200">Cabang:</span>
-                        <select id="officeBranchFilterSelect" onchange="officeApp.onMonthOrBranchChange()" class="px-3 py-1.5 border border-slate-700 rounded-full text-xs font-extrabold bg-slate-900 text-lime-300 focus:border-nutri-green outline-none">
+                        <span class="text-xs font-bold text-slate-400">Cabang</span>
+                        <select id="officeBranchFilterSelect" onchange="officeApp.onMonthOrBranchChange()" class="w-auto max-w-[230px] px-3 py-1.5 border border-slate-700 rounded-xl text-xs font-bold bg-slate-900 text-lime-300 focus:border-nutri-green outline-none">
                             <option value="ALL">Semua Cabang</option>
                             <option value="cabang-1">cabang-1 — Cabang 1</option>
                         </select>
                     </div>
-                    <div class="text-xs text-slate-300">
-                        Akun: <strong id="activeUserIdentityText" class="text-white">-</strong>
-                    </div>
+                    <span id="activeUserIdentityText" class="hidden">-</span>
+                    <span id="roleScopeSubtitle" class="hidden">Hak akses aktif</span>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-2">
-                    <span id="roleScopeSubtitle" class="text-[11px] text-slate-400">Hak akses aktif</span>
-                    <span id="autoDetectedRolePill" class="px-2.5 py-1 rounded-full bg-slate-800 text-lime-300 border border-slate-700 font-extrabold text-[11px]">Peran: Memuat...</span>
-                    <select id="ownerRolePreviewSelect" onchange="officeApp.changeActiveRoleByOwner(this.value)" title="Uji / ganti peran aktif" class="hidden px-2.5 py-1 rounded-full bg-slate-900 border border-amber-500/40 text-amber-200 font-extrabold text-[11px] outline-none">
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <span id="autoDetectedRolePill" class="px-3 py-1.5 rounded-xl bg-slate-800 text-lime-300 border border-slate-700 font-bold text-[11px] whitespace-nowrap">Peran: Memuat...</span>
+                    <select id="ownerRolePreviewSelect" onchange="officeApp.changeActiveRoleByOwner(this.value)" title="Uji / ganti peran aktif" class="hidden w-auto px-3 py-1.5 rounded-xl bg-slate-900 border border-amber-500/40 text-amber-200 font-bold text-[11px] outline-none">
                         <option value="owner">Mode: Owner</option>
                         <option value="bendahara">Mode: Bendahara</option>
                         <option value="hr">Mode: HR / SDM</option>
@@ -1770,7 +1821,7 @@
                         <h3 class="text-sm font-black text-gray-900 flex items-center">
                             <i class="fa-solid fa-shield-halved text-amber-400 mr-2"></i> Pengaturan Hak Akses Menu Office
                         </h3>
-                        <p class="text-[11px] text-gray-500 mt-0.5">Atur siapa saja (<strong>Owner</strong>, <strong>Bendahara</strong>, <strong>HR / SDM</strong>, <strong>Karyawan</strong>) yang boleh mengakses setiap menu Office dan tombol unduh laporan.</p>
+                        <p class="text-[11px] text-gray-500 mt-0.5">Atur hak akses menu dan tombol unduh laporan untuk <strong>Owner</strong>, <strong>Bendahara</strong>, dan <strong>HR / SDM</strong>.</p>
                     </div>
                     <button type="button" onclick="officeApp.saveOfficeMenuAccess()" class="bg-nutri-green hover:bg-nutri-dark text-white font-extrabold px-4 py-2 rounded-xl text-xs shadow-sm transition self-start sm:self-center whitespace-nowrap">
                         <i class="fa-solid fa-floppy-disk mr-1.5"></i> Simpan Hak Akses
@@ -4939,7 +4990,7 @@ Catat juga sebagai Kas Masuk (Pengembalian Pinjaman) di Buku Kas Perusahaan?`);
     </div>
 
     <script>
-        window.__NF_APP_VERSION = 'v153.3';
+        window.__NF_APP_VERSION = 'v153.4';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 
