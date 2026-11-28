@@ -2474,6 +2474,13 @@
         html body #memPortalPane-profile button:not(.nf-theme-card):not(#btnSaveMemProfile) {
             border-radius: 12px !important;
         }
+
+        /* Anti blok teks biru saat geser/tahan jari di HP (native feel) */
+        button, nav, .cust-chip-pill, .cust-cat-pill, .modern-prod-card, #heroBannerGridContainer, #parcelPreOrderCtaCard, #memberGreetingBanner, #customerHeader {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
     </style>
     <style id="nfCleanSplashV1531">
         @keyframes nfCleanSpin { to { transform: rotate(360deg); } }
@@ -8019,7 +8026,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v153.1';
+        window.__NF_APP_VERSION = 'v153.2';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 
