@@ -49,6 +49,17 @@ public class NfLiveOrderHelper {
     private static final LinkedHashSet<Integer> activeChatNotifIds = new LinkedHashSet<>();
     private static volatile String pendingOpenOrderId = "";
 
+    public static final int NOTIF_ACCENT_COLOR = 0xFF7CB342;
+
+    public static int getNotifSmallIconRes(Context ctx) {
+        if (ctx == null) return android.R.drawable.ic_dialog_info;
+        try {
+            int resId = ctx.getResources().getIdentifier("ic_stat_nutrifresh", "drawable", ctx.getPackageName());
+            if (resId != 0) return resId;
+        } catch (Exception ignored) {}
+        return ctx.getApplicationInfo().icon;
+    }
+
     public static void ensureChannels(Context ctx) {
         if (ctx == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         try {
@@ -405,7 +416,8 @@ public class NfLiveOrderHelper {
             );
 
             NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CH_LIVE)
-                .setSmallIcon(ctx.getApplicationInfo().icon)
+                .setSmallIcon(getNotifSmallIconRes(ctx))
+                .setColor(NOTIF_ACCENT_COLOR)
                 .setContentTitle(title)
                 .setContentText(shortLine)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(big.toString()))
@@ -500,7 +512,8 @@ public class NfLiveOrderHelper {
             }
 
             NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CH_ALERTS)
-                .setSmallIcon(ctx.getApplicationInfo().icon)
+                .setSmallIcon(getNotifSmallIconRes(ctx))
+                .setColor(NOTIF_ACCENT_COLOR)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
@@ -579,7 +592,8 @@ public class NfLiveOrderHelper {
             );
 
             NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CH_ALERTS)
-                .setSmallIcon(ctx.getApplicationInfo().icon)
+                .setSmallIcon(getNotifSmallIconRes(ctx))
+                .setColor(NOTIF_ACCENT_COLOR)
                 .setContentTitle(convTitle != null && !convTitle.isEmpty() ? convTitle : ("Chat #" + orderId))
                 .setContentText(lastText)
                 .setStyle(style)
@@ -868,6 +882,31 @@ UPDATE_PATHS_XML = """<?xml version="1.0" encoding="utf-8"?>
     <files-path name="nf_updates_files" path="." />
 </paths>
 """
+
+NOTIF_ICON_XML = """<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M13.2,5.6 C13.5,3.2 15.8,1.8 18.4,2.1 C18.1,4.6 15.9,6.1 13.2,5.6 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M11.3,3.2 C11.3,2.6 11.7,2.2 12.2,2.2 C12.7,2.2 13.0,2.7 12.9,3.3 L12.5,6.4 L11.5,6.4 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12.0,6.2 C9.6,6.2 8.2,7.9 8.0,10.2 C7.8,11.9 6.2,13.4 6.2,16.1 C6.2,19.4 8.7,21.8 12.0,21.8 C15.3,21.8 17.8,19.4 17.8,16.1 C17.8,13.4 16.2,11.9 16.0,10.2 C15.8,7.9 14.4,6.2 12.0,6.2 Z" />
+</vector>
+"""
+
+NOTIF_COLORS_XML = """<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="nf_notif_accent">#7CB342</color>
+</resources>
+"""
+
 
 SMART_PERM_AND_UPDATER_FIELDS = r"""
     private static final String NF_UPDATE_MANIFEST_URL = "__UPDATE_MANIFEST_URL__";
@@ -1326,7 +1365,7 @@ def main():
 
     # 1. Auto-increment versionCode & versionName from web/sw.js (strictly monotonic across all workflows!)
     run_num = int(os.environ.get("GITHUB_RUN_NUMBER", "1") or "1")
-    sw_major, sw_minor = 153, 4
+    sw_major, sw_minor = 153, 5
     for sw_cand in (Path("web/sw.js"), Path(__file__).resolve().parent.parent / "web" / "sw.js"):
         if sw_cand.exists():
             m_sw = re.search(r"SW_VERSION\s*=\s*['\"]v?(\d+)(?:\.(\d+))?", sw_cand.read_text(encoding="utf-8"))
@@ -1402,6 +1441,13 @@ def main():
     # 3. Universal v145+v146+v147 Java Classes (NfUpdateFileProvider, NfLiveOrderHelper, NfDirectReplyReceiver)
     res_xml_dir.mkdir(parents=True, exist_ok=True)
     (res_xml_dir / "nf_update_paths.xml").write_text(UPDATE_PATHS_XML.lstrip("\n"), encoding="utf-8")
+    res_drawable_dir = android_dir / "app" / "src" / "main" / "res" / "drawable"
+    res_drawable_dir.mkdir(parents=True, exist_ok=True)
+    (res_drawable_dir / "ic_stat_nutrifresh.xml").write_text(NOTIF_ICON_XML.lstrip("\n"), encoding="utf-8")
+    res_values_dir = android_dir / "app" / "src" / "main" / "res" / "values"
+    res_values_dir.mkdir(parents=True, exist_ok=True)
+    (res_values_dir / "nf_notif_colors.xml").write_text(NOTIF_COLORS_XML.lstrip("\n"), encoding="utf-8")
+    print("[notif-icon] Generated monochrome transparent ic_stat_nutrifresh.xml & accent color #7CB342!")
     java_dir.mkdir(parents=True, exist_ok=True)
     (java_dir / "NfUpdateFileProvider.java").write_text(
         UPDATE_PROVIDER_JAVA.replace("__PACKAGE_ID__", pkg_id).lstrip("\n"), encoding="utf-8"
@@ -1458,6 +1504,12 @@ def main():
                 '        <meta-data\n'
                 '            android:name="com.google.firebase.messaging.default_notification_channel_id"\n'
                 f'            android:value="{channel_id}" />\n'
+                '        <meta-data\n'
+                '            android:name="com.google.firebase.messaging.default_notification_icon"\n'
+                '            android:resource="@drawable/ic_stat_nutrifresh" />\n'
+                '        <meta-data\n'
+                '            android:name="com.google.firebase.messaging.default_notification_color"\n'
+                '            android:resource="@color/nf_notif_accent" />\n'
                 '    </application>'
             )
             m_txt = m_txt.replace("</application>", recv_xml, 1)
@@ -1490,6 +1542,11 @@ def main():
                 1,
             )
             print(f"[v147] Injected Live Order, Smart Permissions & In-App Self-Updater into {ma_path.name}!")
+        ma = re.sub(
+            r"\.setSmallIcon\((?:MainActivity\.this\.)?getApplicationInfo\(\)\.icon\)",
+            ".setSmallIcon(NfLiveOrderHelper.getNotifSmallIconRes(MainActivity.this)).setColor(NfLiveOrderHelper.NOTIF_ACCENT_COLOR)",
+            ma,
+        )
         ma_path.write_text(ma, encoding="utf-8")
 
     # 4. Optional Firebase Cloud Messaging (FCM) for real background Push Notifications!
