@@ -2127,6 +2127,354 @@
 
     </style>
     <link rel="stylesheet" href="nutri-theme.css">
+    <style id="nfRetailProV153">
+        /* ==============================================================
+           NUTRIFRESH RETAIL PRO UNSLOP LAYER (v153.0)
+           Standar aplikasi ritel buah modern: tenang, presisi, 60fps,
+           tanpa kesan generik AI, aman 100% di tema Natural / Glass / Dark
+           ============================================================== */
+
+        /* 1. MATIKAN BOLA AURA BLUR BERGERAK (60fps smooth & hemat baterai) */
+        .nf-liquid-bg,
+        .nf-orb {
+            display: none !important;
+            animation: none !important;
+        }
+        html[data-theme="natural"] body {
+            background-color: #f5f7f5 !important;
+            background-image: none !important;
+        }
+        html[data-theme="glass"] body {
+            background-color: #eef3ef !important;
+            background-image: linear-gradient(180deg, #edf3ef 0%, #f6f8f6 45%, #f3f5f3 100%) !important;
+        }
+
+        /* 2. ANGKA RATA KOLOM (TABULAR NUMS) UNTUK HARGA, STOK & POIN */
+        .nf-num,
+        #customerCartTotal,
+        #floatCartTotalText,
+        #custModalEstimatedSubtotal,
+        #poItemSubtotalPreview,
+        #poGrandTotalDisplay,
+        #memPortalPointsValue,
+        #memPortalSpendText,
+        #memPortalVisitsText,
+        #obralCountdownBadge {
+            font-variant-numeric: tabular-nums !important;
+        }
+
+        /* 3. KARTU PRODUK BERSIH & RINGAN (TANPA BLUR DI DAFTAR SCROLL) */
+        html body .modern-prod-card {
+            background: #ffffff !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+            border-radius: 18px !important;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease !important;
+        }
+        html body .modern-prod-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -10px rgba(15, 23, 42, 0.14) !important;
+            border-color: rgba(124, 179, 66, 0.35) !important;
+        }
+        html[data-theme="dark"] body .modern-prod-card {
+            background: #111827 !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+        }
+
+        /* 4. HEADER & STICKY CHIPS RAPI KONSISTEN */
+        html body #stickyCategoryChipsBar > div {
+            padding: 4px !important;
+        }
+        html body #stickyCategoryChipsBar .cust-chip-pill {
+            font-weight: 600 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            padding: 6px 13px !important;
+            font-size: 12px !important;
+        }
+        html body #stickyCategoryChipsBar .cust-chip-pill.nf-slide-active {
+            font-weight: 700 !important;
+        }
+        html body #stickyCategoryChipsBar .cust-chip-pill i {
+            font-size: 11px !important;
+            opacity: 0.88;
+        }
+
+        /* 5. BOTTOM DOCK TENANG (TANPA WARNA PELANGI PADA IKON NON-AKTIF) */
+        html body #customerView nav {
+            background: rgba(255, 255, 255, 0.92) !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+            box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.14) !important;
+        }
+        html[data-theme="natural"] body #customerView nav {
+            background: #ffffff !important;
+        }
+        html[data-theme="dark"] body #customerView nav {
+            background: rgba(17, 24, 39, 0.94) !important;
+            border-color: rgba(255, 255, 255, 0.10) !important;
+        }
+        html body #customerView nav button:not(.nf-slide-active),
+        html body #customerView nav button:not(.nf-slide-active) i,
+        html body #customerView nav button:not(.nf-slide-active) span:not(#cartItemCount):not(#mobActiveOrdersCount) {
+            color: #64748b !important;
+            font-weight: 600 !important;
+        }
+        html[data-theme="dark"] body #customerView nav button:not(.nf-slide-active),
+        html[data-theme="dark"] body #customerView nav button:not(.nf-slide-active) i,
+        html[data-theme="dark"] body #customerView nav button:not(.nf-slide-active) span:not(#cartItemCount):not(#mobActiveOrdersCount) {
+            color: #94a3b8 !important;
+        }
+        html body #customerView nav button.nf-slide-active,
+        html body #customerView nav button.nf-slide-active i,
+        html body #customerView nav button.nf-slide-active span:not(#cartItemCount):not(#mobActiveOrdersCount) {
+            color: #4d7c0f !important;
+            font-weight: 700 !important;
+        }
+        html[data-theme="dark"] body #customerView nav button.nf-slide-active,
+        html[data-theme="dark"] body #customerView nav button.nf-slide-active i,
+        html[data-theme="dark"] body #customerView nav button.nf-slide-active span:not(#cartItemCount):not(#mobActiveOrdersCount) {
+            color: #a3e635 !important;
+        }
+        html body #customerView nav .nf-slide-lens {
+            background: #eef6e7 !important;
+            border: 1px solid #d7ebc8 !important;
+            box-shadow: none !important;
+        }
+        html[data-theme="dark"] body #customerView nav .nf-slide-lens {
+            background: rgba(132, 204, 22, 0.16) !important;
+            border: 1px solid rgba(163, 230, 53, 0.28) !important;
+            box-shadow: none !important;
+        }
+
+        /* 6. PERBAIKAN FORM INPUT & SELECT: KOTAK MEMBULAT 12px (BUKAN PIL LONJONG!) */
+        html body #customerCartModal input:not([type="checkbox"]),
+        html body #customerCartModal select,
+        html body #customerCartModal textarea,
+        html body #customerItemModal input:not([type="checkbox"]),
+        html body #customerItemModal select,
+        html body #memberModal input:not([type="checkbox"]),
+        html body #memberModal select,
+        html body #memberModal textarea,
+        html body #parcelPreOrderModal input:not([type="checkbox"]),
+        html body #parcelPreOrderModal select,
+        html body #parcelPreOrderModal textarea {
+            border-radius: 12px !important;
+            background: #ffffff !important;
+            border: 1px solid #d5dde0 !important;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+            transition: border-color 0.16s ease, box-shadow 0.16s ease !important;
+        }
+        html body #customerCartModal input:focus,
+        html body #customerCartModal select:focus,
+        html body #customerCartModal textarea:focus,
+        html body #customerItemModal input:focus,
+        html body #customerItemModal select:focus,
+        html body #memberModal input:focus,
+        html body #memberModal textarea:focus,
+        html body #parcelPreOrderModal input:focus,
+        html body #parcelPreOrderModal select:focus,
+        html body #parcelPreOrderModal textarea:focus {
+            background: #ffffff !important;
+            border-color: #65a30d !important;
+            box-shadow: 0 0 0 3px rgba(124, 179, 66, 0.16) !important;
+        }
+        html[data-theme="dark"] body #customerCartModal input:not([type="checkbox"]),
+        html[data-theme="dark"] body #customerCartModal select,
+        html[data-theme="dark"] body #customerCartModal textarea,
+        html[data-theme="dark"] body #customerItemModal input:not([type="checkbox"]),
+        html[data-theme="dark"] body #customerItemModal select,
+        html[data-theme="dark"] body #memberModal input:not([type="checkbox"]),
+        html[data-theme="dark"] body #memberModal textarea,
+        html[data-theme="dark"] body #parcelPreOrderModal input:not([type="checkbox"]),
+        html[data-theme="dark"] body #parcelPreOrderModal select,
+        html[data-theme="dark"] body #parcelPreOrderModal textarea {
+            background: #0f172a !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+        }
+
+        /* Perbaiki input angka Qty di Detail Buah agar rapi 12px + tabular */
+        html body #customerItemModal #custModalQtyInput {
+            border-radius: 12px !important;
+            font-variant-numeric: tabular-nums !important;
+        }
+        html body #customerItemModal button[onclick*="stepCustomerModalQty"] {
+            border-radius: 12px !important;
+            background: #ffffff !important;
+            border: 1px solid #d5dde0 !important;
+        }
+        html[data-theme="dark"] body #customerItemModal button[onclick*="stepCustomerModalQty"] {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+        }
+
+        /* 7. FIX PLACEHOLDER PIN TIDAK PERNAH TERPOTONG */
+        html body #memProfCurrentPinInput::placeholder,
+        html body #memProfNewPinInput::placeholder,
+        html body #memLoginPinInput::placeholder,
+        html body #memRegPinInput::placeholder,
+        html body #memRegPinConfirmInput::placeholder {
+            letter-spacing: normal !important;
+            font-family: 'Inter', sans-serif !important;
+            font-weight: 500 !important;
+            font-size: 12px !important;
+            color: #94a3b8 !important;
+        }
+
+        /* 8. FIX BUG KARTU TEMA BULAT OVAL DI PENGATURAN MEMBER! */
+        html body #memberModal button.nf-theme-card {
+            border-radius: 16px !important;
+            padding: 11px !important;
+            background: #ffffff !important;
+            border: 1.5px solid #e2e8f0 !important;
+            box-shadow: none !important;
+            min-height: 92px;
+        }
+        html body #memberModal button.nf-theme-card.nf-theme-card-active {
+            border: 2px solid #65a30d !important;
+            background: #f4f9f1 !important;
+            box-shadow: 0 4px 12px -6px rgba(85, 139, 47, 0.28) !important;
+        }
+        html[data-theme="dark"] body #memberModal button.nf-theme-card {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+        }
+        html[data-theme="dark"] body #memberModal button.nf-theme-card.nf-theme-card-active {
+            border-color: #84cc16 !important;
+            background: rgba(132, 204, 22, 0.14) !important;
+        }
+
+        /* 9. FIX BUG STICKY TAB BAR MEMBER TEMBUS TEKS DI BELAKANGNYA + HEADER TENANG */
+        html body #memberModal > div,
+        html body #customerItemModal > div,
+        html body #customerCartModal > div,
+        html body #customerOrdersModal > div,
+        html body #parcelPreOrderModal > div {
+            background: #f8fafc !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+            border-radius: 24px !important;
+            box-shadow: 0 24px 60px -16px rgba(15, 23, 42, 0.28) !important;
+        }
+        @media (max-width: 639px) {
+            html body #memberModal > div,
+            html body #customerCartModal > div,
+            html body #customerOrdersModal > div,
+            html body #parcelPreOrderModal > div {
+                border-bottom-left-radius: 0 !important;
+                border-bottom-right-radius: 0 !important;
+            }
+        }
+        html[data-theme="dark"] body #memberModal > div,
+        html[data-theme="dark"] body #customerItemModal > div,
+        html[data-theme="dark"] body #customerCartModal > div,
+        html[data-theme="dark"] body #customerOrdersModal > div,
+        html[data-theme="dark"] body #parcelPreOrderModal > div {
+            background: #0f172a !important;
+            border-color: rgba(255, 255, 255, 0.10) !important;
+        }
+
+        /* Header Member & Pesanan Saya: Putih bersih elegan (tidak oranye ngejreng / hitam tabrakan) */
+        html body #memberModal > div > div:first-child,
+        html[data-theme="natural"] body #memberModal > div > div:first-child {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+        }
+        html[data-theme="dark"] body #memberModal > div > div:first-child {
+            background: #111827 !important;
+            color: #f8fafc !important;
+            border-bottom: 1px solid #1f2937 !important;
+        }
+        html body #memberModalHeaderSub {
+            color: #64748b !important;
+        }
+        html[data-theme="dark"] body #memberModalHeaderSub {
+            color: #94a3b8 !important;
+        }
+
+        /* Sticky wrapper 4-tab Member: OPAQUE solid agar teks di belakang tidak pernah tembus! */
+        html body #memberTabsStickyOuter {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 25 !important;
+            background: #f8fafc !important;
+            padding: 10px 14px 8px 14px !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+        }
+        html[data-theme="dark"] body #memberTabsStickyOuter {
+            background: #0f172a !important;
+            border-bottom-color: #1e293b !important;
+        }
+        html body #memberPortalContainer .grid.grid-cols-4 {
+            margin: 0 !important;
+            position: relative !important;
+            top: auto !important;
+            background: #e9eff0 !important;
+            border: 1px solid #dde5e7 !important;
+            box-shadow: none !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+        }
+        html[data-theme="dark"] body #memberPortalContainer .grid.grid-cols-4 {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+        }
+        html body #memberPortalContainer .grid.grid-cols-4 button:not(.nf-slide-active),
+        html body #memberPortalContainer .grid.grid-cols-4 button:not(.nf-slide-active) i {
+            color: #64748b !important;
+            font-weight: 600 !important;
+        }
+        html body #memberPortalContainer .grid.grid-cols-4 button.nf-slide-active,
+        html body #memberPortalContainer .grid.grid-cols-4 button.nf-slide-active i {
+            color: #4d7c0f !important;
+            font-weight: 700 !important;
+        }
+        html[data-theme="dark"] body #memberPortalContainer .grid.grid-cols-4 button.nf-slide-active,
+        html[data-theme="dark"] body #memberPortalContainer .grid.grid-cols-4 button.nf-slide-active i {
+            color: #a3e635 !important;
+        }
+
+        /* Kartu QR & Pengaturan Member: Putih solid crisp */
+        html body #memberPortalContainer .bg-white,
+        html body #memberAuthContainer .bg-white {
+            background: #ffffff !important;
+            border: 1px solid #e5e9ec !important;
+            border-radius: 18px !important;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+        }
+        html[data-theme="dark"] body #memberPortalContainer .bg-white,
+        html[data-theme="dark"] body #memberAuthContainer .bg-white {
+            background: #111827 !important;
+            border-color: #1f2937 !important;
+        }
+
+        /* Tombol CTA Utama di Modal: Rounded-xl (14px) elegan seperti Astro/Apple Pay */
+        html body #btnCheckoutAppDirect,
+        html body #customerItemModal button[onclick*="submitItemToCustomerCart"],
+        html body #btnSaveMemProfile,
+        html body #btnSubmitParcelPreOrder,
+        html body #btnMemLoginPin,
+        html body #btnMemRegPin {
+            border-radius: 14px !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.01em;
+        }
+        /* Tombol aksi sekunder dalam Pengaturan Member (Notif, Update, Segarkan, Keluar) */
+        html body #memPortalPane-profile button:not(.nf-theme-card):not(#btnSaveMemProfile) {
+            border-radius: 12px !important;
+        }
+    </style>
 </head>
 <body class="text-gray-800 h-screen flex flex-col overflow-hidden">
     
@@ -2440,13 +2788,13 @@
                 <!-- BILAH KATEGORI CEPAT MENGAMBANG (STICKY APP CHIPS) -->
                 <div id="stickyCategoryChipsBar" class="sticky top-0 z-10 bg-[#f8fafc]/95 backdrop-blur-md py-2 -mx-4 px-2.5 sm:mx-0 sm:px-0 border-b border-gray-200/60">
                     <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
-                        <button type="button" onclick="app.setCustomerCategory('Semua')" id="chipCat-Semua" class="cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-nutri-green text-white shadow-sm transition">Semua</button>
-                        <button type="button" onclick="app.setCustomerCategory('Obral')" id="chipCat-Obral" class="cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-red-600 border border-red-200 hover:bg-red-50 transition">🔥 Obral</button>
-                        <button type="button" onclick="app.setCustomerCategory('Buah Lokal')" id="chipCat-Buah Lokal" class="cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-gray-700 border border-gray-200 hover:border-nutri-green transition">🥭 Buah Lokal</button>
-                        <button type="button" onclick="app.setCustomerCategory('Buah Impor')" id="chipCat-Buah Impor" class="cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-gray-700 border border-gray-200 hover:border-nutri-green transition">🍎 Buah Impor</button>
-                        <button type="button" onclick="app.setCustomerCategory('🍹 Aneka Jus Buah')" id="chipCat-🍹 Aneka Jus Buah" class="cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-gray-700 border border-gray-200 hover:border-nutri-green transition">🍹 Aneka Jus</button>
-                        <button type="button" onclick="app.setCustomerCategory('Buah Potong / Pack')" id="chipCat-Buah Potong / Pack" class="cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-gray-700 border border-gray-200 hover:border-nutri-green transition">🥗 Buah Potong</button>
-                        <button type="button" onclick="app.setCustomerCategory('Parsel & Gift')" id="chipCat-Parsel & Gift" class="cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-gray-700 border border-gray-200 hover:border-nutri-green transition">🎁 Parsel Gift</button>
+                        <button type="button" onclick="app.setCustomerCategory('Semua')" id="chipCat-Semua" class="cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold bg-nutri-green text-white shadow-sm transition">Semua</button>
+                        <button type="button" onclick="app.setCustomerCategory('Obral')" id="chipCat-Obral" class="cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-red-600 border border-red-200 hover:bg-red-50 transition"><i class="fa-solid fa-fire"></i><span>Obral</span></button>
+                        <button type="button" onclick="app.setCustomerCategory('Buah Lokal')" id="chipCat-Buah Lokal" class="cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-gray-700 border border-gray-200 hover:border-nutri-green transition"><i class="fa-solid fa-seedling"></i><span>Buah Lokal</span></button>
+                        <button type="button" onclick="app.setCustomerCategory('Buah Impor')" id="chipCat-Buah Impor" class="cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-gray-700 border border-gray-200 hover:border-nutri-green transition"><i class="fa-solid fa-apple-whole"></i><span>Buah Impor</span></button>
+                        <button type="button" onclick="app.setCustomerCategory('🍹 Aneka Jus Buah')" id="chipCat-🍹 Aneka Jus Buah" class="cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-gray-700 border border-gray-200 hover:border-nutri-green transition"><i class="fa-solid fa-blender"></i><span>Aneka Jus</span></button>
+                        <button type="button" onclick="app.setCustomerCategory('Buah Potong / Pack')" id="chipCat-Buah Potong / Pack" class="cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-gray-700 border border-gray-200 hover:border-nutri-green transition"><i class="fa-solid fa-bowl-food"></i><span>Buah Potong</span></button>
+                        <button type="button" onclick="app.setCustomerCategory('Parsel & Gift')" id="chipCat-Parsel & Gift" class="cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-gray-700 border border-gray-200 hover:border-nutri-green transition"><i class="fa-solid fa-gift"></i><span>Parsel</span></button>
                     </div>
                 </div>
 
@@ -2651,11 +2999,11 @@
             </div>
 
             <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-lg border-t border-gray-200/80 z-40 flex justify-around items-center py-2 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-6px_20px_rgba(0,0,0,0.06)]">
-                <button type="button" id="mobNav-home" onclick="app.resetCustomerFilters(); window.scrollTo(0,0); document.getElementById('mainContent').scrollTo({top:0, behavior:'smooth'});" class="flex flex-col items-center text-nutri-green font-extrabold text-[11px] w-1/5 transition"><div class="px-3 py-0.5 rounded-full bg-nutri-light mb-0.5"><i class="fa-solid fa-house text-base"></i></div><span>Beranda</span></button>
-                <button type="button" id="mobNav-promo" onclick="app.setCustomerCategory('Obral', true)" class="flex flex-col items-center text-gray-500 hover:text-red-500 font-bold text-[11px] w-1/5 transition"><div class="px-3 py-0.5 rounded-full mb-0.5"><i class="fa-solid fa-fire text-base text-red-500"></i></div><span>Promo</span></button>
-                <button type="button" onclick="app.showCustomerCartModal()" class="flex flex-col items-center text-gray-600 hover:text-nutri-green font-bold text-[11px] relative w-1/5 transition"><div class="px-3 py-0.5 rounded-full mb-0.5"><i class="fa-solid fa-basket-shopping text-base text-nutri-green"></i></div><span>Keranjang</span><span id="cartItemCount" class="absolute top-0 right-3 bg-red-500 text-white text-[9px] font-black min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center hidden shadow-sm">0</span></button>
-                <button type="button" id="mobNav-orders" onclick="app.openCustomerOrdersModal()" class="flex flex-col items-center text-gray-600 hover:text-blue-600 font-bold text-[11px] relative w-1/5 transition"><div class="px-3 py-0.5 rounded-full mb-0.5"><i class="fa-solid fa-receipt text-base text-blue-600"></i></div><span>Pesanan</span><span id="mobActiveOrdersCount" class="absolute top-0 right-3 bg-blue-600 text-white text-[9px] font-black min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center hidden shadow-sm">0</span></button>
-                <button type="button" onclick="app.openMemberModal()" class="flex flex-col items-center text-gray-500 hover:text-amber-600 font-bold text-[11px] w-1/5 transition"><div class="px-3 py-0.5 rounded-full mb-0.5"><i class="fa-solid fa-crown text-base text-amber-500"></i></div><span id="mobMemberLabel">Member</span></button>
+                <button type="button" id="mobNav-home" onclick="app.resetCustomerFilters(); window.scrollTo(0,0); document.getElementById('mainContent').scrollTo({top:0, behavior:'smooth'});" class="flex flex-col items-center text-nutri-green font-bold text-[11px] w-1/5 transition"><div class="px-3 py-0.5 rounded-full mb-0.5"><i class="fa-solid fa-house text-[15px]"></i></div><span>Beranda</span></button>
+                <button type="button" id="mobNav-promo" onclick="app.setCustomerCategory('Obral', true)" class="flex flex-col items-center text-slate-500 font-semibold text-[11px] w-1/5 transition"><div class="px-3 py-0.5 rounded-full mb-0.5"><i class="fa-solid fa-fire text-[15px]"></i></div><span>Promo</span></button>
+                <button type="button" onclick="app.showCustomerCartModal()" class="flex flex-col items-center text-slate-500 font-semibold text-[11px] relative w-1/5 transition"><div class="px-3 py-0.5 rounded-full mb-0.5"><i class="fa-solid fa-basket-shopping text-[15px]"></i></div><span>Keranjang</span><span id="cartItemCount" class="absolute top-0 right-3 bg-red-500 text-white text-[9px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center hidden shadow-sm nf-num">0</span></button>
+                <button type="button" id="mobNav-orders" onclick="app.openCustomerOrdersModal()" class="flex flex-col items-center text-slate-500 font-semibold text-[11px] relative w-1/5 transition"><div class="px-3 py-0.5 rounded-full mb-0.5"><i class="fa-solid fa-receipt text-[15px]"></i></div><span>Pesanan</span><span id="mobActiveOrdersCount" class="absolute top-0 right-3 bg-nutri-dark text-white text-[9px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center hidden shadow-sm nf-num">0</span></button>
+                <button type="button" onclick="app.openMemberModal()" class="flex flex-col items-center text-slate-500 font-semibold text-[11px] w-1/5 transition"><div class="px-3 py-0.5 rounded-full mb-0.5"><i class="fa-regular fa-user text-[15px]"></i></div><span id="mobMemberLabel">Akun</span></button>
             </nav>
         </div>
 
@@ -2663,17 +3011,17 @@
         <div id="memberModal" class="fixed inset-0 bg-black/65 z-[70] hidden flex items-end sm:items-center justify-center fade-in backdrop-blur-sm sm:p-4">
             <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-lg mx-auto overflow-hidden border border-gray-100 flex flex-col max-h-[93vh]">
                 <!-- Header -->
-                <div class="px-5 py-4 border-b bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white flex justify-between items-center flex-shrink-0">
+                <div class="px-5 py-3.5 border-b border-gray-200/80 bg-white text-gray-900 flex justify-between items-center flex-shrink-0">
                     <div class="flex items-center space-x-2.5 min-w-0">
-                        <div class="w-9 h-9 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-yellow-200 text-base flex-shrink-0">
+                        <div class="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 text-sm flex-shrink-0">
                             <i class="fa-solid fa-crown"></i>
                         </div>
                         <div class="min-w-0">
-                            <h3 class="text-sm sm:text-base font-black leading-tight truncate" id="memberModalHeaderTitle">Member Setia NutriFresh</h3>
-                            <p class="text-[11px] text-amber-100 truncate" id="memberModalHeaderSub">Kumpulkan poin tiap belanja & tukar promo spesial</p>
+                            <h3 class="text-sm sm:text-base font-bold leading-tight truncate" id="memberModalHeaderTitle">Member NutriFresh</h3>
+                            <p class="text-[11px] text-gray-500 truncate" id="memberModalHeaderSub">Kumpulkan poin tiap belanja &amp; tukar promo</p>
                         </div>
                     </div>
-                    <button type="button" onclick="document.getElementById('memberModal').classList.add('hidden')" aria-label="Tutup" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition flex-shrink-0"><i class="fa-solid fa-xmark text-base"></i></button>
+                    <button type="button" onclick="document.getElementById('memberModal').classList.add('hidden')" aria-label="Tutup" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 flex items-center justify-center transition flex-shrink-0"><i class="fa-solid fa-xmark text-base"></i></button>
                 </div>
 
                 <!-- BODY SCROLLABLE -->
@@ -2855,20 +3203,22 @@
                             </div>
                         </div>
 
-                        <!-- 4 Tab Navigasi Portal Member -->
-                        <div class="bg-white border-b border-gray-200 px-3 py-2 grid grid-cols-4 gap-1 sticky top-0 z-10">
-                            <button type="button" id="memTabBtn-card" onclick="app.switchMemberPortalTab('card')" class="py-2 px-1 rounded-xl text-[11px] font-extrabold bg-nutri-light text-nutri-dark border border-green-200 transition flex flex-col items-center">
-                                <i class="fa-solid fa-qrcode text-sm mb-0.5"></i><span>Kartu QR</span>
-                            </button>
-                            <button type="button" id="memTabBtn-rewards" onclick="app.switchMemberPortalTab('rewards')" class="py-2 px-1 rounded-xl text-[11px] font-bold text-gray-600 hover:bg-gray-100 transition flex flex-col items-center">
-                                <i class="fa-solid fa-gift text-sm mb-0.5 text-amber-500"></i><span>Tukar Poin</span>
-                            </button>
-                            <button type="button" id="memTabBtn-vouchers" onclick="app.switchMemberPortalTab('vouchers')" class="py-2 px-1 rounded-xl text-[11px] font-bold text-gray-600 hover:bg-gray-100 transition flex flex-col items-center relative">
-                                <i class="fa-solid fa-ticket text-sm mb-0.5 text-rose-500"></i><span>Voucher</span>
-                            </button>
-                            <button type="button" id="memTabBtn-profile" onclick="app.switchMemberPortalTab('profile')" class="py-2 px-1 rounded-xl text-[11px] font-bold text-gray-600 hover:bg-gray-100 transition flex flex-col items-center">
-                                <i class="fa-solid fa-sliders text-sm mb-0.5 text-blue-600"></i><span>Pengaturan</span>
-                            </button>
+                        <!-- 4 Tab Navigasi Portal Member (Opaque Sticky Bar — anti tembus teks!) -->
+                        <div id="memberTabsStickyOuter">
+                            <div class="px-1.5 py-1.5 grid grid-cols-4 gap-1 rounded-full">
+                                <button type="button" id="memTabBtn-card" onclick="app.switchMemberPortalTab('card')" class="py-2 px-1 rounded-xl text-[11px] font-bold bg-nutri-light text-nutri-dark border border-green-200 transition flex flex-col items-center">
+                                    <i class="fa-solid fa-qrcode text-sm mb-0.5"></i><span>Kartu QR</span>
+                                </button>
+                                <button type="button" id="memTabBtn-rewards" onclick="app.switchMemberPortalTab('rewards')" class="py-2 px-1 rounded-xl text-[11px] font-semibold text-gray-600 transition flex flex-col items-center">
+                                    <i class="fa-solid fa-gift text-sm mb-0.5"></i><span>Tukar Poin</span>
+                                </button>
+                                <button type="button" id="memTabBtn-vouchers" onclick="app.switchMemberPortalTab('vouchers')" class="py-2 px-1 rounded-xl text-[11px] font-semibold text-gray-600 transition flex flex-col items-center relative">
+                                    <i class="fa-solid fa-ticket text-sm mb-0.5"></i><span>Voucher</span>
+                                </button>
+                                <button type="button" id="memTabBtn-profile" onclick="app.switchMemberPortalTab('profile')" class="py-2 px-1 rounded-xl text-[11px] font-semibold text-gray-600 transition flex flex-col items-center">
+                                    <i class="fa-solid fa-sliders text-sm mb-0.5"></i><span>Pengaturan</span>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- TAB 1: KARTU MEMBER & QR CODE -->
@@ -2949,9 +3299,9 @@
                                 <div class="pt-2 border-t space-y-2">
                                     <label class="block font-extrabold text-amber-900" id="memProfPinSectionTitle">Ganti / Buat PIN 6 Digit (Opsional)</label>
                                     <div id="memProfCurrentPinWrap">
-                                        <input type="password" inputmode="numeric" maxlength="6" id="memProfCurrentPinInput" class="w-full px-3 py-2 border rounded-xl font-mono text-center tracking-widest outline-none" placeholder="PIN Saat Ini (Wajib jika tidak login Google)">
+                                        <input type="password" inputmode="numeric" maxlength="6" id="memProfCurrentPinInput" class="w-full px-3 py-2 border rounded-xl font-mono text-center tracking-widest outline-none" placeholder="PIN saat ini (6 angka)">
                                     </div>
-                                    <input type="password" inputmode="numeric" maxlength="6" id="memProfNewPinInput" class="w-full px-3 py-2 border border-amber-300 bg-amber-50/40 rounded-xl font-mono text-center tracking-widest outline-none" placeholder="PIN Baru 6 Angka (Kosongkan jika tidak ganti)">
+                                    <input type="password" inputmode="numeric" maxlength="6" id="memProfNewPinInput" class="w-full px-3 py-2 border border-amber-300 bg-amber-50/40 rounded-xl font-mono text-center tracking-widest outline-none" placeholder="PIN baru 6 angka (opsional)">
                                 </div>
                                 <button type="button" id="btnSaveMemProfile" onclick="app.saveMemberProfileUpdate()" class="w-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold py-2.5 rounded-xl shadow transition">Simpan Perubahan Profil</button>
                             </div>
@@ -3055,10 +3405,10 @@
                     </div>
                     <div id="custModalWeightPreferenceContainer" class="space-y-1.5 bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200/80">
                         <label class="block font-bold text-amber-900 text-xs"><i class="fa-solid fa-scale-balanced mr-1 text-amber-600"></i> Jika Berat Buah Tidak Pas Persis:</label>
-                        <select id="custModalWeightPreference" class="w-full px-3 py-2 border rounded-xl text-xs bg-white text-gray-800 font-semibold outline-none">
-                            <option value="Boleh lebih sedikit">➕ Boleh lebih sedikit (misal: 1,1 Kg)</option>
-                            <option value="Kurang sedikit saja">➖ Kurang sedikit saja (misal: 900 gr)</option>
-                            <option value="Pilihkan yang paling mendekati">⚖️ Pilihkan yang paling mendekati</option>
+                        <select id="custModalWeightPreference" class="w-full px-3 py-2.5 border rounded-xl text-xs bg-white text-gray-800 font-semibold outline-none">
+                            <option value="Boleh lebih sedikit">Boleh lebih sedikit (misal: 1,1 Kg)</option>
+                            <option value="Kurang sedikit saja">Kurang sedikit saja (misal: 900 gr)</option>
+                            <option value="Pilihkan yang paling mendekati">Pilihkan yang paling mendekati</option>
                         </select>
                     </div>
                     <div>
@@ -3355,57 +3705,59 @@
                     <button type="button" onclick="document.getElementById('customerCartModal').classList.add('hidden')" aria-label="Tutup" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 flex items-center justify-center transition"><i class="fa-solid fa-xmark text-base"></i></button>
                 </div>
                 <div id="customerCartItems" class="flex-1 overflow-y-auto p-4 space-y-2.5 bg-[#f8fafc]"></div>
-                <div class="p-4 border-t bg-white overflow-y-auto max-h-[58vh] space-y-3 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
+                <div id="customerCartCheckoutPane" class="p-4 border-t border-gray-200/80 bg-white overflow-y-auto max-h-[60vh] space-y-3 shadow-[0_-4px_16px_rgba(0,0,0,0.03)]">
                     <div class="space-y-2.5">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div>
-                                <label class="block text-[11px] font-extrabold text-gray-600 uppercase tracking-wider mb-1">Nama Pemesan *</label>
-                                <input type="text" id="custName" class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:border-nutri-green outline-none font-semibold" placeholder="Masukkan nama Anda...">
+                                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Nama Pemesan *</label>
+                                <input type="text" id="custName" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-[13px] bg-white outline-none font-medium" placeholder="Masukkan nama Anda">
                             </div>
                             <div>
-                                <label class="block text-[11px] font-extrabold text-gray-600 uppercase tracking-wider mb-1">No. WhatsApp Aktif *</label>
-                                <input type="tel" id="custPhone" class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:border-nutri-green outline-none font-mono font-bold" placeholder="08123456789">
+                                <label class="block text-[11px] font-semibold text-gray-600 mb-1">No. WhatsApp Aktif *</label>
+                                <input type="tel" id="custPhone" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-[13px] bg-white outline-none font-mono font-semibold nf-num" placeholder="08123456789">
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-2.5">
                             <div>
-                                <label class="block text-[11px] font-extrabold text-gray-600 uppercase tracking-wider mb-1">Pengambilan</label>
-                                <select id="custDelivery" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm bg-gray-50 focus:bg-white outline-none font-bold" onchange="document.getElementById('addressContainer').style.display = this.value === 'Kirim ke Rumah' ? 'block' : 'none';">
-                                    <option value="Kirim ke Rumah">🛵 Kirim ke Rumah</option>
-                                    <option value="Ambil di Toko">🏬 Ambil di Toko</option>
+                                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Pengambilan</label>
+                                <select id="custDelivery" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white outline-none font-semibold" onchange="document.getElementById('addressContainer').style.display = this.value === 'Kirim ke Rumah' ? 'block' : 'none';">
+                                    <option value="Kirim ke Rumah">Kirim ke Rumah</option>
+                                    <option value="Ambil di Toko">Ambil di Toko</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-[11px] font-extrabold text-gray-600 uppercase tracking-wider mb-1">Pembayaran</label>
-                                <select id="custPayment" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm bg-gray-50 focus:bg-white outline-none font-bold">
-                                    <option value="QRIS">📱 QRIS / E-Wallet</option>
-                                    <option value="Transfer Bank">🏦 Transfer Bank</option>
-                                    <option value="Cash / Tunai">💵 Cash / Tunai (COD)</option>
+                                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Pembayaran</label>
+                                <select id="custPayment" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white outline-none font-semibold">
+                                    <option value="QRIS">QRIS / E-Wallet</option>
+                                    <option value="Transfer Bank">Transfer Bank</option>
+                                    <option value="Cash / Tunai">Cash / Tunai (COD)</option>
                                 </select>
                             </div>
                         </div>
                         <div id="addressContainer">
-                            <label class="block text-[11px] font-extrabold text-gray-600 uppercase tracking-wider mb-1">Alamat Lengkap Pengiriman</label>
-                            <textarea id="custAddress" class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm bg-gray-50 focus:bg-white focus:border-nutri-green outline-none resize-none" rows="2" placeholder="Nama jalan, nomor rumah, RT/RW..."></textarea>
+                            <label class="block text-[11px] font-semibold text-gray-600 mb-1">Alamat Lengkap Pengiriman</label>
+                            <textarea id="custAddress" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white outline-none resize-none leading-relaxed" rows="2" placeholder="Nama jalan, nomor rumah, RT/RW..."></textarea>
                         </div>
                     </div>
-                    <div id="custCartVoucherBox" class="hidden bg-rose-50 border border-rose-200 p-2.5 rounded-2xl flex items-center justify-between gap-2 text-xs">
+                    <div id="custCartVoucherBox" class="hidden bg-rose-50 border border-rose-200 p-2.5 rounded-xl flex items-center justify-between gap-2 text-xs">
                         <div class="min-w-0">
-                            <span class="font-extrabold text-rose-800 block truncate" id="custCartVoucherLabel">🎟️ Voucher Aktif</span>
+                            <span class="font-bold text-rose-800 block truncate" id="custCartVoucherLabel">Voucher Aktif</span>
                             <span class="text-[10px] text-rose-600 font-mono" id="custCartVoucherCode">-</span>
                         </div>
-                        <button type="button" onclick="app.clearCustomerCartVoucher()" class="text-rose-600 hover:text-rose-800 font-bold text-[11px] px-2 py-1 rounded-lg bg-white border border-rose-200 flex-shrink-0">Lepas</button>
+                        <button type="button" onclick="app.clearCustomerCartVoucher()" class="text-rose-600 hover:text-rose-800 font-semibold text-[11px] px-2.5 py-1 rounded-lg bg-white border border-rose-200 flex-shrink-0">Lepas</button>
                     </div>
-                    <div class="bg-[#f4f9f1] border border-green-200/80 p-3 rounded-2xl flex justify-between items-center">
-                        <div>
-                            <span class="text-[11px] text-nutri-dark font-extrabold uppercase tracking-wider block">Total Estimasi Belanja</span>
-                            <span class="text-[10px] text-gray-500">*Berat riil ditimbang toko & difoto via WA</span>
+                    <div class="bg-[#f4f9f1] border border-green-200/80 p-3 rounded-2xl space-y-2">
+                        <div id="custCartFreeShipBanner" class="flex items-center justify-between text-[11px] text-emerald-800 font-semibold pb-1.5 border-b border-green-200/70">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-truck-fast text-nutri-dark text-[11px]"></i> <span id="custCartFreeShipText">Gratis Ongkir</span></span>
+                            <span class="font-bold text-nutri-dark nf-num">Rp 0</span>
                         </div>
-                        <span class="text-xl md:text-2xl font-black text-nutri-brown" id="customerCartTotal">Rp 0</span>
-                    </div>
-                    <div id="custCartFreeShipBanner" class="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-[11px] font-bold text-emerald-800 flex items-center justify-between">
-                        <span><i class="fa-solid fa-truck-fast text-nutri-green mr-1.5"></i> <span id="custCartFreeShipText">Gratis Ongkir • Tanpa biaya tambahan</span></span>
-                        <span class="text-[10px] bg-white px-2 py-0.5 rounded-full border border-emerald-200 font-black text-nutri-dark">Rp 0</span>
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <span class="text-xs text-gray-800 font-bold block">Total Estimasi</span>
+                                <span class="text-[10.5px] text-gray-500">Berat riil ditimbang &amp; difoto toko</span>
+                            </div>
+                            <span class="text-xl font-extrabold text-nutri-brown nf-num" id="customerCartTotal">Rp 0</span>
+                        </div>
                     </div>
                     <button type="button" onclick="app.submitAppDirectOrder()" id="btnCheckoutAppDirect" class="w-full bg-gradient-to-r from-nutri-dark to-nutri-green hover:opacity-95 active:scale-[0.99] text-white font-extrabold py-3.5 rounded-2xl shadow-lg shadow-green-600/20 transition flex justify-center items-center text-sm md:text-base">
                         <i class="fa-solid fa-bag-shopping mr-2 text-base"></i> Pesan Langsung di Aplikasi
@@ -3426,19 +3778,19 @@
     <!-- MODAL PESANAN SAYA & PELACAKAN REAL-TIME (v138 — ALA GRAB / GOJEK) -->
     <div id="customerOrdersModal" class="fixed inset-0 bg-black/65 z-[85] hidden flex items-end sm:items-center justify-center fade-in backdrop-blur-sm sm:p-4">
         <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-lg mx-auto overflow-hidden border border-gray-200 flex flex-col max-h-[93vh]">
-            <div class="px-5 py-4 border-b bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white flex justify-between items-center flex-shrink-0">
+            <div class="px-5 py-3.5 border-b border-gray-200/80 bg-white text-gray-900 flex justify-between items-center flex-shrink-0">
                 <div class="flex items-center space-x-2.5 min-w-0">
-                    <div class="w-9 h-9 rounded-2xl bg-lime-400/20 border border-lime-400/40 flex items-center justify-center text-lime-300 text-base flex-shrink-0">
+                    <div class="w-9 h-9 rounded-xl bg-nutri-light border border-green-200 flex items-center justify-center text-nutri-dark text-sm flex-shrink-0">
                         <i class="fa-solid fa-receipt"></i>
                     </div>
                     <div class="min-w-0">
-                        <h3 class="text-sm sm:text-base font-black leading-tight truncate">Pesanan Saya</h3>
-                        <p id="custOrdersLiveSub" class="text-[11px] text-emerald-200 truncate">Status timbangan &amp; pengantaran diperbarui otomatis</p>
+                        <h3 class="text-sm sm:text-base font-bold leading-tight truncate">Pesanan Saya</h3>
+                        <p id="custOrdersLiveSub" class="text-[11px] text-gray-500 truncate">Status timbangan &amp; pengantaran real-time</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-1.5 flex-shrink-0">
-                    <button type="button" onclick="app.refreshCustomerOrders(true)" title="Segarkan Status" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition"><i id="custOrdersRefreshIcon" class="fa-solid fa-rotate text-xs"></i></button>
-                    <button type="button" onclick="document.getElementById('customerOrdersModal').classList.add('hidden')" aria-label="Tutup" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition"><i class="fa-solid fa-xmark text-base"></i></button>
+                    <button type="button" onclick="app.refreshCustomerOrders(true)" title="Segarkan Status" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition"><i id="custOrdersRefreshIcon" class="fa-solid fa-rotate text-xs"></i></button>
+                    <button type="button" onclick="document.getElementById('customerOrdersModal').classList.add('hidden')" aria-label="Tutup" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 flex items-center justify-center transition"><i class="fa-solid fa-xmark text-base"></i></button>
                 </div>
             </div>
 
@@ -3454,10 +3806,12 @@
                 <button type="button" onclick="if(window.nfPermissions){window.nfPermissions.open('customer');}else{app.requestCustomerNotifications(true);}" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[11px] px-3 py-2 rounded-full shadow-sm whitespace-nowrap flex-shrink-0 transition">Aktifkan</button>
             </div>
 
-            <!-- 2 TAB: SEDANG BERJALAN vs RIWAYAT SELESAI -->
-            <div class="px-4 py-2.5 bg-gray-50 border-b grid grid-cols-2 gap-1.5 flex-shrink-0 text-xs">
-                <button type="button" id="custOrdTab-active" onclick="app.setCustomerOrdersTab('active')" class="py-2 rounded-full font-extrabold bg-nutri-green text-white shadow-sm transition">⏳ Sedang Berjalan</button>
-                <button type="button" id="custOrdTab-done" onclick="app.setCustomerOrdersTab('done')" class="py-2 rounded-full font-bold bg-gray-200 text-gray-700 transition">✅ Riwayat Selesai</button>
+            <!-- 2 TAB: BERJALAN vs RIWAYAT -->
+            <div class="px-4 py-2.5 bg-white border-b border-gray-200/80 flex-shrink-0 text-xs">
+                <div class="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">
+                    <button type="button" id="custOrdTab-active" onclick="app.setCustomerOrdersTab('active')" class="py-2 rounded-lg font-bold bg-white text-nutri-dark shadow-sm transition">Sedang Berjalan</button>
+                    <button type="button" id="custOrdTab-done" onclick="app.setCustomerOrdersTab('done')" class="py-2 rounded-lg font-semibold text-gray-600 transition">Riwayat</button>
+                </div>
             </div>
 
             <div id="custOrdersListContainer" class="p-4 overflow-y-auto flex-1 space-y-3.5 text-xs bg-slate-50/70"></div>
@@ -4560,6 +4914,15 @@
                         : 'cust-chip-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-nutri-green text-white shadow-sm transition';
                 }
 
+                const navHome = document.getElementById('mobNav-home');
+                const navPromo = document.getElementById('mobNav-promo');
+                if (navHome && navPromo) {
+                    const isPromo = categoryName === 'Obral';
+                    navHome.classList.toggle('text-nutri-green', !isPromo);
+                    navHome.classList.toggle('text-slate-500', isPromo);
+                    navPromo.classList.toggle('text-nutri-green', isPromo);
+                    navPromo.classList.toggle('text-slate-500', !isPromo);
+                }
                 this.renderCustomerProducts();
                 if (shouldScroll) {
                     const targetEl = categoryName === 'Obral' ? document.getElementById('obralSection') : document.getElementById('regularCatalogSection');
@@ -4636,10 +4999,10 @@
                         const effStock = this.getEffectiveAvailableQty(product), priceUnit = this.formatCatalogPriceUnit(product.unit), origPrice = product.originalPrice || Math.round(product.price * 2), discPercent = product.discountPercent || (origPrice > product.price ? Math.round(((origPrice - product.price) / origPrice) * 100) : 50);
                         const inCart = this.state.customerCart.find(c => c.id === product.id);
                         const bottomActionHtml = inCart
-                            ? `<div class="flex items-center justify-between bg-red-50 border-2 border-red-500 rounded-2xl p-1"><button type="button" onclick="app.stepCustomerCardQty('${this.escapeHtml(product.id)}', -1)" class="w-7 h-7 rounded-xl bg-white text-red-600 font-black shadow-sm active:scale-90 transition flex items-center justify-center">−</button><button type="button" onclick="app.openCustomerItemModal('${this.escapeHtml(product.id)}')" class="flex-1 text-center text-[11px] font-black text-red-700 px-1 truncate">${this.formatStockDisplay(inCart.qty, product.unit)}</button><button type="button" onclick="app.stepCustomerCardQty('${this.escapeHtml(product.id)}', 1)" class="w-7 h-7 rounded-xl bg-red-600 text-white font-black shadow-sm active:scale-90 transition flex items-center justify-center">+</button></div>`
-                            : `<button type="button" onclick="app.openCustomerItemModal('${this.escapeHtml(product.id)}')" class="w-full bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 active:scale-[0.98] py-2 rounded-2xl text-xs font-extrabold flex justify-center items-center transition"><i class="fa-solid fa-plus mr-1.5 text-[10px]"></i> Tambah / Berat</button>`;
-                        const card = document.createElement('div'); card.className = 'modern-prod-card bg-white rounded-3xl shadow-sm overflow-hidden border border-red-200 flex flex-col justify-between h-full relative group';
-                        card.innerHTML = `<div class="cursor-pointer" onclick="app.openCustomerItemModal('${this.escapeHtml(product.id)}')"><div class="h-36 sm:h-40 bg-gray-100 relative overflow-hidden"><img src="${this.escapeHtml(product.img)}" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x300/ffebee/c62828?text=Buah+Obral'"><span class="absolute top-2.5 right-2.5 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-lg shadow">-${discPercent}%</span><span class="absolute bottom-2.5 left-2.5 bg-white/95 backdrop-blur-sm text-amber-800 px-2 py-0.5 rounded-lg text-[10px] font-extrabold shadow-sm">Sisa: ${this.formatStockDisplay(effStock, product.unit)}</span><button type="button" onclick="event.stopPropagation(); app.quickAddCustomerCart('${this.escapeHtml(product.id)}')" title="Tambah cepat ke keranjang" class="absolute bottom-2.5 right-2.5 w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 active:scale-90 text-white font-black shadow-md flex items-center justify-center transition"><i class="fa-solid fa-plus text-xs"></i></button></div><div class="p-3.5 pb-2"><h3 class="font-extrabold text-gray-900 text-xs md:text-sm line-clamp-2">${this.escapeHtml((product.name || '').replace('[OBRAL]', '').trim())}</h3><div class="mt-2"><span class="text-[11px] text-gray-400 line-through block">${this.formatCurrency(origPrice)}</span><span class="text-sm md:text-base font-black text-red-600">${this.formatCurrency(product.price)}</span><span class="text-[11px] text-gray-500">/${priceUnit}</span></div></div></div><div class="px-3.5 pb-3.5">${bottomActionHtml}</div>`;
+                            ? `<div class="flex items-center justify-between bg-red-50 border border-red-400 rounded-xl p-1"><button type="button" onclick="app.stepCustomerCardQty('${this.escapeHtml(product.id)}', -1)" class="w-7 h-7 rounded-lg bg-white text-red-600 font-bold shadow-sm active:scale-95 transition flex items-center justify-center">−</button><button type="button" onclick="app.openCustomerItemModal('${this.escapeHtml(product.id)}')" class="flex-1 text-center text-[11px] font-bold text-red-700 px-1 truncate nf-num">${this.formatStockDisplay(inCart.qty, product.unit)}</button><button type="button" onclick="app.stepCustomerCardQty('${this.escapeHtml(product.id)}', 1)" class="w-7 h-7 rounded-lg bg-red-600 text-white font-bold shadow-sm active:scale-95 transition flex items-center justify-center">+</button></div>`
+                            : `<button type="button" onclick="app.openCustomerItemModal('${this.escapeHtml(product.id)}')" class="w-full bg-red-50/80 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 active:scale-[0.98] py-2 rounded-xl text-xs font-bold flex justify-center items-center transition"><i class="fa-solid fa-plus mr-1.5 text-[10px]"></i> Tambah</button>`;
+                        const card = document.createElement('div'); card.className = 'modern-prod-card bg-white rounded-2xl overflow-hidden border border-red-200/80 flex flex-col justify-between h-full relative group';
+                        card.innerHTML = `<div class="cursor-pointer" onclick="app.openCustomerItemModal('${this.escapeHtml(product.id)}')"><div class="aspect-[4/3] bg-gray-100 relative overflow-hidden"><img src="${this.escapeHtml(product.img)}" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x300/ffebee/c62828?text=Buah+Obral'"><span class="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-sm nf-num">-${discPercent}%</span></div><div class="p-3 pb-2"><div class="flex items-center justify-between gap-1 text-[10px] text-amber-700 font-semibold"><span>Obral Segar</span><span class="nf-num">Sisa ${this.formatStockDisplay(effStock, product.unit)}</span></div><h3 class="font-bold text-gray-900 text-[13px] md:text-sm line-clamp-2 mt-0.5 leading-snug">${this.escapeHtml((product.name || '').replace('[OBRAL]', '').trim())}</h3><div class="mt-2 nf-num"><span class="text-[11px] text-gray-400 line-through block leading-none">${this.formatCurrency(origPrice)}</span><span class="text-sm md:text-[15px] font-extrabold text-red-600">${this.formatCurrency(product.price)}</span><span class="text-[11px] text-gray-500 font-medium">/${priceUnit}</span></div></div></div><div class="px-3 pb-3">${bottomActionHtml}</div>`;
                         obralGrid.appendChild(card);
                     });
                 } else obralSection.classList.add('hidden');
@@ -4659,11 +5022,12 @@
                     const effStock = this.getEffectiveAvailableQty(product), priceUnit = this.formatCatalogPriceUnit(product.unit);
                     const hasBundle = (Number(product.bundleQty) >= 2 && Number(product.bundlePrice) > 0);
                     const inCart = this.state.customerCart.find(c => c.id === product.id);
+                    const cleanCatLabel = String(product.category || 'Buah Segar').replace(/^[^\w\s]+\s*/u, '');
                     const bottomActionHtml = inCart
-                        ? `<div class="flex items-center justify-between bg-nutri-light border-2 border-nutri-green rounded-2xl p-1"><button type="button" onclick="app.stepCustomerCardQty('${this.escapeHtml(product.id)}', -1)" class="w-7 h-7 rounded-xl bg-white text-nutri-dark font-black shadow-sm active:scale-90 transition flex items-center justify-center">−</button><button type="button" onclick="app.openCustomerItemModal('${this.escapeHtml(product.id)}')" class="flex-1 text-center text-[11px] font-black text-nutri-dark px-1 truncate">${this.formatStockDisplay(inCart.qty, product.unit)}</button><button type="button" onclick="app.stepCustomerCardQty('${this.escapeHtml(product.id)}', 1)" class="w-7 h-7 rounded-xl bg-nutri-green text-white font-black shadow-sm active:scale-90 transition flex items-center justify-center">+</button></div>`
-                        : `<button type="button" onclick="app.openCustomerItemModal('${this.escapeHtml(product.id)}')" class="w-full bg-[#f4f9f1] hover:bg-nutri-green text-nutri-dark hover:text-white border border-green-200 hover:border-nutri-green active:scale-[0.98] py-2 rounded-2xl text-xs font-extrabold flex justify-center items-center transition"><i class="fa-solid fa-plus mr-1.5 text-[10px]"></i> Tambah / Berat</button>`;
-                    const div = document.createElement('div'); div.className = `modern-prod-card bg-white rounded-3xl shadow-sm overflow-hidden border ${inCart ? 'border-nutri-green ring-1 ring-nutri-green/30' : 'border-gray-200/80'} flex flex-col justify-between h-full group`;
-                    div.innerHTML = `<div class="cursor-pointer" onclick="app.openCustomerItemModal('${this.escapeHtml(product.id)}')"><div class="h-36 sm:h-40 bg-gray-100 relative overflow-hidden"><img src="${this.escapeHtml(product.img)}" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x300/e2e8f0/64748b?text=Buah+Segar'">${hasBundle ? `<span class="absolute top-2.5 left-2.5 bg-rose-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-black shadow">Beli ${product.bundleQty} ${this.formatDisplayUnit(product.unit)} ${this.formatCurrency(product.bundlePrice)}</span>` : ''}<span class="absolute bottom-2.5 left-2.5 bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded-lg text-[10px] font-bold text-gray-700 shadow-sm">Stok: ${this.formatStockDisplay(effStock, product.unit)}</span><button type="button" onclick="event.stopPropagation(); app.quickAddCustomerCart('${this.escapeHtml(product.id)}')" title="Tambah cepat ke keranjang" class="absolute bottom-2.5 right-2.5 w-8 h-8 rounded-full bg-nutri-green hover:bg-nutri-dark active:scale-90 text-white font-black shadow-md flex items-center justify-center transition"><i class="fa-solid fa-plus text-xs"></i></button></div><div class="p-3.5 pb-2"><span class="text-[10px] font-bold text-nutri-green uppercase tracking-wide">${this.escapeHtml(product.category || 'Buah Segar')}</span><h3 class="font-extrabold text-gray-800 text-xs md:text-sm line-clamp-2 mt-0.5">${this.escapeHtml(product.name)}</h3><div class="mt-2"><span class="text-nutri-brown font-black text-sm md:text-base">${this.formatCurrency(product.price)}</span><span class="text-[11px] text-gray-500">/${priceUnit}</span></div></div></div><div class="px-3.5 pb-3.5">${bottomActionHtml}</div>`;
+                        ? `<div class="flex items-center justify-between bg-nutri-light border border-nutri-green rounded-xl p-1"><button type="button" onclick="app.stepCustomerCardQty('${this.escapeHtml(product.id)}', -1)" class="w-7 h-7 rounded-lg bg-white text-nutri-dark font-bold shadow-sm active:scale-95 transition flex items-center justify-center">−</button><button type="button" onclick="app.openCustomerItemModal('${this.escapeHtml(product.id)}')" class="flex-1 text-center text-[11px] font-bold text-nutri-dark px-1 truncate nf-num">${this.formatStockDisplay(inCart.qty, product.unit)}</button><button type="button" onclick="app.stepCustomerCardQty('${this.escapeHtml(product.id)}', 1)" class="w-7 h-7 rounded-lg bg-nutri-green text-white font-bold shadow-sm active:scale-95 transition flex items-center justify-center">+</button></div>`
+                        : `<button type="button" onclick="app.openCustomerItemModal('${this.escapeHtml(product.id)}')" class="w-full bg-[#f4f9f1] hover:bg-nutri-green text-nutri-dark hover:text-white border border-green-200/90 hover:border-nutri-green active:scale-[0.98] py-2 rounded-xl text-xs font-bold flex justify-center items-center transition"><i class="fa-solid fa-plus mr-1.5 text-[10px]"></i> Tambah</button>`;
+                    const div = document.createElement('div'); div.className = `modern-prod-card bg-white rounded-2xl overflow-hidden border ${inCart ? 'border-nutri-green ring-1 ring-nutri-green/25' : 'border-gray-200/80'} flex flex-col justify-between h-full group`;
+                    div.innerHTML = `<div class="cursor-pointer" onclick="app.openCustomerItemModal('${this.escapeHtml(product.id)}')"><div class="aspect-[4/3] bg-gray-100 relative overflow-hidden"><img src="${this.escapeHtml(product.img)}" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x300/e2e8f0/64748b?text=Buah+Segar'">${hasBundle ? `<span class="absolute top-2 left-2 bg-rose-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-sm nf-num">Paket ${product.bundleQty} ${this.formatDisplayUnit(product.unit)} • ${this.formatCurrency(product.bundlePrice)}</span>` : ''}</div><div class="p-3 pb-2"><div class="flex items-center justify-between gap-1 text-[10px]"><span class="font-semibold text-nutri-dark uppercase tracking-wide truncate">${this.escapeHtml(cleanCatLabel)}</span><span class="text-gray-400 font-medium flex-shrink-0 nf-num">${this.formatStockDisplay(effStock, product.unit)}</span></div><h3 class="font-bold text-gray-900 text-[13px] md:text-sm line-clamp-2 mt-0.5 leading-snug">${this.escapeHtml(product.name)}</h3><div class="mt-2 nf-num"><span class="text-nutri-brown font-extrabold text-sm md:text-[15px]">${this.formatCurrency(product.price)}</span><span class="text-[11px] text-gray-500 font-medium">/${priceUnit}</span></div></div></div><div class="px-3 pb-3">${bottomActionHtml}</div>`;
                     regularGrid.appendChild(div);
                 });
             },
@@ -4816,7 +5180,13 @@
                     const sub = this.calculateLineAmount(item, item.qty); tot += sub;
                     c.innerHTML += `<div class="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm space-y-2 text-xs"><div class="flex justify-between items-start gap-2"><div class="min-w-0"><strong class="text-gray-900 block truncate">${this.escapeHtml(item.name)}</strong><span class="text-[11px] text-gray-500">${this.formatStockDisplay(item.qty, item.unit)} × ${this.formatCurrency(item.price)}/${this.formatCatalogPriceUnit(item.unit)}</span>${item.unit === 'Gram' && item.weightPref ? `<span class="block text-[10px] text-gray-400">Timbangan: ${this.escapeHtml(item.weightPref)}</span>` : ''}${item.itemNote ? `<span class="block text-[10px] text-amber-700 italic">*${this.escapeHtml(item.itemNote)}</span>` : ''}</div><span class="font-black text-nutri-brown text-sm flex-shrink-0">${this.formatCurrency(sub)}</span></div><div class="flex items-center justify-between pt-1.5 border-t border-gray-100"><div class="flex items-center space-x-1.5"><button type="button" onclick="app.stepCustomerCartItemQty('${this.escapeHtml(item.id)}', -1)" class="w-7 h-7 rounded-lg bg-gray-100 hover:bg-red-50 font-black border">-</button><span class="px-2 py-1 rounded-lg bg-nutri-light text-nutri-dark font-extrabold text-[11px] border border-green-200 min-w-[60px] text-center">${this.formatStockDisplay(item.qty, item.unit)}</span><button type="button" onclick="app.stepCustomerCartItemQty('${this.escapeHtml(item.id)}', 1)" class="w-7 h-7 rounded-lg bg-gray-100 hover:bg-green-50 font-black border">+</button></div><div class="flex items-center space-x-1.5"><button type="button" onclick="app.editCustomerCartItem('${this.escapeHtml(item.id)}')" class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px]"><i class="fa-solid fa-pen mr-1"></i>Ubah</button><button type="button" onclick="app.removeCustomerCartItem('${this.escapeHtml(item.id)}')" class="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold text-[11px]" title="Hapus"><i class="fa-solid fa-trash-can"></i></button></div></div></div>`;
                 });
-                if (this.state.customerCart.length === 0) c.innerHTML = '<div class="text-center text-gray-400 py-8 text-xs">Keranjang belanja kosong.</div>';
+                const chkPane = document.getElementById('customerCartCheckoutPane');
+                if (this.state.customerCart.length === 0) {
+                    c.innerHTML = '<div class="py-10 px-4 text-center flex flex-col items-center justify-center space-y-3"><div class="w-16 h-16 rounded-2xl bg-green-50 border border-green-100 text-nutri-green flex items-center justify-center text-2xl"><i class="fa-solid fa-basket-shopping"></i></div><div class="space-y-1"><p class="text-sm font-bold text-gray-900">Keranjang belanja masih kosong</p><p class="text-xs text-gray-500 max-w-xs mx-auto leading-relaxed">Tambahkan buah segar, jus dingin, atau parsel pilihan Anda untuk mulai memesan.</p></div><button type="button" onclick="document.getElementById(\'customerCartModal\').classList.add(\'hidden\')" class="mt-1 px-5 py-2.5 rounded-xl bg-nutri-green hover:bg-nutri-dark text-white font-bold text-xs shadow-sm transition">Mulai Belanja</button></div>';
+                    if (chkPane) chkPane.classList.add('hidden');
+                } else {
+                    if (chkPane) chkPane.classList.remove('hidden');
+                }
                 const vBox = document.getElementById('custCartVoucherBox');
                 const vch = this.state.selectedCartVoucher;
                 if (vBox) {
@@ -5194,8 +5564,8 @@
                 this.state.myOrdersTab = tab === 'done' ? 'done' : 'active';
                 const bAct = document.getElementById('custOrdTab-active');
                 const bDone = document.getElementById('custOrdTab-done');
-                if (bAct) bAct.className = this.state.myOrdersTab === 'active' ? 'py-2 rounded-full font-extrabold bg-nutri-green text-white shadow-sm transition' : 'py-2 rounded-full font-bold bg-gray-200 text-gray-700 transition';
-                if (bDone) bDone.className = this.state.myOrdersTab === 'done' ? 'py-2 rounded-full font-extrabold bg-nutri-green text-white shadow-sm transition' : 'py-2 rounded-full font-bold bg-gray-200 text-gray-700 transition';
+                if (bAct) bAct.className = this.state.myOrdersTab === 'active' ? 'py-2 rounded-lg font-bold bg-white text-nutri-dark shadow-sm transition' : 'py-2 rounded-lg font-semibold text-gray-500 transition';
+                if (bDone) bDone.className = this.state.myOrdersTab === 'done' ? 'py-2 rounded-lg font-bold bg-white text-nutri-dark shadow-sm transition' : 'py-2 rounded-lg font-semibold text-gray-500 transition';
                 this.renderCustomerOrdersModalBody();
             },
             isCodOrder(ord) {
@@ -5552,41 +5922,41 @@
                         const isExpanded = !!(this.state.expandedHistoryOrders && this.state.expandedHistoryOrders[ord.id]);
                         const summaryNames = items.slice(0, 2).map(it => it.name).join(', ') + (items.length > 2 ? ` +${items.length - 2} lainnya` : '');
                         const isPoHist = !!(ord.isParcelOrder || String(ord.id || '').startsWith('PO-'));
-                        const badgeHistTxt = isVoidedOrd ? '❌ VOID / Dibatalkan' : (isCancelled ? '❌ Dibatalkan' : ord.orderStatus);
+                        const badgeHistTxt = isVoidedOrd ? 'Dibatalkan' : (isCancelled ? 'Dibatalkan' : ord.orderStatus);
+                        const reorderBtnCls = isCancelled
+                            ? 'px-3 py-1.5 rounded-xl bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 font-semibold text-[11px] transition flex items-center gap-1.5'
+                            : 'px-3 py-1.5 rounded-xl bg-nutri-green hover:bg-nutri-dark text-white font-bold text-[11px] shadow-sm transition flex items-center gap-1.5';
                         return `
-                        <div class="bg-white rounded-2xl border ${isCancelled ? 'border-red-300 bg-red-50/30' : 'border-gray-200'} p-3 shadow-sm space-y-2">
-                            <div class="flex items-start justify-between gap-2 cursor-pointer" onclick="app.toggleHistoryOrderDetail('${this.escapeHtml(ord.id)}')">
-                                <div class="min-w-0">
+                        <div class="bg-white rounded-2xl border ${isCancelled ? 'border-gray-200' : 'border-gray-200'} p-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.03)] space-y-2.5">
+                            <div class="flex items-start justify-between gap-2.5 cursor-pointer" onclick="app.toggleHistoryOrderDetail('${this.escapeHtml(ord.id)}')">
+                                <div class="min-w-0 flex-1">
                                     <div class="flex items-center gap-1.5 flex-wrap">
-                                        ${isPoHist ? '<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[9px] font-black">🎁 PO</span>' : ''}
-                                        <span class="font-mono font-black text-[10.5px] bg-slate-100 text-slate-800 px-2 py-0.5 rounded-full">${this.escapeHtml(ord.orderCode || ord.id)}</span>
-                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-black ${isCancelled ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-nutri-dark'}">${this.escapeHtml(badgeHistTxt)}</span>
+                                        ${isPoHist ? '<span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200/80 text-[10px] font-bold">PO Parsel</span>' : ''}
+                                        <span class="font-mono font-semibold text-[10.5px] text-slate-600">${this.escapeHtml(ord.orderCode || ord.id)}</span>
+                                        <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold ${isCancelled ? 'bg-red-50 text-red-600 border border-red-200/70' : 'bg-emerald-50 text-emerald-700 border border-emerald-200/70'}">${this.escapeHtml(badgeHistTxt)}</span>
                                     </div>
-                                    <div class="text-[11px] font-bold text-gray-800 truncate mt-1">${this.escapeHtml(summaryNames || 'Pesanan Buah')}</div>
-                                    <div class="text-[10px] text-gray-400">${dtShort} • ${items.length} item • ${this.escapeHtml(ord.deliveryMode || 'Kirim')}${ord.voidReason ? ' • <span class="text-red-600 font-bold">Alasan: ' + this.escapeHtml(ord.voidReason) + '</span>' : ''}</div>
+                                    <div class="text-xs font-bold text-gray-900 truncate mt-1.5">${this.escapeHtml(summaryNames || 'Pesanan Buah')}</div>
+                                    <div class="text-[11px] text-gray-500 mt-0.5">${dtShort} • ${items.length} item • ${this.escapeHtml(ord.deliveryMode || 'Kirim')}${ord.voidReason ? ' • <span class="text-red-600 font-medium">Alasan: ' + this.escapeHtml(ord.voidReason) + '</span>' : ''}</div>
                                 </div>
                                 <div class="text-right flex-shrink-0">
-                                    <div class="font-black text-sm ${isCancelled ? 'text-red-500 line-through' : 'text-nutri-brown'}">${this.formatCurrency(grandTotal)}</div>
-                                    <span class="text-[10px] font-extrabold text-blue-600 inline-flex items-center gap-0.5 mt-0.5">${isExpanded ? 'Tutup ▴' : 'Detail ▾'}</span>
+                                    <div class="font-bold text-[13.5px] nf-num ${isCancelled ? 'text-gray-400 line-through' : 'text-gray-900'}">${this.formatCurrency(grandTotal)}</div>
+                                    <span class="text-[11px] font-semibold text-nutri-dark inline-flex items-center gap-1 mt-1">${isExpanded ? 'Tutup <i class="fa-solid fa-chevron-up text-[9px]"></i>' : 'Detail <i class="fa-solid fa-chevron-down text-[9px]"></i>'}</span>
                                 </div>
                             </div>
 
                             ${isExpanded ? `
-                            <div class="pt-2 border-t border-gray-100 space-y-2">
-                                <div class="bg-gray-50 border border-gray-100 rounded-xl p-2 space-y-1 text-[11px]">
-                                    ${items.map(it => `<div class="flex justify-between gap-2"><span class="text-gray-700 truncate">${this.formatStockDisplay(it.qty, it.unit)} × ${this.escapeHtml(it.name)}</span><span class="font-bold text-gray-900 flex-shrink-0">${this.formatCurrency(it.subtotal || this.calculateLineAmount(it, it.qty))}</span></div>`).join('')}
-                                    <div class="flex justify-between pt-1 border-t border-gray-200/80 text-[10.5px] text-gray-500"><span>Ongkos Kirim</span><span class="font-bold">${shipFee === 0 ? 'Gratis (Rp 0)' : this.formatCurrency(shipFee)}</span></div>
+                            <div class="pt-2.5 border-t border-gray-100 space-y-2">
+                                <div class="bg-slate-50 border border-slate-200/70 rounded-xl p-2.5 space-y-1.5 text-[11px]">
+                                    ${items.map(it => `<div class="flex justify-between gap-2"><span class="text-gray-700 truncate">${this.formatStockDisplay(it.qty, it.unit)} × ${this.escapeHtml(it.name)}</span><span class="font-semibold text-gray-900 flex-shrink-0 nf-num">${this.formatCurrency(it.subtotal || this.calculateLineAmount(it, it.qty))}</span></div>`).join('')}
+                                    <div class="flex justify-between pt-1.5 border-t border-slate-200/80 text-[11px] text-gray-500"><span>Ongkos Kirim</span><span class="font-semibold nf-num">${shipFee === 0 ? 'Gratis' : this.formatCurrency(shipFee)}</span></div>
                                 </div>
-                                ${ord.courierName ? `<div class="bg-indigo-50 border border-indigo-200 rounded-xl px-2.5 py-1.5 text-[10.5px] text-indigo-900 flex justify-between"><span>🛵 Kurir: <strong>${this.escapeHtml(ord.courierName)}</strong></span>${ord.deliveryProofUrl ? `<a href="${this.escapeHtml(ord.deliveryProofUrl)}" target="_blank" rel="noopener" class="font-extrabold underline">Bukti Antar</a>` : ''}</div>` : ''}
+                                ${ord.courierName ? `<div class="bg-blue-50/70 border border-blue-200/80 rounded-xl px-2.5 py-1.5 text-[11px] text-blue-900 flex justify-between"><span><i class="fa-solid fa-motorcycle mr-1"></i>Kurir: <strong>${this.escapeHtml(ord.courierName)}</strong></span>${ord.deliveryProofUrl ? `<a href="${this.escapeHtml(ord.deliveryProofUrl)}" target="_blank" rel="noopener" class="font-bold underline">Bukti Antar</a>` : ''}</div>` : ''}
                                 ${chatArr.length > 0 ? `<div class="bg-slate-50 border border-slate-200 rounded-xl p-2 space-y-1 max-h-32 overflow-y-auto">${this.formatCustChatMessagesHtml(ord)}</div>` : ''}
                             </div>` : ''}
 
-                            <div class="flex items-center justify-between gap-1.5 pt-2 border-t border-gray-100">
-                                <div class="flex items-center gap-1.5">
-                                    <button type="button" onclick="app.reorderCustomerOrder('${this.escapeHtml(ord.id)}')" class="px-3 py-1.5 rounded-full bg-nutri-green hover:bg-nutri-dark text-white font-extrabold text-[11px] shadow-sm transition flex items-center gap-1"><i class="fa-solid fa-rotate-right"></i> <span>Pesan Ulang</span></button>
-                                    <button type="button" onclick="app.openPublicReceiptModal('${this.escapeHtml(ord.linkedTxId || ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="px-2.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[11px] transition"><i class="fa-solid fa-file-invoice mr-1"></i> Resi</button>
-                                </div>
-                                <button type="button" onclick="app.toggleHistoryOrderDetail('${this.escapeHtml(ord.id)}')" class="px-2.5 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-[10.5px] transition">${isExpanded ? 'Kecilkan ▴' : 'Rincian ▾'}</button>
+                            <div class="flex items-center justify-between gap-2 pt-2 border-t border-gray-100">
+                                <button type="button" onclick="app.openPublicReceiptModal('${this.escapeHtml(ord.linkedTxId || ord.id)}','${this.escapeHtml(ord.receiptToken || '')}')" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] transition flex items-center gap-1.5"><i class="fa-regular fa-file-lines"></i> <span>Lihat Resi</span></button>
+                                <button type="button" onclick="app.reorderCustomerOrder('${this.escapeHtml(ord.id)}')" class="${reorderBtnCls}"><i class="fa-solid fa-rotate-right text-[10px]"></i> <span>Pesan Ulang</span></button>
                             </div>
                         </div>`;
                     }
@@ -7571,7 +7941,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v152.3';
+        window.__NF_APP_VERSION = 'v153.0';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 
@@ -7701,7 +8071,7 @@ Voucher "${res.voucherTitle}" (Kode: ${res.voucherCode}) sudah aktif di tab Vouc
                 container: '#customerView nav',
                 itemSelector: 'button',
                 radius: '9999px',
-                preferClicked: true,
+                preferClicked: false,
                 isActive: function(el) { return el.classList.contains('text-nutri-green'); }
             },
             {
