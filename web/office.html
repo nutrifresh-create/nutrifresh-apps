@@ -622,6 +622,73 @@
 
     </style>
     <link rel="stylesheet" href="nutri-theme.css">
+    <style id="nfCleanSplashV1531">
+        @keyframes nfCleanSpin { to { transform: rotate(360deg); } }
+        html body #officeSplashLoader,
+        html[data-theme="natural"] body #officeSplashLoader,
+        html[data-theme="glass"] body #officeSplashLoader,
+        html[data-theme="dark"] body #officeSplashLoader {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 99999 !important;
+            background: #0b1120 !important;
+            background-image: none !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 24px !important;
+        }
+        html body #officeSplashLoader > div,
+        html[data-theme="natural"] body #officeSplashLoader > div,
+        html[data-theme="glass"] body #officeSplashLoader > div,
+        html[data-theme="dark"] body #officeSplashLoader > div {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            animation: none !important;
+            max-width: none !important;
+        }
+        .nf-splash-logo-wrap-dark {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.96);
+            padding: 12px 22px;
+            border-radius: 20px;
+        }
+        .nf-splash-bottom {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: max(36px, env(safe-area-inset-bottom));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .nf-splash-ring-dark {
+            width: 18px;
+            height: 18px;
+            border-radius: 9999px;
+            border: 2px solid #1e293b;
+            border-top-color: #a3e635;
+            animation: nfCleanSpin 0.72s linear infinite;
+        }
+        .nf-splash-caption-dark {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+    </style>
 </head>
 <body class="nf-office-page text-slate-100 min-h-screen flex flex-col bg-[#0b1120] overflow-x-hidden">
     
@@ -635,16 +702,13 @@
 
 
     <!-- SPLASH LOADER DARK (MATCHING STORE SMOOTH TIMING) -->
-    <div id="officeSplashLoader" aria-live="polite" style="position:fixed; inset:0; width:100vw; height:100vh; z-index:99999; background:linear-gradient(160deg, #0b1120 0%, #0f172a 55%, #091318 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; opacity:1; transition:opacity 0.45s ease, transform 0.45s ease;">
-        <div style="background:#111827; border:1px solid rgba(124,179,66,0.35); border-radius:28px; padding:28px 32px; box-shadow:0 22px 45px -12px rgba(0,0,0,0.65); display:flex; flex-direction:column; align-items:center; max-width:300px; width:100%; text-align:center;">
-            <div style="width:74px; height:74px; border-radius:22px; background:#0f172a; border:1px solid rgba(124,179,66,0.4); display:flex; align-items:center; justify-content:center; margin-bottom:14px; overflow:hidden; padding:8px;">
-                <img src="logo.png" alt="NutriFresh Office" style="width:100%; height:100%; object-fit:contain;" onerror="this.onerror=null; this.src='icon.png';">
-            </div>
-            <div style="font-size:20px; font-weight:900; color:#a3e635; letter-spacing:-0.02em;">NutriFresh Office</div>
-            <div id="officeSplashSubtext" style="font-size:12px; font-weight:600; color:#94a3b8; margin-top:4px;">Menyiapkan portal sesuai hak akses Anda...</div>
-            <div style="width:100%; height:5px; background:#1e293b; border-radius:999px; overflow:hidden; margin-top:16px;">
-                <div style="width:65%; height:100%; background:linear-gradient(90deg, #7cb342, #558b2f); border-radius:999px; animation:officeBarMove 1.15s ease-in-out infinite;"></div>
-            </div>
+    <div id="officeSplashLoader" aria-live="polite">
+        <div class="nf-splash-logo-wrap-dark">
+            <img src="logo.png" alt="NutriFresh Office" style="height:64px; width:auto; object-fit:contain; display:block;" onerror="this.onerror=null; this.src='icon.png';">
+        </div>
+        <div class="nf-splash-bottom">
+            <div class="nf-splash-ring-dark" aria-hidden="true"></div>
+            <span id="officeSplashSubtext" class="nf-splash-caption-dark">NutriFresh Office</span>
         </div>
     </div>
 
@@ -4695,7 +4759,7 @@ Catat juga sebagai Kas Masuk (Pengembalian Pinjaman) di Buku Kas Perusahaan?`);
     </div>
 
     <script>
-        window.__NF_APP_VERSION = 'v152.3';
+        window.__NF_APP_VERSION = 'v153.1';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
 
