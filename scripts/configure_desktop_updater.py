@@ -23,14 +23,49 @@ async fn check_desktop_update(manifest_url: String) -> Result<String, String> {
     }
 
     tauri::async_runtime::spawn_blocking(move || {
+        let ts = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let sep = if url.contains('?') { '&' } else { '?' };
+        let req_url = format!("{}{}t={}", url, sep, ts);
+
+        // 1. Utama: Native curl.exe bawaan Windows 10/11 (cepat, bebas bug PowerShell byte[] pada application/octet-stream)
+        let mut curl_cmd = std::process::Command::new("curl.exe");
+        curl_cmd.args([
+            "-fsSL",
+            "--max-time",
+            "18",
+            "-A",
+            "NutriFresh-Desktop-Updater/1.1",
+            &req_url,
+        ]);
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            curl_cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        }
+        if let Ok(out) = curl_cmd.output() {
+            if out.status.success() {
+                let body = String::from_utf8_lossy(&out.stdout)
+                    .trim_start_matches('\u{feff}')
+                    .trim()
+                    .to_string();
+                if body.starts_with('{') {
+                    return Ok(body);
+                }
+            }
+        }
+
+        // 2. Fallback: PowerShell WebClient UTF-8 (selalu mengembalikan String UTF-8 meski Content-Type = application/octet-stream)
         let ps_script = concat!(
-            "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; ",
+            "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor 12288; ",
             "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; ",
-            "$u = $env:NF_UPD_URL; ",
-            "$sep = if ($u -match '\\?') { '&' } else { '?' }; ",
-            "$r = Invoke-WebRequest -UseBasicParsing -Uri ($u + $sep + 't=' + [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()) ",
-            "-TimeoutSec 18 -Headers @{'User-Agent'='NutriFresh-Desktop-Updater/1.0'}; ",
-            "Write-Output $r.Content"
+            "$wc = New-Object System.Net.WebClient; ",
+            "$wc.Encoding = [System.Text.Encoding]::UTF8; ",
+            "$wc.Headers.Add('User-Agent', 'NutriFresh-Desktop-Updater/1.1'); ",
+            "$txt = $wc.DownloadString($env:NF_UPD_URL); ",
+            "[Console]::Write($txt)"
         );
 
         let mut cmd = std::process::Command::new("powershell.exe");
@@ -44,7 +79,7 @@ async fn check_desktop_update(manifest_url: String) -> Result<String, String> {
             "-Command",
             ps_script,
         ]);
-        cmd.env("NF_UPD_URL", &url);
+        cmd.env("NF_UPD_URL", &req_url);
         #[cfg(target_os = "windows")]
         {
             use std::os::windows::process::CommandExt;
@@ -64,7 +99,10 @@ async fn check_desktop_update(manifest_url: String) -> Result<String, String> {
             });
         }
 
-        let body = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        let body = String::from_utf8_lossy(&out.stdout)
+            .trim_start_matches('\u{feff}')
+            .trim()
+            .to_string();
         if body.is_empty() || !body.starts_with('{') {
             return Err("Format manifest update tidak valid.".to_string());
         }
@@ -101,46 +139,71 @@ async fn download_and_install_desktop_update(
     let staged_str = staged_exe.to_string_lossy().to_string();
     let target_str = current_exe.to_string_lossy().to_string();
 
-    // 1. Unduh file .exe terbaru secara diam-diam di background thread
+    // 1. Unduh file .exe terbaru secara diam-diam di background thread (curl.exe utama + PowerShell WebClient fallback)
     let dl_url = url.clone();
     let dl_out = staged_str.clone();
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
-        let ps_dl = concat!(
-            "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; ",
-            "$ProgressPreference = 'SilentlyContinue'; ",
-            "Invoke-WebRequest -UseBasicParsing -Uri $env:NF_EXE_URL -OutFile $env:NF_EXE_OUT ",
-            "-TimeoutSec 240 -Headers @{'User-Agent'='NutriFresh-Desktop-Updater/1.0'}"
-        );
-        let mut cmd = std::process::Command::new("powershell.exe");
-        cmd.args([
-            "-NoProfile",
-            "-NonInteractive",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-WindowStyle",
-            "Hidden",
-            "-Command",
-            ps_dl,
+        let mut downloaded_ok = false;
+        let mut curl_dl = std::process::Command::new("curl.exe");
+        curl_dl.args([
+            "-fsSL",
+            "--max-time",
+            "240",
+            "-A",
+            "NutriFresh-Desktop-Updater/1.1",
+            "-o",
+            &dl_out,
+            &dl_url,
         ]);
-        cmd.env("NF_EXE_URL", &dl_url);
-        cmd.env("NF_EXE_OUT", &dl_out);
         #[cfg(target_os = "windows")]
         {
             use std::os::windows::process::CommandExt;
-            cmd.creation_flags(0x08000000);
+            curl_dl.creation_flags(0x08000000);
+        }
+        if let Ok(out) = curl_dl.output() {
+            if out.status.success() {
+                downloaded_ok = true;
+            }
         }
 
-        let out = cmd
-            .output()
-            .map_err(|e| format!("Gagal mengunduh file update: {}", e))?;
-        if !out.status.success() {
-            let err_txt = String::from_utf8_lossy(&out.stderr).trim().to_string();
-            let _ = std::fs::remove_file(&dl_out);
-            return Err(if err_txt.is_empty() {
-                "Unduhan file .exe gagal. Cek koneksi internet.".to_string()
-            } else {
-                err_txt.chars().take(220).collect()
-            });
+        if !downloaded_ok {
+            let ps_dl = concat!(
+                "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor 12288; ",
+                "$wc = New-Object System.Net.WebClient; ",
+                "$wc.Headers.Add('User-Agent', 'NutriFresh-Desktop-Updater/1.1'); ",
+                "$wc.DownloadFile($env:NF_EXE_URL, $env:NF_EXE_OUT)"
+            );
+            let mut cmd = std::process::Command::new("powershell.exe");
+            cmd.args([
+                "-NoProfile",
+                "-NonInteractive",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-WindowStyle",
+                "Hidden",
+                "-Command",
+                ps_dl,
+            ]);
+            cmd.env("NF_EXE_URL", &dl_url);
+            cmd.env("NF_EXE_OUT", &dl_out);
+            #[cfg(target_os = "windows")]
+            {
+                use std::os::windows::process::CommandExt;
+                cmd.creation_flags(0x08000000);
+            }
+
+            let out = cmd
+                .output()
+                .map_err(|e| format!("Gagal mengunduh file update: {}", e))?;
+            if !out.status.success() {
+                let err_txt = String::from_utf8_lossy(&out.stderr).trim().to_string();
+                let _ = std::fs::remove_file(&dl_out);
+                return Err(if err_txt.is_empty() {
+                    "Unduhan file .exe gagal. Cek koneksi internet.".to_string()
+                } else {
+                    err_txt.chars().take(220).collect()
+                });
+            }
         }
 
         // Validasi file PE Windows ("MZ") & ukuran minimal 500 KB
@@ -358,7 +421,7 @@ def main():
     manifest_out_arg = sys.argv[4].strip() if len(sys.argv) >= 5 else ""
 
     run_num = int(os.environ.get("GITHUB_RUN_NUMBER", "1") or "1")
-    sw_major, sw_minor = 153, 5
+    sw_major, sw_minor = 153, 7
     for sw_cand in (Path("web/sw.js"), Path(__file__).resolve().parent.parent / "web" / "sw.js"):
         if sw_cand.exists():
             m_sw = re.search(r"SW_VERSION\s*=\s*['\"]v?(\d+)(?:\.(\d+))?", sw_cand.read_text(encoding="utf-8"))

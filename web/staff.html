@@ -469,7 +469,8 @@
                 <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs">
                     <button type="button" id="courFilt-active" onclick="staffApp.setCourierFilter('active')" class="px-3.5 py-1.5 rounded-full font-extrabold bg-teal-700 text-white shadow-sm whitespace-nowrap">Antaran Aktif</button>
                     <button type="button" id="courFilt-cod" onclick="staffApp.setCourierFilter('cod')" class="px-3.5 py-1.5 rounded-full font-bold bg-white border border-gray-200 text-gray-700 whitespace-nowrap">Tunggu Setor COD</button>
-                    <button type="button" id="courFilt-done" onclick="staffApp.setCourierFilter('done')" class="px-3.5 py-1.5 rounded-full font-bold bg-white border border-gray-200 text-gray-700 whitespace-nowrap">Selesai</button>
+                    <button type="button" id="courFilt-done" onclick="staffApp.setCourierFilter('done')" class="px-3.5 py-1.5 rounded-full font-bold bg-white border border-gray-200 text-gray-700 whitespace-nowrap">Selesai &amp; Batal</button>
+                    <button type="button" id="courFilt-cancelled" onclick="staffApp.setCourierFilter('cancelled')" class="px-3.5 py-1.5 rounded-full font-bold bg-white border border-red-200 text-red-700 whitespace-nowrap inline-flex items-center gap-1.5"><span>Batal / VOID</span><span id="courCancelledCountBadge" class="hidden px-1.5 py-0.5 rounded-full bg-red-600 text-white text-[9.5px] font-black leading-none">0</span></button>
                 </div>
 
                 <div id="courierOrdersList" class="space-y-3 text-xs"></div>
@@ -776,6 +777,7 @@
                 leaveQuotas: [],
                 dzikirLogs: [],
                 onlineOrders: [],
+                transactions: [],
                 courierFilter: 'active',
                 courierProofOrderId: '',
                 courierProofDataByOrder: {},
@@ -942,7 +944,7 @@
                     this.renderIdentity();
                 }
 
-                const [attS, reqS, payS, annS, schS, loanS, qtaS, ordS, dzkS] = await Promise.all([
+                const [attS, reqS, payS, annS, schS, loanS, qtaS, ordS, dzkS, txS] = await Promise.all([
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'attendance'), orderBy('clockInTime', 'desc'), limit(250))), null),
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'office_hr_requests'), orderBy('date', 'desc'), limit(200))), null),
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'office_payroll'), limit(300))), null),
@@ -950,8 +952,9 @@
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_schedules'), orderBy('schedDate', 'desc'), limit(200))), null),
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_loans'), limit(100))), null),
                     safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_leave_quotas'), limit(100))), null),
-                    safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'online_orders'), orderBy('createdAt', 'desc'), limit(100))), null),
-                    safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_dzikir'), limit(200))), null)
+                    safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'online_orders'), orderBy('createdAt', 'desc'), limit(120))), null),
+                    safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'hr_dzikir'), limit(200))), null),
+                    safeGet(() => getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'transactions'), orderBy('date', 'desc'), limit(150))), null)
                 ]);
 
                 if (attS) this.state.attendance = attS.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -963,6 +966,7 @@
                 if (qtaS) this.state.leaveQuotas = qtaS.docs.map(d => ({ id: d.id, ...d.data() }));
                 if (ordS) this.state.onlineOrders = ordS.docs.map(d => ({ id: d.id, ...d.data() }));
                 if (dzkS) this.state.dzikirLogs = dzkS.docs.map(d => ({ id: d.id, ...d.data() }));
+                if (txS) this.state.transactions = txS.docs.map(d => ({ id: d.id, ...d.data() }));
 
                 this.renderAll();
             },
@@ -1040,6 +1044,13 @@
                             }
                         });
                     }
+                    const actEl = document.activeElement;
+                    if (!(actEl && actEl.id && actEl.id.startsWith('courChatInp-'))) {
+                        this.renderCourierOrders();
+                    }
+                });
+                safeSnap(query(collection(db, 'artifacts', appId, 'public', 'data', 'transactions'), orderBy('date', 'desc'), limit(150)), (s) => {
+                    this.state.transactions = s.docs.map(d => ({ id: d.id, ...d.data() }));
                     const actEl = document.activeElement;
                     if (!(actEl && actEl.id && actEl.id.startsWith('courChatInp-'))) {
                         this.renderCourierOrders();
@@ -1566,14 +1577,42 @@
             // =================================================================
             setCourierFilter(mode) {
                 this.state.courierFilter = mode || 'active';
-                ['active', 'cod', 'done'].forEach(k => {
+                ['active', 'cod', 'done', 'cancelled'].forEach(k => {
                     const b = document.getElementById(`courFilt-${k}`);
                     if (!b) return;
-                    b.className = (k === this.state.courierFilter)
-                        ? 'px-3.5 py-1.5 rounded-full font-extrabold bg-teal-700 text-white shadow-sm whitespace-nowrap'
-                        : 'px-3.5 py-1.5 rounded-full font-bold bg-white border border-gray-200 text-gray-700 whitespace-nowrap';
+                    if (k === 'cancelled') {
+                        b.className = (k === this.state.courierFilter)
+                            ? 'px-3.5 py-1.5 rounded-full font-extrabold bg-red-600 text-white shadow-sm whitespace-nowrap inline-flex items-center gap-1.5'
+                            : 'px-3.5 py-1.5 rounded-full font-bold bg-white border border-red-200 text-red-700 whitespace-nowrap inline-flex items-center gap-1.5';
+                    } else {
+                        b.className = (k === this.state.courierFilter)
+                            ? 'px-3.5 py-1.5 rounded-full font-extrabold bg-teal-700 text-white shadow-sm whitespace-nowrap'
+                            : 'px-3.5 py-1.5 rounded-full font-bold bg-white border border-gray-200 text-gray-700 whitespace-nowrap';
+                    }
                 });
                 this.renderCourierOrders();
+            },
+            getCourierOrderVoidState(ord) {
+                if (!ord) return { isVoided: false, isCancelled: false, reason: '', voidedBy: '', wasDelivered: false };
+                const txs = this.state.transactions || [];
+                const linkedTx = txs.find(t => t && ((ord.linkedTxId && t.id === ord.linkedTxId) || (t.linkedOnlineOrderId && t.linkedOnlineOrderId === ord.id))) || null;
+                const txVoided = !!(linkedTx && (linkedTx.status === 'cancelled' || linkedTx.status === 'void'));
+                const stStr = String(ord.orderStatus || '');
+                const isVoided = !!(ord.isVoided || stStr.includes('VOID') || txVoided);
+                const isCancelled = isVoided || stStr.startsWith('Dibatalkan');
+                const reason = String(ord.voidReason || linkedTx?.voidReason || '').trim();
+                const voidedBy = String(ord.voidedBy || ord.cancelledBy || linkedTx?.voidedBy || '').trim();
+                const prevSt = String(ord.previousStatus || '');
+                const destDelivered = Array.isArray(ord.destinations) && ord.destinations.some(d => d && d.delivered);
+                const wasDelivered = !!(
+                    ord.wasDeliveredBeforeVoid ||
+                    ord.deliveryProofUrl ||
+                    ord.deliveredAt ||
+                    destDelivered ||
+                    ['Selesai', 'Terkirim • Lunas', 'Terkirim • Tunggu Setor COD'].includes(prevSt) ||
+                    (txVoided && ['Selesai', 'Terkirim • Lunas', 'Terkirim • Tunggu Setor COD'].includes(stStr))
+                );
+                return { isVoided, isCancelled, reason, voidedBy, wasDelivered };
             },
             formatStockShort(qty, unit) {
                 const n = Math.round(Number(qty) || 0);
@@ -1588,11 +1627,19 @@
             },
             renderCourierOrders() {
                 const all = (this.state.onlineOrders || []).filter(o => o && o.deliveryMode !== 'Ambil di Toko');
-                const readyList = all.filter(o => ['Siap Diambil Kurir', 'Siap Kirim'].includes(o.orderStatus));
-                const waitHandoverList = all.filter(o => o.orderStatus === 'Disetujui — Siap Kirim');
-                const onWayList = all.filter(o => o.orderStatus === 'Diantar Kurir');
-                const codWaitList = all.filter(o => o.orderStatus === 'Terkirim • Tunggu Setor COD');
+                const activePool = all.filter(o => !this.getCourierOrderVoidState(o).isCancelled);
+                const cancelledList = all.filter(o => this.getCourierOrderVoidState(o).isCancelled);
+                const readyList = activePool.filter(o => ['Siap Diambil Kurir', 'Siap Kirim'].includes(o.orderStatus));
+                const waitHandoverList = activePool.filter(o => o.orderStatus === 'Disetujui — Siap Kirim');
+                const onWayList = activePool.filter(o => o.orderStatus === 'Diantar Kurir');
+                const codWaitList = activePool.filter(o => o.orderStatus === 'Terkirim • Tunggu Setor COD');
                 const activeCount = readyList.length + waitHandoverList.length + onWayList.length + codWaitList.length;
+
+                const cancelBadge = document.getElementById('courCancelledCountBadge');
+                if (cancelBadge) {
+                    cancelBadge.textContent = String(cancelledList.length);
+                    cancelBadge.classList.toggle('hidden', cancelledList.length <= 0);
+                }
 
                 const codTotalHold = [...onWayList, ...codWaitList]
                     .filter(o => {
@@ -1632,30 +1679,44 @@
                 let shown = [];
                 if (filt === 'cod') {
                     shown = codWaitList;
+                } else if (filt === 'cancelled') {
+                    shown = cancelledList.slice(0, 40);
                 } else if (filt === 'done') {
-                    shown = all.filter(o => ['Terkirim • Lunas', 'Selesai'].includes(o.orderStatus)).slice(0, 20);
+                    // Tampilkan antaran Selesai SEKALIGUS yang Dibatalkan / VOID agar kurir langsung bisa membedakan!
+                    shown = all.filter(o => {
+                        const vs = this.getCourierOrderVoidState(o);
+                        return vs.isCancelled || ['Terkirim • Lunas', 'Selesai'].includes(o.orderStatus);
+                    }).slice(0, 40);
                 } else {
-                    // Antaran Aktif: Siap Kirim + Diantar Kurir + Tunggu Setor COD (dan juga Menunggu Pembayaran COD jika kasir belum klik Siap Kirim)
-                    shown = all.filter(o => ['Siap Diambil Kurir', 'Siap Kirim', 'Disetujui — Siap Kirim', 'Diantar Kurir', 'Terkirim • Tunggu Setor COD'].includes(o.orderStatus));
+                    // Antaran Aktif: Siap Kirim + Diantar Kurir + Tunggu Setor COD (bebas dari order yang sudah batal/VOID)
+                    shown = activePool.filter(o => ['Siap Diambil Kurir', 'Siap Kirim', 'Disetujui — Siap Kirim', 'Diantar Kurir', 'Terkirim • Tunggu Setor COD'].includes(o.orderStatus));
                 }
 
                 if (shown.length === 0) {
-                    box.innerHTML = `<div class="nf-staff-card rounded-3xl p-8 text-center text-gray-400 space-y-1.5"><i class="fa-solid fa-motorcycle text-3xl text-gray-300"></i><p class="font-bold">${filt === 'cod' ? 'Tidak ada uang COD yang belum disetor.' : (filt === 'done' ? 'Belum ada riwayat antaran selesai.' : 'Belum ada pesanan siap antar saat ini.')}</p><p class="text-[11px]">Pesanan yang sudah di-ACC pelanggan atau ditandai "Siap Kirim" oleh kasir otomatis muncul di sini.</p></div>`;
+                    const emptyTitle = filt === 'cod'
+                        ? 'Tidak ada uang COD yang belum disetor.'
+                        : (filt === 'cancelled'
+                            ? 'Belum ada antaran yang dibatalkan atau di-VOID.'
+                            : (filt === 'done' ? 'Belum ada riwayat antaran selesai atau dibatalkan.' : 'Belum ada pesanan siap antar saat ini.'));
+                    box.innerHTML = `<div class="nf-staff-card rounded-3xl p-8 text-center text-gray-400 space-y-1.5"><i class="fa-solid ${filt === 'cancelled' ? 'fa-ban' : 'fa-motorcycle'} text-3xl text-gray-300"></i><p class="font-bold">${emptyTitle}</p><p class="text-[11px]">${filt === 'cancelled' ? 'Jika ada pesanan atau nota yang dibatalkan/VOID oleh kasir, statusnya otomatis tercatat di sini.' : 'Pesanan yang sudah di-ACC pelanggan atau ditandai "Siap Kirim" oleh kasir otomatis muncul di sini.'}</p></div>`;
                     return;
                 }
 
                 box.innerHTML = shown.map(ord => {
-                    const isCod = String(ord.paymentMethod || '').toLowerCase().includes('cash') || String(ord.paymentMethod || '').toLowerCase().includes('tunai');
+                    const vs = this.getCourierOrderVoidState(ord);
+                    const isVoided = vs.isVoided;
+                    const isCancelled = vs.isCancelled;
+                    const isCod = String(ord.paymentMethod || '').toLowerCase().includes('cash') || String(ord.paymentMethod || '').toLowerCase().includes('tunai') || String(ord.paymentMethod || '').toLowerCase().includes('cod');
                     const grand = (Number(ord.finalTotal) || Number(ord.estimatedTotal) || 0) + (Number(ord.shippingFee) || 0);
                     const items = Array.isArray(ord.weighedItems) && ord.weighedItems.length > 0 ? ord.weighedItems : (Array.isArray(ord.items) ? ord.items : []);
                     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ord.address || '')}`;
                     const waUrl = `https://wa.me/${this.normalizeWa(ord.customerPhone)}?text=${encodeURIComponent('Halo Kak ' + (ord.customerName || '') + ', saya kurir NutriFresh sedang mengantar pesanan #' + (ord.orderCode || ord.id) + '.')}`;
                     const telUrl = `tel:${String(ord.customerPhone || '').replace(/[^0-9+]/g, '')}`;
-                    const isReady = ['Siap Diambil Kurir', 'Siap Kirim'].includes(ord.orderStatus);
-                    const isWaitingCashier = ord.orderStatus === 'Disetujui — Siap Kirim';
-                    const isOnWay = ord.orderStatus === 'Diantar Kurir';
-                    const isCodWait = ord.orderStatus === 'Terkirim • Tunggu Setor COD';
-                    const isDone = ['Terkirim • Lunas', 'Selesai'].includes(ord.orderStatus);
+                    const isReady = !isCancelled && ['Siap Diambil Kurir', 'Siap Kirim'].includes(ord.orderStatus);
+                    const isWaitingCashier = !isCancelled && ord.orderStatus === 'Disetujui — Siap Kirim';
+                    const isOnWay = !isCancelled && ord.orderStatus === 'Diantar Kurir';
+                    const isCodWait = !isCancelled && ord.orderStatus === 'Terkirim • Tunggu Setor COD';
+                    const isDone = isCancelled || ['Terkirim • Lunas', 'Selesai'].includes(ord.orderStatus);
                     const pickedProof = this.state.courierProofDataByOrder[ord.id] || '';
                     const chatArr = Array.isArray(ord.orderChat) ? ord.orderChat : [];
 
@@ -1663,25 +1724,50 @@
                     const dpAmt = Number(ord.dpAmount) || 0;
                     const dests = Array.isArray(ord.destinations) ? ord.destinations : [];
                     const hasMultiDest = dests.length > 1;
-                    const unpaidCod = isCod && ord.paymentStatus !== 'Lunas' && grand > 0;
+                    const unpaidCod = !isCancelled && isCod && ord.paymentStatus !== 'Lunas' && grand > 0;
                     const parcelPhoto = ord.parcelPhotoUrl || ord.weighPhotoUrl || '';
 
+                    const badgeText = isVoided ? '❌ VOID / BATAL' : (isCancelled ? '❌ Dibatalkan' : ord.orderStatus);
+                    const badgeCls = isVoided
+                        ? 'bg-red-600 text-white shadow-sm'
+                        : (isCancelled
+                            ? 'bg-red-100 text-red-700 border border-red-200'
+                            : (isDone ? 'bg-green-100 text-nutri-dark' : (isCodWait ? 'bg-amber-100 text-amber-900' : (isOnWay ? 'bg-indigo-100 text-indigo-800' : 'bg-blue-100 text-blue-800'))));
+                    const cardBorderCls = isCancelled
+                        ? 'border-red-300 bg-red-50/35'
+                        : (isCodWait ? 'border-amber-400' : (isOnWay ? 'border-indigo-400' : (isPoOrd ? 'border-purple-300' : 'border-gray-200')));
+
                     return `
-                        <div class="nf-staff-card rounded-3xl p-4 space-y-3 border ${isCodWait ? 'border-amber-400' : (isOnWay ? 'border-indigo-400' : (isPoOrd ? 'border-purple-300' : 'border-gray-200'))}">
+                        <div class="nf-staff-card rounded-3xl p-4 space-y-3 border ${cardBorderCls}">
                             <div class="flex items-start justify-between gap-2">
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-1.5 flex-wrap">
                                         ${isPoOrd ? '<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[9.5px] font-black">PO PARSEL</span>' : ''}
                                         <span class="font-mono font-black text-[11px] bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full">${this.esc(ord.orderCode || ord.id)}</span>
+                                        ${isCancelled && vs.wasDelivered ? '<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[9px] font-black">SEMULA SUDAH DIANTAR</span>' : ''}
                                     </div>
-                                    <h4 class="font-black text-sm text-gray-900 mt-1">${this.esc(ord.customerName || 'Pelanggan')}${ord.institution ? ` <span class="text-xs font-bold text-gray-500">• ${this.esc(ord.institution)}</span>` : ''}</h4>
+                                    <h4 class="font-black text-sm ${isCancelled ? 'text-red-900 line-through' : 'text-gray-900'} mt-1">${this.esc(ord.customerName || 'Pelanggan')}${ord.institution ? ` <span class="text-xs font-bold text-gray-500">• ${this.esc(ord.institution)}</span>` : ''}</h4>
                                     ${isPoOrd && ord.deliveryDate ? `<div class="text-[10px] text-purple-800 font-bold mt-0.5">Jadwal Kirim: ${this.esc(ord.deliveryDate)} ${this.esc(ord.deliveryTime || '')}</div>` : ''}
+                                    ${ord.courierName ? `<div class="text-[10px] text-gray-500 font-semibold mt-0.5">🛵 Kurir: ${this.esc(ord.courierName)}</div>` : ''}
                                 </div>
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black flex-shrink-0 ${isDone ? 'bg-green-100 text-nutri-dark' : (isCodWait ? 'bg-amber-100 text-amber-900' : (isOnWay ? 'bg-indigo-100 text-indigo-800' : 'bg-blue-100 text-blue-800'))}">${this.esc(ord.orderStatus)}</span>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black flex-shrink-0 ${badgeCls}">${this.esc(badgeText)}</span>
                             </div>
 
-                            <!-- Kotak Tagihan COD vs Lunas -->
-                            ${unpaidCod ? `
+                            <!-- Kotak Status Pembayaran vs Dibatalkan / VOID -->
+                            ${isCancelled ? `
+                            <div class="bg-red-50 border-2 border-red-300 rounded-2xl p-3 space-y-1">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="text-[10.5px] font-black uppercase text-red-800">${isVoided ? '❌ TRANSAKSI / NOTA DI-VOID (DIBATALKAN)' : '❌ PESANAN DIBATALKAN'}</span>
+                                    <span class="text-xs font-black text-red-600 line-through">${this.rp(grand)}</span>
+                                </div>
+                                <p class="text-[11px] text-red-900 font-semibold leading-snug">
+                                    ${vs.wasDelivered
+                                        ? 'Antaran ini sempat dikirim, namun nota/pesanannya telah dibatalkan (VOID) di Kasir POS. Tidak dihitung setoran COD / penjualan.'
+                                        : 'Pesanan ini dibatalkan oleh toko dan tidak perlu diantar maupun ditagih ke pembeli.'}
+                                </p>
+                                ${vs.reason ? `<div class="text-[10.5px] font-extrabold text-red-800 bg-white/80 border border-red-200 rounded-xl px-2.5 py-1 mt-1">Alasan: ${this.esc(vs.reason)}</div>` : ''}
+                                ${vs.voidedBy ? `<div class="text-[10px] text-red-700 font-semibold">Diproses oleh: ${this.esc(vs.voidedBy)}</div>` : ''}
+                            </div>` : (unpaidCod ? `
                             <div class="bg-amber-50 border-2 border-amber-400 rounded-2xl p-3 flex items-center justify-between gap-2">
                                 <div>
                                     <span class="text-[10px] font-black uppercase text-amber-800 block">💵 ${dpAmt > 0 ? 'TAGIH SISA COD (SUDAH DP ' + this.rp(dpAmt) + ')' : 'TAGIH TUNAI (COD) KE PEMBELI'}</span>
@@ -1695,7 +1781,7 @@
                                     <span class="text-xs font-extrabold text-emerald-900">Tidak perlu tagih uang tunai (${this.rp(Number(ord.estimatedTotal) || grand)})</span>
                                 </div>
                                 <span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[10px]">LUNAS</span>
-                            </div>`}
+                            </div>`)}
 
                             <!-- Alamat & Tombol Navigasi (Multi-Alamat Otomatis Tercoret Saat Kurir Kirim!) -->
                             <div class="bg-gray-50 border border-gray-200 rounded-2xl p-3 space-y-2">
@@ -1730,7 +1816,7 @@
 
                             <!-- Rincian Buah / Parsel -->
                             <div class="bg-gray-50 border border-gray-100 rounded-2xl p-2.5 space-y-1 text-[11px]">
-                                ${items.map(it => `<div class="flex justify-between gap-2"><span class="text-gray-700">▪️ <strong>${this.formatStockShort(it.qty, it.unit)}</strong> ${this.esc(it.name)}</span><span class="font-bold text-gray-800">${this.rp(it.subtotal)}</span></div>`).join('')}
+                                ${items.map(it => `<div class="flex justify-between gap-2"><span class="${isCancelled ? 'text-gray-500 line-through' : 'text-gray-700'}">▪️ <strong>${this.formatStockShort(it.qty, it.unit)}</strong> ${this.esc(it.name)}</span><span class="font-bold ${isCancelled ? 'text-red-500 line-through' : 'text-gray-800'}">${this.rp(it.subtotal)}</span></div>`).join('')}
                             </div>
 
                             <!-- Chat Lega Kurir <-> Pembeli + Foto + Perluas (v152) -->

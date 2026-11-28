@@ -5387,6 +5387,17 @@
                     if (this.state.poCloudAvailable && !this.state.isOfflineMode && db && user) {
                         await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'parcel_orders', poId)).catch((e) => console.warn('[POS] Hapus PO cloud:', e?.message || e));
                     }
+                    const mirrorOrd = (this.state.onlineOrders || []).find(o => o && o.id === poId);
+                    if (mirrorOrd) {
+                        mirrorOrd.previousStatus = mirrorOrd.orderStatus;
+                        mirrorOrd.wasDeliveredBeforeVoid = !!(mirrorOrd.deliveryProofUrl || mirrorOrd.deliveredAt || ['Selesai', 'Terkirim • Lunas', 'Terkirim • Tunggu Setor COD'].includes(mirrorOrd.orderStatus));
+                        mirrorOrd.orderStatus = 'Dibatalkan (VOID)';
+                        mirrorOrd.isVoided = true;
+                        mirrorOrd.voidReason = 'Jadwal PO dihapus oleh manajemen';
+                        mirrorOrd.voidedBy = this.state.currentCashier || 'Owner';
+                        mirrorOrd.voidedAt = new Date().toISOString();
+                        await this.persistOnlineOrderRecord(mirrorOrd).catch(() => {});
+                    }
                     this.updatePoNavBadge();
                     this.renderParcelOrderBoard();
                 });
@@ -5394,8 +5405,17 @@
             async updateParcelOrderStatus(poId, newStatus) {
                 const po = this.state.parcelOrders.find(x => x.id === poId);
                 if (!po) return;
+                const prevPoStatus = po.orderStatus;
                 po.orderStatus = newStatus;
                 await this.persistParcelOrderRecord(po);
+                const extraPatch = {};
+                if (newStatus === 'Dibatalkan') {
+                    extraPatch.previousStatus = prevPoStatus;
+                    extraPatch.wasDeliveredBeforeVoid = ['Selesai', 'Terkirim • Lunas', 'Terkirim • Tunggu Setor COD'].includes(prevPoStatus);
+                    extraPatch.cancelledBy = this.state.currentCashier || 'Kasir';
+                    extraPatch.cancelledAt = new Date().toISOString();
+                }
+                await this.syncPoToOnlineOrderMirror(po, null, extraPatch).catch(() => {});
             },
             async updateParcelPaymentStatus(poId, newPayStatus) {
                 const po = this.state.parcelOrders.find(x => x.id === poId);
@@ -7508,18 +7528,26 @@
                 const ord = this.state.onlineOrders.find(x => x.id === orderId);
                 if (!ord) return;
                 this.showConfirm(`Batalkan Order Katalog ${ord.orderCode} a.n "${ord.customerName}"?`, async () => {
+                    const prevSt = ord.orderStatus || '';
+                    ord.previousStatus = prevSt;
+                    ord.wasDeliveredBeforeVoid = !!(ord.deliveryProofUrl || ord.deliveredAt || ['Selesai', 'Terkirim • Lunas', 'Terkirim • Tunggu Setor COD'].includes(prevSt));
+                    ord.cancelledBy = this.state.currentCashier || 'Kasir';
+                    ord.cancelledAt = new Date().toISOString();
                     ord.orderStatus = 'Dibatalkan';
                     await this.persistOnlineOrderRecord(ord);
                     const coPo = (this.state.parcelOrders || []).find(p => p.id === ord.id);
                     if (coPo) { coPo.orderStatus = 'Dibatalkan'; await this.persistParcelOrderRecord(coPo).catch(() => {}); }
+                    const targets = (ord.deliveryMode !== 'Ambil di Toko' && (ord.courierName || ['Siap Diambil Kurir', 'Siap Kirim', 'Diantar Kurir', 'Terkirim • Tunggu Setor COD', 'Terkirim • Lunas', 'Selesai'].includes(prevSt)))
+                        ? ['customer', 'staff']
+                        : ['customer'];
                     this.dispatchOrderPushNow({
                         ...this.buildOrderPushMeta(ord, 'Dibatalkan'),
                         order_id: ord.id,
-                        target_roles: ['customer'],
+                        target_roles: targets,
                         target_phone: ord.customerPhone || '',
                         event_type: 'order_status',
                         title: `❌ Pesanan Dibatalkan • #${ord.orderCode || ord.id}`,
-                        body: 'Pesanan Anda telah dibatalkan oleh kasir toko.'
+                        body: `Pesanan a.n ${ord.customerName || 'Pelanggan'} telah dibatalkan oleh kasir toko.`
                     });
                     if (this.state.activeLinkedOnlineOrder && this.state.activeLinkedOnlineOrder.id === orderId) {
                         this.detachLinkedOnlineOrder();
@@ -12583,19 +12611,43 @@ Kirim PIN sementara ini ke WhatsApp pelanggan sekarang?`, () => {
                     }
                     const linkedOnline = (this.state.onlineOrders || []).find(o => o && (o.linkedTxId === id || (t.linkedOnlineOrderId && o.id === t.linkedOnlineOrderId)));
                     if (linkedOnline) {
+                        const prevOnlStatus = linkedOnline.orderStatus || '';
+                        linkedOnline.previousStatus = prevOnlStatus;
+                        linkedOnline.wasDeliveredBeforeVoid = !!(linkedOnline.deliveryProofUrl || linkedOnline.deliveredAt || ['Selesai', 'Terkirim • Lunas', 'Terkirim • Tunggu Setor COD'].includes(prevOnlStatus));
                         linkedOnline.orderStatus = 'Dibatalkan (VOID)';
                         linkedOnline.isVoided = true;
                         linkedOnline.voidReason = reason;
                         linkedOnline.voidedBy = voidMeta.voidedBy;
                         linkedOnline.voidedAt = voidMeta.voidedAt;
                         await this.persistOnlineOrderRecord(linkedOnline).catch(() => {});
+                        if (linkedOnline.deliveryMode !== 'Ambil di Toko') {
+                            this.dispatchOrderPushNow({
+                                ...this.buildOrderPushMeta(linkedOnline, 'Dibatalkan (VOID)'),
+                                order_id: linkedOnline.id,
+                                target_roles: ['staff'],
+                                event_type: 'order_status',
+                                title: `❌ Nota Di-VOID • #${linkedOnline.orderCode || linkedOnline.id}`,
+                                body: `Antaran a.n ${linkedOnline.customerName || 'Pelanggan'} dibatalkan (VOID): ${reason}`
+                            });
+                        }
                     }
                     const linkedPo = (this.state.parcelOrders || []).find(p => p && (p.linkedTxId === id || (t.linkedOnlineOrderId && p.id === t.linkedOnlineOrderId)));
                     if (linkedPo) {
+                        const prevPoSt = linkedPo.orderStatus || '';
                         linkedPo.orderStatus = 'Dibatalkan';
                         linkedPo.isVoided = true;
                         linkedPo.voidReason = reason;
                         await this.persistParcelOrderRecord(linkedPo).catch(() => {});
+                        if (!linkedOnline) {
+                            await this.syncPoToOnlineOrderMirror(linkedPo, 'Dibatalkan (VOID)', {
+                                previousStatus: prevPoSt,
+                                wasDeliveredBeforeVoid: ['Selesai', 'Terkirim • Lunas', 'Terkirim • Tunggu Setor COD'].includes(prevPoSt),
+                                isVoided: true,
+                                voidReason: reason,
+                                voidedBy: voidMeta.voidedBy,
+                                voidedAt: voidMeta.voidedAt
+                            }).catch(() => {});
+                        }
                     }
                     await this.syncInventoryFromServer(false);
                     this.renderOnlineOrdersList();
@@ -13291,7 +13343,7 @@ File foto dihapus dari Storage: ${res.storage_files_deleted}`);
     </script>
 
     <script>
-        window.__NF_APP_VERSION = 'v153.5';
+        window.__NF_APP_VERSION = 'v153.7';
         window.__NF_PAGE_BOOT_AT = Date.now();
         window.__nutriWaitingSW = null;
         window.__nutriUserClickedUpdate = false;

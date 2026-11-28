@@ -2022,9 +2022,13 @@
             }
         } catch (err) {
             if (manual) {
-                const msg = (err && (err.message || String(err))) || "";
-                if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("command")) {
+                const msg = String((err && (err.message || err)) || "").trim();
+                const low = msg.toLowerCase();
+                if (low.includes("not found") || low.includes("command")) {
                     showUpdateNoticeToast("Versi .exe ini perlu diperbarui 1x manual agar Auto-Update aktif.");
+                } else if (msg) {
+                    const cleanMsg = msg.replace(/\s+/g, " ").slice(0, 95);
+                    showUpdateNoticeToast("Gagal cek update: " + cleanMsg);
                 } else {
                     showUpdateNoticeToast("Belum ada rilis Desktop baru / cek koneksi internet.");
                 }

@@ -1365,7 +1365,7 @@ def main():
 
     # 1. Auto-increment versionCode & versionName from web/sw.js (strictly monotonic across all workflows!)
     run_num = int(os.environ.get("GITHUB_RUN_NUMBER", "1") or "1")
-    sw_major, sw_minor = 153, 5
+    sw_major, sw_minor = 153, 7
     for sw_cand in (Path("web/sw.js"), Path(__file__).resolve().parent.parent / "web" / "sw.js"):
         if sw_cand.exists():
             m_sw = re.search(r"SW_VERSION\s*=\s*['\"]v?(\d+)(?:\.(\d+))?", sw_cand.read_text(encoding="utf-8"))
